@@ -23,6 +23,8 @@ if(KMM_USE_CUDA)
   enable_language(CUDA)
   SET(CUDA_SEPARABLE_COMPILATION ON)
   set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+elseif(KMM_USE_HIP)
+  enable_language(HIP)
 endif()
 
 # Enable C++17 support
@@ -114,6 +116,8 @@ if(KMM_USE_CUDA)
 
   # Define `KMM_USE_CUDA` macro so that headers can detect CUDA usage
   target_compile_definitions(${PROJECT_NAME} PUBLIC KMM_USE_CUDA=1)
+elseif(KMM_USE_HIP)
+  find_package(hip REQUIRED)
 endif()
 
 # Compile unit tests
