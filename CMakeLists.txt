@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 
 # Project setup
 set(PROJECT_NAME "kmm")
-project(${PROJECT_NAME} LANGUAGES CXX VERSION 0.1)
+project(${PROJECT_NAME} LANGUAGES CXX VERSION 0.3)
 
 # User options (features)
 option(KMM_STATIC   "Build a static library" OFF)
