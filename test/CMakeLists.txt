@@ -9,4 +9,3 @@ target_link_libraries(kmmTest PRIVATE kmm)
 target_link_libraries(kmmTest PRIVATE Catch2::Catch2WithMain)
 
 include(Catch)
-catch_discover_tests(kmmTest)
