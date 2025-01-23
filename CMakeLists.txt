@@ -117,7 +117,10 @@ if(KMM_USE_CUDA)
   # Define `KMM_USE_CUDA` macro so that headers can detect CUDA usage
   target_compile_definitions(${PROJECT_NAME} PUBLIC KMM_USE_CUDA=1)
 elseif(KMM_USE_HIP)
-  set_source_files_properties(${sources} PROPERTIES LANGUAGE HIP)
+  file(GLOB_RECURSE hip_sources
+          "${PROJECT_SOURCE_DIR}/src/*.cu"
+  )
+  set_source_files_properties(${hip_sources} PROPERTIES LANGUAGE HIP)
 endif()
 
 # Compile unit tests
