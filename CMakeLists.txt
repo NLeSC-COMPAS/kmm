@@ -121,6 +121,8 @@ elseif(KMM_USE_HIP)
           "${PROJECT_SOURCE_DIR}/src/*.cu"
   )
   set_source_files_properties(${hip_sources} PROPERTIES LANGUAGE HIP)
+  # Define `KMM_USE_HIP` macro so that headers can detect HIP usage
+  target_compile_definitions(${PROJECT_NAME} PUBLIC KMM_USE_HIP=1)
 endif()
 
 # Compile unit tests
