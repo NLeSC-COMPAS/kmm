@@ -21,6 +21,8 @@ class ArrayBase {
     virtual const std::type_info& type_info() const = 0;
     virtual size_t rank() const = 0;
     virtual int64_t size(size_t axis) const = 0;
+    virtual const Worker& worker() const = 0;
+    virtual void synchronize() const = 0;
     virtual void copy_bytes_to(void* output, size_t num_bytes) const = 0;
 };
 
@@ -78,11 +80,11 @@ class Array: public ArrayBase {
         return chunk_size().get(axis);
     }
 
-    const Worker& worker() const {
+    const Worker& worker() const final {
         return handle().worker();
     }
 
-    void synchronize() const {
+    void synchronize() const final {
         if (m_handle) {
             m_handle->synchronize();
         }
@@ -93,23 +95,23 @@ class Array: public ArrayBase {
     }
 
     template<typename M = All>
-    Access<Array<T, N>, Read<std::decay_t<M>>> access(M&& mapper = {}) {
-        return {*this, {mapper}};
+    Access<Array<T, N>, Read<M>> access(M mapper = {}) {
+        return {*this, {std::move(mapper)}};
     }
 
     template<typename M = All>
-    Access<const Array<T, N>, Read<std::decay_t<M>>> access(M&& mapper = {}) const {
-        return {*this, {mapper}};
+    Access<const Array<T, N>, Read<M>> access(M mapper = {}) const {
+        return {*this, {std::move(mapper)}};
     }
 
     template<typename M>
-    Access<Array<T, N>, Read<std::decay_t<M>>> operator[](M&& mapper) {
-        return access(mapper);
+    Access<Array<T, N>, Read<M>> operator[](M mapper) {
+        return access(std::move(mapper));
     }
 
     template<typename M>
-    Access<const Array<T, N>, Read<std::decay_t<M>>> operator[](M&& mapper) const {
-        return access(mapper);
+    Access<const Array<T, N>, Read<M>> operator[](M mapper) const {
+        return access(std::move(mapper));
     }
 
     template<typename... Is>
@@ -163,12 +165,14 @@ template<typename T, size_t N>
 struct ArgumentHandler<Access<const Array<T, N>, Read<All>>> {
     using type = ArrayArgument<const T, views::dynamic_domain<N>>;
 
-    ArgumentHandler(Access<const Array<T, N>, Read<All>> access) :
-        m_handle(access.argument.handle().shared_from_this()),
+    ArgumentHandler(const Array<T, N>& array) :
+        m_handle(array.handle().shared_from_this()),
         m_chunk(m_handle->distribution().chunk(0)) {
-        m_handle->distribution().region_to_chunk_index(access.argument.sizes()
-        );  // Check if it is in-bounds
+        m_handle->distribution().region_to_chunk_index(array.sizes());  // Check if it is in-bounds
     }
+
+    ArgumentHandler(Access<const Array<T, N>, Read<All>> access) :  //
+        ArgumentHandler(access.argument) {}
 
     void initialize(const TaskGroupInfo& init) {}
 
@@ -190,8 +194,10 @@ struct ArgumentHandler<Access<const Array<T, N>, Read<All>>> {
 };
 
 template<typename T, size_t N>
-struct ArgumentHandlerDispatch<Array<T, N>>:
-    ArgumentHandlerDispatch<Access<const Array<T, N>, Read<All>>> {};
+struct ArgumentHandler<const Array<T, N>&>: ArgumentHandler<Access<const Array<T, N>, Read<All>>> {
+    ArgumentHandler(const Array<T, N>& arg) :  //
+        ArgumentHandler<Access<const Array<T, N>, Read<All>>>(arg) {}
+};
 
 template<typename T, size_t N>
 struct ArgumentHandler<Access<Array<T, N>, Write<All>>> {
@@ -311,10 +317,10 @@ struct ArgumentHandler<Access<Array<T, N>, Write<M>>> {
 };
 
 template<typename T, size_t N>
-struct ArgumentHandler<Access<Array<T, N>, Reduce<>>> {
+struct ArgumentHandler<Access<Array<T, N>, Reduce<All>>> {
     using type = ArrayArgument<T, views::dynamic_domain<N>>;
 
-    ArgumentHandler(Access<Array<T, N>, Reduce<>> access) :
+    ArgumentHandler(Access<Array<T, N>, Reduce<All>> access) :
         m_array(access.argument),
         m_builder(access.argument.sizes(), DataType::of<T>(), access.mode.op) {
         if (m_array.is_valid()) {

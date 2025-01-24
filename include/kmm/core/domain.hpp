@@ -39,16 +39,23 @@ struct NDRange {
      * Constructs a chunk with a given offset and size.
      */
     KMM_HOST_DEVICE
-    explicit NDRange(NDIndex offset, NDSize size) : begin(offset) {
-        // Doing this in the initializer causes a SEGFAULT in GCC
+    explicit NDRange(NDIndex offset, NDSize size) {
+        // Doing this in the initializer leads to SEGFAULT in GCC. Why? Don't ask me
+        this->begin = offset;
         this->end = offset + size.to_point();
     }
 
     /**
-     * Constructs a chunk with a given size and starting at the origin.
+     * Constructs a range with a given size.
      */
-    KMM_HOST_DEVICE
-    NDRange(NDSize size) : end(size) {}
+    template<size_t N = ND_DIMS>
+    KMM_HOST_DEVICE NDRange(Size<N> m) : NDRange(NDSize::from(m)) {}
+
+    /**
+     * Constructs a range from an existing range.
+     */
+    template<size_t N = ND_DIMS>
+    KMM_HOST_DEVICE NDRange(Range<N> m) : NDRange(NDIndex::from(m.offset), NDSize::from(m.sizes)) {}
 
     /**
      * Gets the sizes of the work chunk in each dimension.
@@ -83,35 +90,9 @@ struct NDRange {
     }
 
     /**
-     * Checks if a given 3D point is contained within the work chunk.
-     */
-    KMM_HOST_DEVICE
-    bool contains(int64_t x, int64_t y, int64_t z) const {
-        return (x >= begin[0] && x < end[0]) &&  //
-            (y >= begin[1] && y < end[1]) &&  //
-            (z >= begin[2] && z < end[2]);
-    }
-
-    /**
-     * Checks if a given 2D point is contained within the work chunk.
-     */
-    KMM_HOST_DEVICE
-    bool contains(int64_t x, int64_t y) const {
-        return x >= begin[0] && x < end[0] && y >= begin[1] && y < end[1];
-    }
-
-    /**
-     * Checks if a given 1D point is contained within the work chunk.
-     */
-    KMM_HOST_DEVICE
-    bool contains(int64_t x) const {
-        return x >= begin[0] && x < end[0];
-    }
-
-    /**
      * Checks if a multidimensional point is contained within the work chunk.
      */
-    template<size_t N>
+    template<size_t N = ND_DIMS>
     KMM_HOST_DEVICE bool contains(Index<N> p) const {
         bool result = true;
 
@@ -120,6 +101,44 @@ struct NDRange {
         }
 
         return result;
+    }
+
+    /**
+     * Checks if a given 3D point is contained within the work chunk.
+     */
+    KMM_HOST_DEVICE
+    bool contains(int64_t x, int64_t y, int64_t z) const {
+        return contains(Index<3> {x, y, z});
+    }
+
+    /**
+     * Checks if a given 2D point is contained within the work chunk.
+     */
+    KMM_HOST_DEVICE
+    bool contains(int64_t x, int64_t y) const {
+        return contains(Index<2> {x, y});
+    }
+
+    /**
+     * Checks if a given 1D point is contained within the work chunk.
+     */
+    KMM_HOST_DEVICE
+    bool contains(int64_t x) const {
+        return contains(Index<1> {x});
+    }
+
+    /**
+     * Returns the effective dimensionality of this range. This the dimensionality `N` such that
+     * for all `i >= N` we have `begin[i] == 0` and `end[i] == 1`.
+     */
+    size_t effective_dimensionality() const {
+        for (size_t i = ND_DIMS; i > 0; i--) {
+            if (begin[i - 1] == 0 && end[i - 1] == 1) {
+                return i;
+            }
+        }
+
+        return 0;
     }
 };
 

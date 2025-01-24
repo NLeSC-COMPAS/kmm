@@ -6,38 +6,34 @@
 
 namespace kmm {
 
-template<typename T>
+template<typename T, typename Enabled = void>
 struct ArgumentHandler;
 
-template<ExecutionSpace, typename T>
-struct ArgumentUnpack;
-
-template<typename T, typename = void>
-struct ArgumentHandlerDispatch {
-    using type = ArgumentHandler<std::decay_t<T>>;
-
-    template<typename U>
-    static type call(U&& value) {
-        return {std::forward<U>(value)};
-    }
+template<typename T>
+struct ArgumentHandler<const T&>: ArgumentHandler<T> {
+    ArgumentHandler(const T& arg) : ArgumentHandler<T>(arg) {}
 };
 
 template<typename T>
-struct ArgumentHandlerDispatch<const T&>: ArgumentHandlerDispatch<T> {};
+struct ArgumentHandler<T&>: ArgumentHandler<const T&> {
+    ArgumentHandler(T& arg) : ArgumentHandler<const T&>(arg) {}
+};
 
 template<typename T>
-struct ArgumentHandlerDispatch<T&>: ArgumentHandlerDispatch<const T&> {};
+struct ArgumentHandler<T&&>: ArgumentHandler<T> {
+    ArgumentHandler(T&& arg) : ArgumentHandler<T>(std::move(arg)) {}
+};
 
 template<typename T>
-struct ArgumentHandlerDispatch<T&&>: ArgumentHandlerDispatch<T> {};
-
-template<typename T>
-using packed_argument_t = typename ArgumentHandlerDispatch<T>::type::type;
+using packed_argument_t = typename ArgumentHandler<T>::type;
 
 template<typename T>
 packed_argument_t<T> pack_argument(TaskInstance& task, T&& arg) {
-    return ArgumentHandlerDispatch<T>::call(std::forward<T>(arg)).process_chunk(task);
+    return ArgumentHandler<T>(std::forward<T>(arg)).process_chunk(task);
 }
+
+template<ExecutionSpace, typename T>
+struct ArgumentUnpack;
 
 template<ExecutionSpace execution_space, typename T>
 auto unpack_argument(TaskContext& context, T&& arg) {
@@ -49,7 +45,7 @@ struct Argument {
     Argument(T value) : m_value(std::move(value)) {}
 
     static Argument pack(TaskInstance& builder, T value) {
-        return {std::move(value)};
+        return Argument {std::move(value)};
     }
 
     template<ExecutionSpace Space>
@@ -61,7 +57,7 @@ struct Argument {
     T m_value;
 };
 
-template<typename T>
+template<typename T, typename Enabled>
 struct ArgumentHandler {
     using type = Argument<T>;
 
