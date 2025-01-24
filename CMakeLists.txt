@@ -117,10 +117,7 @@ if(KMM_USE_CUDA)
   # Define `KMM_USE_CUDA` macro so that headers can detect CUDA usage
   target_compile_definitions(${PROJECT_NAME} PUBLIC KMM_USE_CUDA=1)
 elseif(KMM_USE_HIP)
-  file(GLOB_RECURSE hip_sources
-          "${PROJECT_SOURCE_DIR}/src/*.cu"
-  )
-  set_source_files_properties(${hip_sources} PROPERTIES LANGUAGE HIP)
+  set_source_files_properties(${sources} PROPERTIES LANGUAGE HIP)
   # Define `KMM_USE_HIP` macro so that headers can detect HIP usage
   target_compile_definitions(${PROJECT_NAME} PUBLIC KMM_USE_HIP=1)
 endif()
