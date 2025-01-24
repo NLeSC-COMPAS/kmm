@@ -152,9 +152,9 @@ using bfloat16_type = __hip_bfloat16;
     HIP_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR
 #define GPU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR \
     HIP_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR
-#define GPU_MEMHOSTALLOC_PORTABLE            HIP_MEMHOSTALLOC_PORTABLE
-#define GPU_MEMHOSTALLOC_DEVICEMAP           HIP_MEMHOSTALLOC_DEVICEMAP
-#define GPU_SUCCESS                          HIP_SUCCESS
+#define GPU_MEMHOSTALLOC_PORTABLE            hipHostAllocPortable
+#define GPU_MEMHOSTALLOC_DEVICEMAP           hipHostAllocMapped
+#define GPU_SUCCESS                          hipSuccess
 #define GPU_ERROR_OUT_OF_MEMORY              HIP_ERROR_OUT_OF_MEMORY
 #define GPU_MEM_ALLOCATION_TYPE_PINNED       HIP_MEM_ALLOCATION_TYPE_PINNED
 #define GPU_MEM_HANDLE_TYPE_NONE             HIP_MEM_HANDLE_TYPE_NONE
@@ -181,8 +181,8 @@ using bfloat16_type = __hip_bfloat16;
 #define gpuMemsetD16Async                    hipMemsetD16Async
 #define gpuMemsetD32Async                    hipMemsetD32Async
 #define gpuMemcpyAsync                       hipMemcpyAsync
-#define gpuMemHostAlloc                      hipMemHostAlloc
-#define gpuMemFreeHost                       hipMemFreeHost
+#define gpuMemHostAlloc                      hipHostAlloc
+#define gpuMemFreeHost                       hipFreeHost
 #define gpuMemAlloc                          hipMemAlloc
 #define gpuMemFree                           hipMemFree
 #define gpuMemPoolCreate                     hipMemPoolCreate
@@ -226,12 +226,12 @@ using bfloat16_type = __hip_bfloat16;
 
 using GPUresult = hipError_t;
 using gpuError_t = hipError_t;
-using GPUdevice = int;
+using GPUdevice = hipDevice_t;
 using GPUdevice_attribute = hipDeviceAttribute_t;
 using GPUcontext = hipCtx_t;
 using GPUmemorytype = hipMemoryType;
 using GPUstream_t = hipStream_t;
-using GPUdeviceptr = int*;
+using GPUdeviceptr = hipDevice_t*;
 using GPUmemoryPool = hipMemPool_t;
 using GPUmemPoolProps = hipMemPoolProps;
 using GPUmemAllocationType = hipMemAllocationType;
