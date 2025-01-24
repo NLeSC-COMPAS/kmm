@@ -232,22 +232,23 @@ using GPUmemorytype = hipMemoryType;
 using GPUstream_t = hipStream_t;
 using GPUdeviceptr = int*;
 using GPUmemoryPool = hipMemPool_t;
-using GPUmemPoolProps = hipMemPoolProp;
+using GPUmemPoolProps = hipMemPoolProps;
 using GPUmemAllocationType = hipMemAllocationType;
 using GPUmemAllocationHandleType = hipMemAllocationHandleType;
 using GPUmemLocationType = hipMemLocationType;
 using GPUevent_t = hipEvent_t;
-using GPU_MEMCPY2D = HIP_MEMCPY2D;
+using GPU_MEMCPY2D = hip_Memcpy2D;
 
 // cuBLAS
-#define blasCreate                           rocblasCreate
-#define blasSetStream                        rocblasSetStream
-#define blasDestroy                          rocblasDestroy
-#define blasGetStatusName                    rocblasGetStatusName
-#define blasGetStatusString                  rocblasGetStatusString
+#define blasCreate                           rocblas_create_handle
+#define blasSetStream                        rocblas_set_stream
+#define blasDestroy                          rocblas_destroy_handle
+#define blasGetStatusString                  rocblas_status_to_string
 
-using blasStatus_t = rocblasStatus_t;
-using blasHandle_t = rocblasHandle_t;
+using blasStatus_t = rocblas_status;
+using blasHandle_t = rocblas_handle;
+
+const char* blasGetStatusName(blasStatus_t);
 
 #else
 #define GPU_DEVICE_ATTRIBUTE_MAX   1

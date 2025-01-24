@@ -264,6 +264,12 @@ void execute_gpu_fill_async(GPUstream_t stream, GPUdeviceptr dst_buffer, const F
     return;
 }
 
+#elif defined(KMM_USE_HIP)
+
+const char* blasGetStatusName(blasStatus_t) {
+    return "";
+}
+
 #endif
 
 }  // namespace kmm
