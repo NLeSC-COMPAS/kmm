@@ -225,18 +225,18 @@ using bfloat16_type = __hip_bfloat16;
 
 using GPUresult = hipError_t;
 using gpuError_t = hipError_t;
-using GPUdevice = hipError_t;
+using GPUdevice = int;
 using GPUdevice_attribute = hipDeviceAttribute_t;
-using GPUcontext = HIPcontext;
-using GPUmemorytype = HIPmemorytype;
-using GPUstream_t = HIPstream;
-using GPUdeviceptr = HIPdeviceptr;
-using GPUmemoryPool = HIPmemoryPool;
-using GPUmemPoolProps = hipMemPoolProps;
-using GPUmemAllocationType = HIPmemAllocationType;
-using GPUmemAllocationHandleType = HIPmemAllocationHandleType;
-using GPUmemLocationType = HIPmemLocationType;
-using GPUevent_t = HIPevent;
+using GPUcontext = hipCtx_t;
+using GPUmemorytype = hipMemorytype;
+using GPUstream_t = hipStream_t;
+using GPUdeviceptr = int*;
+using GPUmemoryPool = hipMemPool_t;
+using GPUmemPoolProps = hipMemPoolProp;
+using GPUmemAllocationType = hipMemAllocationType;
+using GPUmemAllocationHandleType = hipMemAllocationHandleType;
+using GPUmemLocationType = hipMemLocationType;
+using GPUevent_t = hipEvent_t;
 using GPU_MEMCPY2D = HIP_MEMCPY2D;
 
 // cuBLAS
