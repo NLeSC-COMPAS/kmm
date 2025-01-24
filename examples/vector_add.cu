@@ -47,10 +47,10 @@ int main() {
     auto C = kmm::Array<float> {n};
 
     rt.parallel_submit(
-        {n},
-        {chunk_size},
+        kmm::Size {n},
+        kmm::ChunkPartitioner {chunk_size},
         kmm::GPUKernel(initialize_range, block_size),
-        write(A[_x])
+        write(A(_x))
     );
 
     rt.parallel_submit(
@@ -58,16 +58,16 @@ int main() {
         {chunk_size},
         kmm::GPUKernel(fill_range, block_size),
         float(1.0),
-        write(B[_x])
+        write(B(_x))
     );
 
     rt.parallel_submit(
         {n},
         {chunk_size},
         kmm::GPUKernel(vector_add, block_size),
-        write(C[_x]),
-        A[_x],
-        B[_x]
+        write(C(_x)),
+        A(_x),
+        B(_x)
     );
 
     std::vector<float> result(n);

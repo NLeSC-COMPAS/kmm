@@ -117,8 +117,8 @@ EventId parallel_submit_impl(
     Launcher launcher,
     Args&&... args
 ) {
-    std::tuple<typename ArgumentHandlerDispatch<Args>::type...> handlers = {
-        ArgumentHandlerDispatch<Args>::call(std::forward<Args>(args))...};
+    std::tuple<ArgumentHandler<Args>...> handlers = {
+        ArgumentHandler<Args>(std::forward<Args>(args))...};
 
     return worker.with_task_graph([&](TaskGraph& graph) {
         EventList events;

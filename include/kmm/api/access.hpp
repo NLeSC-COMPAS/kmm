@@ -13,7 +13,7 @@ struct Access {
     Access(Arg& argument, Mode mode = {}) : argument(argument), mode(mode) {}
 
     template<typename U>
-    Access(Access<U, Mode> access = {}) : argument(access.argument), mode(access.mode) {}
+    Access(Access<U, Mode> that = {}) : argument(that.argument), mode(that.mode) {}
 };
 
 template<typename M = All>
@@ -34,8 +34,13 @@ struct Reduce {
 };
 
 template<typename M = All, typename Arg>
-Access<Arg, Read<M>> read(Arg& argument, M access_mapper = {}) {
+Access<const Arg, Read<M>> read(const Arg& argument, M access_mapper = {}) {
     return {argument, {access_mapper}};
+}
+
+template<typename Arg, typename M>
+Access<const Arg, Read<M>> read(Access<Arg, Read<M>> access) {
+    return access;
 }
 
 template<typename M = All, typename Arg>
@@ -87,8 +92,12 @@ Access<Arg, Reduce<M, P>> reduce(
     return {access.argument, {op, access.mode.access_mapper, private_mapper.access_mapper}};
 }
 
+// Forward `Access<Arg, Read<M>>` to `Access<const Arg, Read<M>>` only if `Arg` is not const
 template<typename Arg, typename M>
-struct ArgumentHandlerDispatch<Access<Arg, Read<M>>, std::enable_if_t<!std::is_const_v<Arg>>>: //
-    ArgumentHandlerDispatch<Access<const Arg, Read<M>>> {};
+struct ArgumentHandler<Access<Arg, Read<M>>>:
+    std::enable_if<std::is_const<Arg>::value, ArgumentHandler<Access<const Arg, Read<M>>>>::type {
+    ArgumentHandler(Access<Arg, Read<M>> access) :
+        ArgumentHandler<Access<const Arg, Read<M>>>(access) {}
+};
 
 }  // namespace kmm
