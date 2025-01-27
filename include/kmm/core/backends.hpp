@@ -249,7 +249,7 @@ using blasStatus_t = rocblas_status;
 using blasHandle_t = rocblas_handle;
 
 const char* blasGetStatusName(blasStatus_t);
-GPUresult gpuMemcpyAsync(GPUdeviceptr, GPUdeviceptr, size_t, GPUstream);
+GPUresult gpuMemcpyAsync(GPUdeviceptr, GPUdeviceptr, size_t, GPUstream_t);
 
 #else
 #define GPU_DEVICE_ATTRIBUTE_MAX   1
