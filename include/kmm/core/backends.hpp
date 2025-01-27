@@ -181,7 +181,7 @@ using bfloat16_type = __hip_bfloat16;
 #define gpuMemsetD16Async                    hipMemsetD16Async
 #define gpuMemsetD32Async                    hipMemsetD32Async
 #define gpuMemcpyAsync                       hipMemcpyAsync
-#define gpuMemHostAlloc                      hipHostAlloc
+#define gpuMemHostAlloc                      hipHostMalloc
 #define gpuMemFreeHost                       hipHostFree
 #define gpuMemAlloc                          hipMalloc
 #define gpuMemFree                           hipFree
