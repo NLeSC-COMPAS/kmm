@@ -152,14 +152,14 @@ using bfloat16_type = __hip_bfloat16;
     HIP_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR
 #define GPU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR \
     HIP_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR
-#define GPU_MEMHOSTALLOC_PORTABLE            hipHostAllocPortable
-#define GPU_MEMHOSTALLOC_DEVICEMAP           hipHostAllocMapped
+#define GPU_MEMHOSTALLOC_PORTABLE            hipHostMallocPortable
+#define GPU_MEMHOSTALLOC_DEVICEMAP           hipHostMallocMapped
 #define GPU_SUCCESS                          hipSuccess
-#define GPU_ERROR_OUT_OF_MEMORY              HIP_ERROR_OUT_OF_MEMORY
+#define GPU_ERROR_OUT_OF_MEMORY              hipErrorOutOfMemory
 #define GPU_MEM_ALLOCATION_TYPE_PINNED       HIP_MEM_ALLOCATION_TYPE_PINNED
 #define GPU_MEM_HANDLE_TYPE_NONE             HIP_MEM_HANDLE_TYPE_NONE
 #define GPU_MEM_LOCATION_TYPE_DEVICE         HIP_MEM_LOCATION_TYPE_DEVICE
-#define GPU_ERROR_UNKNOWN                    HIP_ERROR_UNKNOWN
+#define GPU_ERROR_UNKNOWN                    hipErrorUnknown
 #define GPU_STREAM_NON_BLOCKING              HIP_STREAM_NON_BLOCKING
 #define GPU_EVENT_WAIT_DEFAULT               HIP_EVENT_WAIT_DEFAULT
 #define GPU_ERROR_NOT_READY                  HIP_ERROR_NOT_READY
@@ -182,13 +182,13 @@ using bfloat16_type = __hip_bfloat16;
 #define gpuMemsetD32Async                    hipMemsetD32Async
 #define gpuMemcpyAsync                       hipMemcpyAsync
 #define gpuMemHostAlloc                      hipHostAlloc
-#define gpuMemFreeHost                       hipFreeHost
-#define gpuMemAlloc                          hipMemAlloc
-#define gpuMemFree                           hipMemFree
+#define gpuMemFreeHost                       hipHostFree
+#define gpuMemAlloc                          hipMalloc
+#define gpuMemFree                           hipFree
 #define gpuMemPoolCreate                     hipMemPoolCreate
 #define gpuMemPoolDestroy                    hipMemPoolDestroy
-#define gpuMemAllocFromPoolAsync             hipMemAllocFromPoolAsync
-#define gpuMemFreeAsync                      hipMemFreeAsync
+#define gpuMemAllocFromPoolAsync             hipMallocFromPoolAsync
+#define gpuMemFreeAsync                      hipFreeAsync
 #define gpuCtxGetStreamPriorityRange         hipCtxGetStreamPriorityRange
 #define gpuStreamCreateWithPriority          hipStreamCreateWithPriority
 #define gpuStreamQuery                       hipStreamQuery
