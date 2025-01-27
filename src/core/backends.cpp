@@ -270,6 +270,10 @@ const char* blasGetStatusName(blasStatus_t) {
     return "";
 }
 
+GPUresult gpuMemcpyAsync(GPUdeviceptr dst, GPUdeviceptr src, size_t ByteCount, GPUstream hStream) {
+    return hipMemcpyAsync(dst, src, ByteCount, hipMemcpyDefault, hStream);
+}
+
 #endif
 
 }  // namespace kmm

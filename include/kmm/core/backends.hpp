@@ -180,7 +180,6 @@ using bfloat16_type = __hip_bfloat16;
 #define gpuMemsetD8Async                     hipMemsetD8Async
 #define gpuMemsetD16Async                    hipMemsetD16Async
 #define gpuMemsetD32Async                    hipMemsetD32Async
-#define gpuMemcpyAsync                       hipMemcpyAsync
 #define gpuMemHostAlloc                      hipHostMalloc
 #define gpuMemFreeHost                       hipHostFree
 #define gpuMemAlloc                          hipMalloc
@@ -250,6 +249,7 @@ using blasStatus_t = rocblas_status;
 using blasHandle_t = rocblas_handle;
 
 const char* blasGetStatusName(blasStatus_t);
+GPUresult gpuMemcpyAsync(GPUdeviceptr, GPUdeviceptr, size_t, GPUstream);
 
 #else
 #define GPU_DEVICE_ATTRIBUTE_MAX   1
