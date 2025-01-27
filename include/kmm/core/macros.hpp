@@ -26,9 +26,16 @@
 #define KMM_UNLIKELY(expr) (__builtin_expect(!(expr), false))
 #define KMM_LIKELY(expr)   KMM_UNLIKELY(!(expr))
 
-#if defined(__CUDACC__) || defined(__HIPCC__)
-    // CUDA or HIP
+#if defined(__CUDACC__)
+    // CUDA
     #define KMM_HOST_DEVICE          __host__ __device__ __forceinline__
+    #define KMM_DEVICE               __device__ __forceinline__
+    #define KMM_HOST_DEVICE_NOINLINE __host__ __device__
+    #define KMM_DEVICE_NOINLINE      __device__
+#elif defined(__HIPCC__)
+    // HIP
+    // TODO: using __forceinline__ breaks compilation, it needs to be investigated
+    #define KMM_HOST_DEVICE          __host__ __device__
     #define KMM_DEVICE               __device__ __forceinline__
     #define KMM_HOST_DEVICE_NOINLINE __host__ __device__
     #define KMM_DEVICE_NOINLINE      __device__
