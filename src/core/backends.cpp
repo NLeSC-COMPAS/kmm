@@ -274,6 +274,14 @@ GPUresult gpuMemcpyAsync(GPUdeviceptr dst, GPUdeviceptr src, size_t ByteCount, G
     return hipMemcpyAsync(dst, src, ByteCount, hipMemcpyDefault, hStream);
 }
 
+GPUresult gpuMemcpyHtoDAsync(GPUdeviceptr dstDevice, const void* srcHost, size_t ByteCount, GPUstream_t hStream) {
+    return hipMemcpyHtoDAsync(dstDevice, const_cast<void*>(srcHost), ByteCount, hStream);
+}
+
+GPUresult gpuMemcpyHtoD(GPUdeviceptr dstDevice, const void* srcHost, size_t ByteCount) {
+    return hipMemcpyHtoD(dstDevice, const_cast<void*>(srcHost), ByteCount);
+}
+
 #endif
 
 }  // namespace kmm

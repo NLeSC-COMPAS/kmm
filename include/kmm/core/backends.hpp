@@ -174,7 +174,6 @@ using bfloat16_type = __hip_bfloat16;
 #define gpuDeviceGetName                     hipDeviceGetName
 #define gpuDeviceGetAttribute                hipDeviceGetAttribute
 #define gpuMemGetInfo                        hipMemGetInfo
-#define gpuMemcpyHtoDAsync                   hipMemcpyHtoDAsync
 #define gpuMemcpyDtoHAsync                   hipMemcpyDtoHAsync
 #define gpuStreamSynchronize                 hipStreamSynchronize
 #define gpuMemsetD8Async                     hipMemsetD8Async
@@ -198,9 +197,8 @@ using bfloat16_type = __hip_bfloat16;
 #define gpuEventQuery                        hipEventQuery
 #define gpuEventDestroy                      hipEventDestroy
 #define gpuEventCreate                       hipEventCreate
-#define gpuMemcpyHtoD                        hipMemcpyHtoD
-#define gpuMemcpy2DAsync                     hipMemcpy2DAsync
-#define gpuMemcpy2D                          hipMemcpy2D
+#define gpuMemcpy2DAsync                     hipMemcpyParam2DAsync
+#define gpuMemcpy2D                          hipMemcpyParam2D
 #define gpuMemcpyDtoH                        hipMemcpyDtoH
 #define gpuMemcpyDtoDAsync                   hipMemcpyDtoDAsync
 #define gpuMemcpyDtoD                        hipMemcpyDtoD
@@ -250,6 +248,8 @@ using blasHandle_t = rocblas_handle;
 
 const char* blasGetStatusName(blasStatus_t);
 GPUresult gpuMemcpyAsync(GPUdeviceptr, GPUdeviceptr, size_t, GPUstream_t);
+GPUresult gpuMemcpyHtoDAsync(GPUdeviceptr, const void*, size_t, GPUstream_t);
+GPUresult gpuMemcpyHtoD(GPUdeviceptr, const void*, size_t);
 
 #else
 #define GPU_DEVICE_ATTRIBUTE_MAX   1
