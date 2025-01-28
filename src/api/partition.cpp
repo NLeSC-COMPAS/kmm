@@ -37,7 +37,7 @@ WorkPartition ChunkPartitioner::operator()(
     std::array<int64_t, ND_DIMS> num_chunks;
 
     for (size_t i = 0; i < ND_DIMS; i++) {
-        num_chunks[i] = div_ceil(index_space.size(i), m_chunk_size[i]);
+        num_chunks[i] = div_ceil(index_space[i].size(), m_chunk_size[i]);
     }
 
     size_t owner_id = 0;
@@ -50,8 +50,8 @@ WorkPartition ChunkPartitioner::operator()(
                 auto current = Index<3> {x, y, z};
 
                 for (size_t i = 0; i < ND_DIMS; i++) {
-                    offset[i] = index_space.begin[i] + current[i] * m_chunk_size[i];
-                    size[i] = std::min(m_chunk_size[i], index_space.end[i] - offset[i]);
+                    offset[i] = index_space[i].begin + current[i] * m_chunk_size[i];
+                    size[i] = std::min(m_chunk_size[i], index_space[i].end - offset[i]);
                 }
 
                 chunks.push_back({devices[owner_id], offset, size});

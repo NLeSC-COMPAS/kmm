@@ -46,7 +46,7 @@ __global__ void init_points(kmm::NDRange chunk, kmm::gpu_subview_mut<float2> poi
 }
 
 void init_polygon(kmm::NDRange chunk, int nvertices, kmm::view_mut<float2> vertices) {
-    for (int64_t i = chunk.begin(); i < chunk.end(); i++) {
+    for (int64_t i = chunk.begin(0); i < chunk.end(0); i++) {
         float angle = float(i) / float(nvertices) * float(2.0F * M_PI);
         vertices[i] = {cosf(angle), sinf(angle)};
     }

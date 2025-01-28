@@ -9,7 +9,7 @@
 namespace kmm {
 
 template<size_t N>
-Range<N> index2region(
+Bounds<N> index2region(
     size_t index,
     std::array<size_t, N> num_chunks,
     Size<N> chunk_size,
@@ -69,7 +69,7 @@ DataDistribution<N>::DataDistribution(Size<N> array_size, std::vector<DataChunk<
         if (chunk.offset != expected_offset || chunk.size != expected_size) {
             throw std::runtime_error(fmt::format(
                 "invalid write access pattern, the region {} is not aligned to the chunk size of {}",
-                Range<N>(chunk.offset, chunk.size),
+                Bounds<N>(chunk.offset, chunk.size),
                 m_chunk_size
             ));
         }
@@ -77,7 +77,7 @@ DataDistribution<N>::DataDistribution(Size<N> array_size, std::vector<DataChunk<
         if (m_mapping[linear_index] != INVALID_INDEX) {
             throw std::runtime_error(fmt::format(
                 "invalid write access pattern, the region {} is written to by more one task",
-                Range<N>(expected_offset, expected_size)
+                Bounds<N>(expected_offset, expected_size)
             ));
         }
 
@@ -104,7 +104,7 @@ ArrayHandle<N>::~ArrayHandle() {
 }
 
 template<size_t N>
-size_t DataDistribution<N>::region_to_chunk_index(Range<N> region) const {
+size_t DataDistribution<N>::region_to_chunk_index(Bounds<N> region) const {
     size_t index = 0;
 
     for (size_t i = 0; compare_less(i, N); i++) {
@@ -176,7 +176,7 @@ void ArrayHandle<N>::synchronize() const {
 template<size_t N>
 class CopyOutTask: public Task {
   public:
-    CopyOutTask(void* data, size_t element_size, Size<N> array_size, Range<N> region) :
+    CopyOutTask(void* data, size_t element_size, Size<N> array_size, Bounds<N> region) :
         m_dst_addr(data) {
         size_t src_stride = 1;
         size_t dst_stride = 1;
@@ -223,7 +223,7 @@ void ArrayHandle<N>::copy_bytes(void* dest_addr, size_t element_size) const {
 
         for (size_t i = 0; i < m_buffers.size(); i++) {
             auto chunk = m_distribution.chunk(i);
-            auto region = Range<N> {chunk.offset, chunk.size};
+            auto region = Bounds<N> {chunk.offset, chunk.size};
 
             auto task = std::make_shared<CopyOutTask<N>>(
                 dest_addr,

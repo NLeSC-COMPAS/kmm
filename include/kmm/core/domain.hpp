@@ -19,21 +19,85 @@ using NDIndex = Index<ND_DIMS>;
  */
 using NDSize = Size<ND_DIMS>;
 
+template<typename T = default_geometry_type>
+struct Range {
+    T begin;
+    T end;
+
+    KMM_HOST_DEVICE
+    Range() : begin(T {}), end(T {}) {}
+
+    KMM_HOST_DEVICE
+    Range(T end) : begin(T {}), end(end) {}
+
+    KMM_HOST_DEVICE
+    Range(T begin, T end) : begin(begin), end(end) {}
+
+    template<typename U>
+    KMM_HOST_DEVICE Range(const Range<U>& that) : begin(that.begin), end(that.end) {}
+
+    template<typename U>
+    KMM_HOST_DEVICE Range(Size<1, U> that) : end(that[0]) {}
+
+    template<typename U>
+    KMM_HOST_DEVICE Range(Bounds<1, U> that) : begin(that.begin()), end(that.end()) {}
+
+    KMM_HOST_DEVICE
+    T contains(const T& index) const {
+        return index >= begin && index < end;
+    }
+
+    KMM_HOST_DEVICE
+    T contains(const Range<T>& that) const {
+        return that.begin >= begin && that.end < end;
+    }
+
+    KMM_HOST_DEVICE
+    T size() const {
+        return begin <= end ? end - begin : T {0};
+    }
+
+    KMM_HOST_DEVICE
+    bool is_empty() const {
+        return begin >= end;
+    }
+};
+
 struct NDRange {
-    NDIndex begin;  ///< The starting index of the work chunk.
-    NDIndex end;  ///< The ending index of the work chunk.
+    Range<default_geometry_type> x;
+    Range<default_geometry_type> y;
+    Range<default_geometry_type> z;
 
     /**
-     * Initializes an empty chunk.
+     * Initializes from sizes.
      */
     KMM_HOST_DEVICE
-    NDRange(int64_t x = 1, int64_t y = 1, int64_t z = 1) : begin(0, 0, 0), end(x, y, z) {}
+    NDRange(default_geometry_type x = 1, default_geometry_type y = 1, default_geometry_type z = 1) :
+        x(x),
+        y(y),
+        z(z) {}
+
+    /**
+     * Initializes from a set of ranges.
+     */
+    KMM_HOST_DEVICE
+    NDRange(
+        Range<default_geometry_type> x,
+        Range<default_geometry_type> y = 1,
+        Range<default_geometry_type> z = 1
+    ) :
+        x(x),
+        y(y),
+        z(z) {}
 
     /**
      * Constructs a chunk with a given begin and end index.
      */
     KMM_HOST_DEVICE
-    explicit NDRange(NDIndex begin, NDIndex end) : begin(begin), end(end) {}
+    explicit NDRange(NDIndex begin, NDIndex end) :
+        x(begin.x, end.x),
+        y(begin.y, end.y),
+        z(begin.z, end.z) {}
 
     /**
      * Constructs a chunk with a given offset and size.
@@ -41,8 +105,7 @@ struct NDRange {
     KMM_HOST_DEVICE
     explicit NDRange(NDIndex offset, NDSize size) {
         // Doing this in the initializer leads to SEGFAULT in GCC. Why? Don't ask me
-        this->begin = offset;
-        this->end = this->begin + NDIndex::from(size);
+        *this = NDRange(offset, offset + size.to_point());
     }
 
     /**
@@ -50,25 +113,50 @@ struct NDRange {
      */
     template<size_t N = ND_DIMS>
     KMM_HOST_DEVICE NDRange(Size<N> m) {
-        this->begin = 0;
-        this->end = NDIndex::from(m);
+        *this = NDRange(NDIndex::zero(), NDSize::from(m));
     }
 
     /**
-     * Constructs a range from an existing range.
+     * Constructs a range from the bounds.
      */
     template<size_t N = ND_DIMS>
-    KMM_HOST_DEVICE NDRange(Range<N> m) {
-        this->begin = NDIndex::from(m.offset);
-        this->end = this->begin + NDIndex::from(m.sizes);
+    KMM_HOST_DEVICE NDRange(Bounds<N> m) {
+        *this = NDRange(NDIndex::from(m.begin()), NDSize::from(m.end()));
     }
 
     /**
-     * Gets the sizes of the work chunk in each dimension.
+     * Get the range along the given index
      */
     KMM_HOST_DEVICE
-    NDSize sizes() const {
-        return NDSize::from(end - begin);
+    Range<> get(size_t axis) const {
+        switch (axis) {
+            case 0:
+                return x;
+            case 1:
+                return y;
+            case 2:
+                return z;
+            default:
+                return 1;
+        }
+    }
+
+    /**
+     * Get the range along the given index
+     */
+    KMM_HOST_DEVICE
+    Range<> operator[](size_t axis) const {
+        return get(axis);
+    }
+
+    KMM_HOST_DEVICE
+    int64_t begin(size_t axis) const {
+        return get(axis).begin;
+    }
+
+    KMM_HOST_DEVICE
+    int64_t end(size_t axis) const {
+        return get(axis).end;
     }
 
     /**
@@ -76,7 +164,7 @@ struct NDRange {
      */
     KMM_HOST_DEVICE
     int64_t size(size_t axis) const {
-        return axis < ND_DIMS ? end[axis] - begin[axis] : 1;
+        return get(axis).size();
     }
 
     /**
@@ -84,7 +172,7 @@ struct NDRange {
      */
     KMM_HOST_DEVICE
     int64_t size() const {
-        return sizes().volume();
+        return x.size() * y.size() * z.size();
     }
 
     /**
@@ -92,7 +180,43 @@ struct NDRange {
      */
     KMM_HOST_DEVICE
     bool is_empty() const {
-        return sizes().is_empty();
+        return x.is_empty() || y.is_empty() || z.is_empty();
+    }
+
+    template<size_t N = ND_DIMS>
+    KMM_HOST_DEVICE Index<N> begin() const {
+        auto result = Index<N>::zero();
+
+        for (size_t i = 0; i < N; i++) {
+            result[i] = get(i).begin;
+        }
+
+        return result;
+    }
+
+    template<size_t N = ND_DIMS>
+    KMM_HOST_DEVICE Index<N> end() const {
+        auto result = Index<N>::one();
+
+        for (size_t i = 0; i < N; i++) {
+            result[i] = get(i).end;
+        }
+
+        return result;
+    }
+
+    /**
+     * Gets the sizes of the work chunk in each dimension.
+     */
+    template<size_t N = ND_DIMS>
+    KMM_HOST_DEVICE Size<N> sizes() const {
+        auto result = Size<N>::one();
+
+        for (size_t i = 0; i < N && i < ND_DIMS; i++) {
+            result[i] = get(i).size();
+        }
+
+        return result;
     }
 
     /**
@@ -103,7 +227,7 @@ struct NDRange {
         bool result = true;
 
         for (size_t i = 0; i < N && i < ND_DIMS; i++) {
-            result &= p[i] >= begin[i] && p[i] < end[i];
+            result &= get(i).contains(p[i]);
         }
 
         return result;
@@ -113,24 +237,24 @@ struct NDRange {
      * Checks if a given 3D point is contained within the work chunk.
      */
     KMM_HOST_DEVICE
-    bool contains(int64_t x, int64_t y, int64_t z) const {
-        return contains(Index<3> {x, y, z});
+    bool contains(int64_t px, int64_t py, int64_t pz) const {
+        return contains(Index<3> {px, py, pz});
     }
 
     /**
      * Checks if a given 2D point is contained within the work chunk.
      */
     KMM_HOST_DEVICE
-    bool contains(int64_t x, int64_t y) const {
-        return contains(Index<2> {x, y});
+    bool contains(int64_t px, int64_t py) const {
+        return contains(Index<2> {px, py});
     }
 
     /**
      * Checks if a given 1D point is contained within the work chunk.
      */
     KMM_HOST_DEVICE
-    bool contains(int64_t x) const {
-        return contains(Index<1> {x});
+    bool contains(int64_t px) const {
+        return contains(Index<1> {px});
     }
 
     /**
@@ -139,7 +263,7 @@ struct NDRange {
      */
     size_t effective_dimensionality() const {
         for (size_t i = ND_DIMS; i > 0; i--) {
-            if (begin[i - 1] == 0 && end[i - 1] == 1) {
+            if (get(i - 1).begin == 0 && get(i - 1).end == 1) {
                 return i;
             }
         }

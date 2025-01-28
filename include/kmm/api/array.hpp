@@ -162,7 +162,7 @@ template<typename T>
 using Scalar = Array<T, 0>;
 
 template<typename T, size_t N>
-struct ArgumentHandler<Access<const Array<T, N>, Read<All>>> {
+struct ArgumentHandler<Array<T, N>> {
     using type = ArrayArgument<const T, views::dynamic_domain<N>>;
 
     ArgumentHandler(const Array<T, N>& array) :
@@ -170,9 +170,6 @@ struct ArgumentHandler<Access<const Array<T, N>, Read<All>>> {
         m_chunk(m_handle->distribution().chunk(0)) {
         m_handle->distribution().region_to_chunk_index(array.sizes());  // Check if it is in-bounds
     }
-
-    ArgumentHandler(Access<const Array<T, N>, Read<All>> access) :  //
-        ArgumentHandler(access.argument) {}
 
     void initialize(const TaskGroupInfo& init) {}
 
@@ -194,9 +191,9 @@ struct ArgumentHandler<Access<const Array<T, N>, Read<All>>> {
 };
 
 template<typename T, size_t N>
-struct ArgumentHandler<const Array<T, N>&>: ArgumentHandler<Access<const Array<T, N>, Read<All>>> {
-    ArgumentHandler(const Array<T, N>& arg) :  //
-        ArgumentHandler<Access<const Array<T, N>, Read<All>>>(arg) {}
+struct ArgumentHandler<Access<const Array<T, N>, Read<All>>>: ArgumentHandler<Array<T, N>> {
+    ArgumentHandler(Access<const Array<T, N>, Read<All>> arg) :  //
+        ArgumentHandler<Array<T, N>>(arg.argument) {}
 };
 
 template<typename T, size_t N>
@@ -245,13 +242,14 @@ struct ArgumentHandler<Access<const Array<T, N>, Read<M>>> {
 
     ArgumentHandler(Access<const Array<T, N>, Read<M>> access) :
         m_handle(access.argument.handle().shared_from_this()),
+        m_distribution(m_handle->distribution()),
         m_access_mapper(access.mode.access_mapper) {}
 
     void initialize(const TaskGroupInfo& init) {}
 
     type process_chunk(TaskInstance& task) {
         auto array_size = m_handle->distribution().array_size();
-        auto access_region = m_access_mapper(task.chunk, Range<N>(array_size));
+        auto access_region = m_access_mapper(task.chunk, Bounds<N>(array_size));
         auto chunk_index = m_handle->distribution().region_to_chunk_index(access_region);
 
         auto buffer_index = task.add_buffer_requirement(BufferRequirement {
@@ -268,6 +266,7 @@ struct ArgumentHandler<Access<const Array<T, N>, Read<M>>> {
 
   private:
     std::shared_ptr<const ArrayHandle<N>> m_handle;
+    const DataDistribution<N>& m_distribution;
     M m_access_mapper;
 };
 
@@ -292,7 +291,7 @@ struct ArgumentHandler<Access<Array<T, N>, Write<M>>> {
     void initialize(const TaskGroupInfo& init) {}
 
     type process_chunk(TaskInstance& task) {
-        auto access_region = m_access_mapper(task.chunk, Range<N>(m_builder.sizes()));
+        auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_builder.sizes()));
         auto buffer_index = task.add_buffer_requirement(
             m_builder.add_chunk(task.graph, task.memory_id, access_region)
         );
@@ -382,7 +381,7 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<M, P>>> {
     void initialize(const TaskGroupInfo& init) {}
 
     type process_chunk(TaskInstance& task) {
-        auto access_region = m_access_mapper(task.chunk, Range<N>(m_builder.sizes()));
+        auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_builder.sizes()));
         auto private_region = m_private_mapper(task.chunk);
         auto rep = private_region.size();
         size_t buffer_index = task.add_buffer_requirement(
