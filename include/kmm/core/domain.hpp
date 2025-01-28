@@ -42,20 +42,26 @@ struct NDRange {
     explicit NDRange(NDIndex offset, NDSize size) {
         // Doing this in the initializer leads to SEGFAULT in GCC. Why? Don't ask me
         this->begin = offset;
-        this->end = offset + size.to_point();
+        this->end = this->begin + NDIndex::from(size);
     }
 
     /**
      * Constructs a range with a given size.
      */
     template<size_t N = ND_DIMS>
-    KMM_HOST_DEVICE NDRange(Size<N> m) : NDRange(NDSize::from(m)) {}
+    KMM_HOST_DEVICE NDRange(Size<N> m) {
+        this->begin = 0;
+        this->end = NDIndex::from(m);
+    }
 
     /**
      * Constructs a range from an existing range.
      */
     template<size_t N = ND_DIMS>
-    KMM_HOST_DEVICE NDRange(Range<N> m) : NDRange(NDIndex::from(m.offset), NDSize::from(m.sizes)) {}
+    KMM_HOST_DEVICE NDRange(Range<N> m) {
+        this->begin = NDIndex::from(m.offset);
+        this->end = this->begin + NDIndex::from(m.sizes);
+    }
 
     /**
      * Gets the sizes of the work chunk in each dimension.

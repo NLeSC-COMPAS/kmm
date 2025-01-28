@@ -87,9 +87,7 @@ void Worker::shutdown() {
 
 void Worker::flush_events_impl() {
     // Flush all events from the DAG builder to the scheduler
-    for (auto event : m_graph.flush()) {
-        m_scheduler.insert_event(event.id, std::move(event.command), std::move(event.dependencies));
-    }
+    m_scheduler.submit(m_graph.flush());
 }
 
 void Worker::make_progress_impl() {

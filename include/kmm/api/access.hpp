@@ -95,7 +95,7 @@ Access<Arg, Reduce<M, P>> reduce(
 // Forward `Access<Arg, Read<M>>` to `Access<const Arg, Read<M>>` only if `Arg` is not const
 template<typename Arg, typename M>
 struct ArgumentHandler<Access<Arg, Read<M>>>:
-    std::enable_if<std::is_const<Arg>::value, ArgumentHandler<Access<const Arg, Read<M>>>>::type {
+    std::enable_if<!std::is_const<Arg>::value, ArgumentHandler<Access<const Arg, Read<M>>>>::type {
     ArgumentHandler(Access<Arg, Read<M>> access) :
         ArgumentHandler<Access<const Arg, Read<M>>>(access) {}
 };
