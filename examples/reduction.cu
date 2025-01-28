@@ -4,10 +4,10 @@ __global__ void initialize_matrix_kernel(
     kmm::NDRange chunk,
     kmm::gpu_subview_mut<float, 2> matrix
 ) {
-    int i = blockIdx.y * blockDim.y + threadIdx.y + chunk.begin.y;
-    int j = blockIdx.x * blockDim.x + threadIdx.x + chunk.begin.x;
+    int i = blockIdx.y * blockDim.y + threadIdx.y + chunk.y.begin;
+    int j = blockIdx.x * blockDim.x + threadIdx.x + chunk.x.begin;
 
-    if (i < chunk.end.y && j < chunk.end.x) {
+    if (i < chunk.y.end && j < chunk.x.end) {
         matrix[i][j] = 1.0f;
     }
 }
@@ -17,10 +17,10 @@ __global__ void sum_total_kernel(
     kmm::gpu_subview<float, 2> matrix,
     kmm::gpu_subview_mut<float, 2> sum
 ) {
-    int i = blockIdx.y * blockDim.y + threadIdx.y + chunk.begin.y;
-    int j = blockIdx.x * blockDim.x + threadIdx.x + chunk.begin.x;
+    int i = blockIdx.y * blockDim.y + threadIdx.y + chunk.y.begin;
+    int j = blockIdx.x * blockDim.x + threadIdx.x + chunk.x.begin;
 
-    if (i < chunk.end.y && j < chunk.end.x) {
+    if (i < chunk.y.end && j < chunk.x.end) {
         sum[i][j] += matrix[i][j];
     }
 }
@@ -30,10 +30,10 @@ __global__ void sum_rows_kernel(
     kmm::gpu_subview<float, 2> matrix,
     kmm::gpu_subview_mut<float, 2> rows_sum
 ) {
-    int i = blockIdx.y * blockDim.y + threadIdx.y + chunk.begin.y;
-    int j = blockIdx.x * blockDim.x + threadIdx.x + chunk.begin.x;
+    int i = blockIdx.y * blockDim.y + threadIdx.y + chunk.y.begin;
+    int j = blockIdx.x * blockDim.x + threadIdx.x + chunk.x.begin;
 
-    if (i < chunk.end.y && j < chunk.end.x) {
+    if (i < chunk.y.end && j < chunk.x.end) {
         rows_sum[i][j] += matrix[i][j];
     }
 }
@@ -43,10 +43,10 @@ __global__ void sum_cols_kernel(
     kmm::gpu_subview<float, 2> matrix,
     kmm::gpu_subview_mut<float, 2> cols_sum
 ) {
-    int i = blockIdx.y * blockDim.y + threadIdx.y + chunk.begin.y;
-    int j = blockIdx.x * blockDim.x + threadIdx.x + chunk.begin.x;
+    int i = blockIdx.y * blockDim.y + threadIdx.y + chunk.y.begin;
+    int j = blockIdx.x * blockDim.x + threadIdx.x + chunk.x.begin;
 
-    if (i < chunk.end.y && j < chunk.end.x) {
+    if (i < chunk.y.end && j < chunk.x.end) {
         cols_sum[j][i] += matrix[i][j];
     }
 }

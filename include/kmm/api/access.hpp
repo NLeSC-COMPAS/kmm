@@ -56,11 +56,14 @@ Access<Arg, Write<M>> write(Access<Arg, Read<M>> access) {
 template<typename M>
 struct Privatize {
     M access_mapper;
+
+    explicit Privatize(M access_mapper) :  //
+        access_mapper(std::move(access_mapper)) {}
 };
 
 template<typename... Is>
 Privatize<MultiIndexMap<sizeof...(Is)>> privatize(const Is&... slices) {
-    return {into_index_map(slices)...};
+    return Privatize {slice(slices...)};
 }
 
 template<typename M = All, typename Arg>
@@ -94,8 +97,8 @@ Access<Arg, Reduce<M, P>> reduce(
 
 // Forward `Access<Arg, Read<M>>` to `Access<const Arg, Read<M>>` only if `Arg` is not const
 template<typename Arg, typename M>
-struct ArgumentHandler<Access<Arg, Read<M>>>:
-    std::enable_if<!std::is_const<Arg>::value, ArgumentHandler<Access<const Arg, Read<M>>>>::type {
+struct ArgumentHandler<Access<Arg, Read<M>>, std::enable_if_t<!std::is_const_v<Arg>>>:
+    ArgumentHandler<Access<const Arg, Read<M>>> {
     ArgumentHandler(Access<Arg, Read<M>> access) :
         ArgumentHandler<Access<const Arg, Read<M>>>(access) {}
 };

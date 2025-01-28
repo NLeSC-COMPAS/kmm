@@ -21,7 +21,7 @@ class DataDistribution {
   public:
     DataDistribution(Size<N> array_size, std::vector<DataChunk<N>> chunks);
 
-    size_t region_to_chunk_index(Range<N> region) const;
+    size_t region_to_chunk_index(Bounds<N> region) const;
 
     DataChunk<N> chunk(size_t index) const;
 
@@ -56,7 +56,7 @@ class ArrayBuilder {
         m_sizes(sizes),
         m_element_layout(element_layout) {}
 
-    BufferRequirement add_chunk(TaskGraph& graph, MemoryId memory_id, Range<N> access_region);
+    BufferRequirement add_chunk(TaskGraph& graph, MemoryId memory_id, Bounds<N> access_region);
     std::pair<DataDistribution<N>, std::vector<BufferId>> build(TaskGraph& graph);
 
     Size<N> sizes() const {
@@ -81,7 +81,7 @@ class ArrayReductionBuilder {
     BufferRequirement add_chunk(
         TaskGraph& graph,
         MemoryId memory_id,
-        Range<N> access_region,
+        Bounds<N> access_region,
         size_t replication_factor = 1
     );
 
@@ -97,7 +97,7 @@ class ArrayReductionBuilder {
     Size<N> m_sizes;
     DataType m_dtype;
     Reduction m_reduction;
-    std::unordered_map<Range<N>, std::vector<ReductionInput>> m_partial_inputs;
+    std::unordered_map<Bounds<N>, std::vector<ReductionInput>> m_partial_inputs;
 };
 
 }  // namespace kmm

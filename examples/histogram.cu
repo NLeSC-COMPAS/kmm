@@ -24,7 +24,7 @@ void initialize_images(
     int height,
     kmm::subview_mut<uint8_t, 3> images
 ) {
-    for (auto i = subrange.begin(); i < subrange.end(); i++) {
+    for (auto i = subrange.begin(0); i < subrange.end(0); i++) {
         initialize_image(i, width, height, images.drop_axis<0>(i));
     }
 }
@@ -36,11 +36,11 @@ __global__ void calculate_histogram(
     kmm::gpu_subview<uint8_t, 3> images,
     kmm::gpu_subview_mut<int, 2> histogram
 ) {
-    int image_id = blockIdx.z * blockDim.z + threadIdx.z + subrange.begin.z;
+    int image_id = blockIdx.z * blockDim.z + threadIdx.z + subrange.z.begin;
     int i = blockIdx.y * blockDim.y + threadIdx.y;
     int j = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (image_id < int(subrange.end.z) && i < height && j < width) {
+    if (image_id < int(subrange.z.end) && i < height && j < width) {
         uint8_t value = images[image_id][i][j];
         atomicAdd(&histogram[image_id][value], 1);
     }

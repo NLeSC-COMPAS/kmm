@@ -34,7 +34,7 @@ class Runtime {
     EventId submit(NDRange index_space, ProcessorId target, L&& launcher, Args&&... args) const {
         WorkChunk chunk = {
             .owner_id = target,  //
-            .offset = index_space.begin,
+            .offset = index_space.begin(),
             .size = index_space.sizes()};
 
         return kmm::parallel_submit(

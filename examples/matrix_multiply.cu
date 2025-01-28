@@ -23,17 +23,17 @@ void matrix_multiply(
     float alpha = 1.0;
     float beta = 0.0;
 
-    const float* A_ptr = A.data_at({region.begin.y, region.begin.x});
-    const float* B_ptr = B.data_at({region.begin.x, region.begin.z});
-    float* C_ptr = C.data_at({region.begin.y, region.begin.z});
+    const float* A_ptr = A.data_at({region.y.begin, region.x.begin});
+    const float* B_ptr = B.data_at({region.x.begin, region.z.begin});
+    float* C_ptr = C.data_at({region.y.begin, region.z.begin});
 
     KMM_GPU_CHECK(cublasGemmEx(
         device.blas(),
         CUBLAS_OP_T,
         CUBLAS_OP_T,
-        checked_cast<int>(region.sizes().y),
-        checked_cast<int>(region.sizes().z),
-        checked_cast<int>(region.sizes().x),
+        checked_cast<int>(region.y.size()),
+        checked_cast<int>(region.z.size()),
+        checked_cast<int>(region.x.size()),
         &alpha,
         A_ptr,
         CUDA_R_32F,

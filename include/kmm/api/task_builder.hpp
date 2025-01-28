@@ -9,12 +9,18 @@ class Worker;
 class TaskGraph;
 
 struct TaskGroupInfo {
+    KMM_NOT_COPYABLE_OR_MOVABLE(TaskGroupInfo)
+
+  public:
     Worker& worker;
     TaskGraph& graph;
     const WorkPartition& partition;
 };
 
 struct TaskInstance {
+    KMM_NOT_COPYABLE_OR_MOVABLE(TaskInstance)
+
+  public:
     Worker& worker;
     TaskGraph& graph;
     WorkChunk chunk;
@@ -30,6 +36,9 @@ struct TaskInstance {
 };
 
 struct TaskGroupResult {
+    KMM_NOT_COPYABLE_OR_MOVABLE(TaskGroupResult)
+
+  public:
     Worker& worker;
     TaskGraph& graph;
     EventList events;

@@ -2,8 +2,8 @@
 #include "kmm/api/runtime.hpp"
 
 __global__ void initialize_range(kmm::NDRange chunk, kmm::gpu_subview_mut<float> output) {
-    int64_t i = blockIdx.x * blockDim.x + threadIdx.x + chunk.begin();
-    if (i >= chunk.end()) {
+    int64_t i = blockIdx.x * blockDim.x + threadIdx.x + chunk.x.begin;
+    if (i >= chunk.x.end) {
         return;
     }
 
@@ -11,8 +11,8 @@ __global__ void initialize_range(kmm::NDRange chunk, kmm::gpu_subview_mut<float>
 }
 
 __global__ void fill_range(kmm::NDRange chunk, float value, kmm::gpu_subview_mut<float> output) {
-    int64_t i = blockIdx.x * blockDim.x + threadIdx.x + chunk.begin();
-    if (i >= chunk.end()) {
+    int64_t i = blockIdx.x * blockDim.x + threadIdx.x + chunk.x.begin;
+    if (i >= chunk.x.end) {
         return;
     }
 
@@ -25,8 +25,9 @@ __global__ void vector_add(
     kmm::gpu_subview<float> left,
     kmm::gpu_subview<float> right
 ) {
-    int64_t i = blockIdx.x * blockDim.x + threadIdx.x + range.begin();
-    if (i >= range.end()) {
+    int64_t i = blockIdx.x * blockDim.x + threadIdx.x + range.x.begin;
+
+    if (i >= range.x.end) {
         return;
     }
 

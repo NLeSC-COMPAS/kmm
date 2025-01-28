@@ -7,7 +7,7 @@ template<size_t N>
 BufferRequirement ArrayBuilder<N>::add_chunk(
     TaskGraph& graph,
     MemoryId memory_id,
-    Range<N> access_region
+    Bounds<N> access_region
 ) {
     auto num_elements = checked_cast<size_t>(access_region.size());
     auto buffer_id = graph.create_buffer(m_element_layout.repeat(num_elements));
@@ -33,7 +33,7 @@ template<size_t N>
 BufferRequirement ArrayReductionBuilder<N>::add_chunk(
     TaskGraph& graph,
     MemoryId memory_id,
-    Range<N> access_region,
+    Bounds<N> access_region,
     size_t replication_factor
 ) {
     auto num_elements = checked_mul(checked_cast<size_t>(access_region.size()), replication_factor);

@@ -360,28 +360,28 @@ class Size<0, T>: public fixed_array<T, 0> {
 };
 
 template<size_t N, typename T = default_geometry_type>
-class Range {
+class Bounds {
   public:
     Index<N, T> offset;
     Size<N, T> sizes;
 
     KMM_HOST_DEVICE
-    Range(Index<N, T> offset, Size<N, T> sizes) : offset(offset), sizes(sizes) {}
+    Bounds(Index<N, T> offset, Size<N, T> sizes) : offset(offset), sizes(sizes) {}
 
     KMM_HOST_DEVICE
-    Range(Size<N, T> sizes) : Range(Index<N, T>::zero(), sizes) {}
+    Bounds(Size<N, T> sizes) : Bounds(Index<N, T>::zero(), sizes) {}
 
     template<typename... Ts, typename = typename std::enable_if<(sizeof...(Ts) < N)>::type>
-    KMM_HOST_DEVICE Range(T first, Ts&&... args) {
+    KMM_HOST_DEVICE Bounds(T first, Ts&&... args) {
         // GCC segfaults when doing this as part of initialization, do it in the body instead
         this->offset = Index<N, T>::zero();
         this->sizes = {first, args...};
     }
 
     KMM_HOST_DEVICE
-    Range() : Range(Size<N, T>::zero()) {}
+    Bounds() : Bounds(Size<N, T>::zero()) {}
 
-    KMM_HOST_DEVICE static constexpr Range from_bounds(
+    KMM_HOST_DEVICE static constexpr Bounds from_bounds(
         const Index<N, T>& begin,
         const Index<N, T>& end
     ) {
@@ -389,7 +389,7 @@ class Range {
     }
 
     template<size_t M, typename U>
-    KMM_HOST_DEVICE static constexpr Range from(const Range<M, U>& that) {
+    KMM_HOST_DEVICE static constexpr Bounds from(const Bounds<M, U>& that) {
         return {Index<N, T>::from(that.offset()), Size<N, T>::from(that.sizes())};
     }
 
@@ -434,7 +434,7 @@ class Range {
     }
 
     KMM_HOST_DEVICE
-    Range intersection(const Range& that) const {
+    Bounds intersection(const Bounds& that) const {
         Index<N, T> new_offset;
         Size<N, T> new_sizes;
         bool is_empty = false;
@@ -469,7 +469,7 @@ class Range {
     }
 
     KMM_HOST_DEVICE
-    bool overlaps(const Range& that) const {
+    bool overlaps(const Bounds& that) const {
         bool overlapping = true;
 
         for (size_t i = 0; is_less(i, N); i++) {
@@ -490,7 +490,7 @@ class Range {
     }
 
     KMM_HOST_DEVICE
-    bool contains(const Range& that) const {
+    bool contains(const Bounds& that) const {
         if (that.is_empty()) {
             return true;
         }
@@ -543,22 +543,22 @@ class Range {
     }
 
     KMM_HOST_DEVICE
-    Range intersection(const Size<N, T>& that) const {
-        return intersection(Range<N, T> {that});
+    Bounds intersection(const Size<N, T>& that) const {
+        return intersection(Bounds<N, T> {that});
     }
 
     KMM_HOST_DEVICE
     bool overlaps(const Size<N, T>& that) const {
-        return overlaps(Range<N, T> {that});
+        return overlaps(Bounds<N, T> {that});
     }
 
     KMM_HOST_DEVICE
     bool contains(const Size<N, T>& that) const {
-        return contains(Range<N, T> {that});
+        return contains(Bounds<N, T> {that});
     }
 
     template<size_t M>
-    KMM_HOST_DEVICE Range<N + M> concat(const Range<M>& that) const {
+    KMM_HOST_DEVICE Bounds<N + M> concat(const Bounds<M>& that) const {
         return {offset.concat(that.offset), sizes.concate(that.sizes)};
     }
 };
@@ -570,10 +570,10 @@ template<typename... Ts>
 KMM_HOST_DEVICE_NOINLINE Size(Ts...) -> Size<sizeof...(Ts)>;
 
 template<size_t N, typename T>
-KMM_HOST_DEVICE_NOINLINE Range(Index<N, T> offset, Size<N, T> sizes) -> Range<N, T>;
+KMM_HOST_DEVICE_NOINLINE Bounds(Index<N, T> offset, Size<N, T> sizes) -> Bounds<N, T>;
 
 template<size_t N, typename T>
-KMM_HOST_DEVICE_NOINLINE Range(Size<N, T> sizes) -> Range<N, T>;
+KMM_HOST_DEVICE_NOINLINE Bounds(Size<N, T> sizes) -> Bounds<N, T>;
 
 template<size_t N, typename T>
 KMM_HOST_DEVICE bool operator==(const Index<N, T>& a, const Index<N, T>& b) {
@@ -596,12 +596,12 @@ KMM_HOST_DEVICE bool operator!=(const Size<N, T>& a, const Size<N, T>& b) {
 }
 
 template<size_t N, typename T>
-KMM_HOST_DEVICE bool operator==(const Range<N, T>& a, const Range<N, T>& b) {
+KMM_HOST_DEVICE bool operator==(const Bounds<N, T>& a, const Bounds<N, T>& b) {
     return a.offset == b.offset && a.sizes == b.sizes;
 }
 
 template<size_t N, typename T>
-KMM_HOST_DEVICE bool operator!=(const Range<N, T>& a, const Range<N, T>& b) {
+KMM_HOST_DEVICE bool operator!=(const Bounds<N, T>& a, const Bounds<N, T>& b) {
     return !(a == b);
 }
 
@@ -638,7 +638,7 @@ std::ostream& operator<<(std::ostream& stream, const Size<N, T>& p) {
 }
 
 template<size_t N, typename T>
-std::ostream& operator<<(std::ostream& stream, const Range<N, T>& p) {
+std::ostream& operator<<(std::ostream& stream, const Bounds<N, T>& p) {
     stream << "{";
     for (size_t i = 0; is_less(i, N); i++) {
         if (i != 0) {
@@ -661,7 +661,7 @@ template<size_t N, typename T>
 struct fmt::formatter<kmm::Size<N, T>>: fmt::ostream_formatter {};
 
 template<size_t N, typename T>
-struct fmt::formatter<kmm::Range<N, T>>: fmt::ostream_formatter {};
+struct fmt::formatter<kmm::Bounds<N, T>>: fmt::ostream_formatter {};
 
 #include "kmm/utils/hash_utils.hpp"
 
@@ -672,8 +672,8 @@ template<size_t N, typename T>
 struct std::hash<kmm::Size<N, T>>: std::hash<kmm::fixed_array<T, N>> {};
 
 template<size_t N, typename T>
-struct std::hash<kmm::Range<N, T>> {
-    size_t operator()(const kmm::Range<N, T>& p) const {
+struct std::hash<kmm::Bounds<N, T>> {
+    size_t operator()(const kmm::Bounds<N, T>& p) const {
         kmm::fixed_array<T, N> v[2] = {p.offset, p.sizes};
         return kmm::hash_range(v, v + 2);
     }
