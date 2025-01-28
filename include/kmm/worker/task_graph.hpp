@@ -11,12 +11,6 @@
 
 namespace kmm {
 
-struct CommandNode {
-    EventId id;
-    Command command;
-    EventList dependencies;
-};
-
 class TaskGraph {
     KMM_NOT_COPYABLE_OR_MOVABLE(TaskGraph)
 

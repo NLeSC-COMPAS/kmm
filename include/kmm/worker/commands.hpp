@@ -65,6 +65,12 @@ using Command = std::variant<
     CommandReduction,
     CommandFill>;
 
+struct CommandNode {
+    EventId id;
+    Command command;
+    EventList dependencies;
+};
+
 inline const char* command_name(const Command& cmd) {
     static constexpr const char* names[] = {
         "CommandEmpty",

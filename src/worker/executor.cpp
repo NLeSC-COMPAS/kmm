@@ -23,7 +23,7 @@ class MergeJob: public Executor::Job {
             return Poll::Pending;
         }
 
-        scheduler.set_complete(m_id);
+        scheduler.mark_as_completed(m_id);
         return Poll::Ready;
     }
 
@@ -83,7 +83,7 @@ class HostJob: public Executor::Job {
 
         if (m_status == Status::Completing) {
             executor.release_requests(m_requests);
-            scheduler.set_complete(m_id);
+            scheduler.mark_as_completed(m_id);
             m_status = Status::Completed;
         }
 
@@ -152,7 +152,7 @@ class DeviceJob: public Executor::Job {
                 }
 
                 state.last_event = m_event;
-                scheduler.set_scheduled(m_id, m_event);
+                scheduler.mark_as_scheduled(m_id, m_event);
                 executor.release_requests(m_requests, m_event);
                 m_status = Status::Running;
             } catch (const std::exception& e) {
@@ -171,7 +171,7 @@ class DeviceJob: public Executor::Job {
         }
 
         if (m_status == Status::Completing) {
-            scheduler.set_complete(m_id);
+            scheduler.mark_as_completed(m_id);
             m_status = Status::Completed;
         }
 
@@ -433,7 +433,7 @@ class PrefetchJob: public Executor::Job {
             }
 
             executor.release_requests(m_requests);
-            scheduler.set_complete(m_id);
+            scheduler.mark_as_completed(m_id);
             m_status = Status::Completed;
         }
 
