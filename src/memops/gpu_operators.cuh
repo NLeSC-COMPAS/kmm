@@ -39,12 +39,15 @@ KMM_DEVICE void gpu_generic_atomicCAS(T* output, T input, F combine) {
     } while (old_bits != assumed_bits);
 }
 
+#ifndef KMM_USE_HIP
+// TODO: add it back when HIP support will be present
 template<typename T, Reduction Op>
 struct GPUAtomic<ReductionOperator<T, Op>, std::enable_if_t<sizeof(T) == 2 && alignof(T) == 2>> {
     static KMM_DEVICE void atomic_combine(T* output, T input) {
         gpu_generic_atomicCAS<unsigned short>(output, input, ReductionOperator<T, Op>());
     }
 };
+#endif
 
 template<typename T, Reduction Op>
 struct GPUAtomic<ReductionOperator<T, Op>, std::enable_if_t<sizeof(T) == 4 && alignof(T) == 4>> {
@@ -69,12 +72,18 @@ struct GPUAtomic<ReductionOperator<T, Op>, std::enable_if_t<sizeof(T) == 8 && al
     };
 
 KMM_GPU_ATOMIC_REDUCTION_IMPL(int, Reduction::BitAnd, atomicAnd)
+#ifndef KMM_USE_HIP
+// TODO: add it back when HIP support will be present
 KMM_GPU_ATOMIC_REDUCTION_IMPL(long long int, Reduction::BitAnd, atomicAnd)
+#endif
 KMM_GPU_ATOMIC_REDUCTION_IMPL(unsigned int, Reduction::BitAnd, atomicAnd)
 KMM_GPU_ATOMIC_REDUCTION_IMPL(unsigned long long int, Reduction::BitAnd, atomicAnd)
 
 KMM_GPU_ATOMIC_REDUCTION_IMPL(int, Reduction::BitOr, atomicOr)
+#ifndef KMM_USE_HIP
+// TODO: add it back when HIP support will be present
 KMM_GPU_ATOMIC_REDUCTION_IMPL(long long int, Reduction::BitOr, atomicOr)
+#endif
 KMM_GPU_ATOMIC_REDUCTION_IMPL(unsigned int, Reduction::BitOr, atomicOr)
 KMM_GPU_ATOMIC_REDUCTION_IMPL(unsigned long long int, Reduction::BitOr, atomicOr)
 
@@ -84,8 +93,11 @@ KMM_GPU_ATOMIC_REDUCTION_IMPL(int, Reduction::Sum, atomicAdd)
 KMM_GPU_ATOMIC_REDUCTION_IMPL(unsigned int, Reduction::Sum, atomicAdd)
 //KMM_GPU_ATOMIC_REDUCTION_IMPL(long long int, ReductionOp::Sum, atomicAdd)
 KMM_GPU_ATOMIC_REDUCTION_IMPL(unsigned long long int, Reduction::Sum, atomicAdd)
+#ifndef KMM_USE_HIP
+// TODO: add it back when HIP support will be present
 KMM_GPU_ATOMIC_REDUCTION_IMPL(half_type, Reduction::Sum, atomicAdd)
 KMM_GPU_ATOMIC_REDUCTION_IMPL(bfloat16_type, Reduction::Sum, atomicAdd)
+#endif
 
 //KMM_GPU_ATOMIC_REDUCTION_IMPL(double, ReductionOp::Min, atomicMin)
 //KMM_GPU_ATOMIC_REDUCTION_IMPL(float, ReductionOp::Min, atomicMin)
