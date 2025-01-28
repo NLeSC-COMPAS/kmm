@@ -97,7 +97,7 @@ void execute_gpu_fill_async(GPUstream_t stream, GPUdeviceptr dest_buffer, const 
         ));
 
     } else if (is_fill_pattern_repetitive<8>(fill_pattern, element_size)) {
-        KMM_ASSERT(dest_buffer % 8 == 0);  // must be aligned?
+        KMM_ASSERT((unsigned long long)(dest_buffer) % 8 == 0);  // must be aligned?
         submit_fill_kernel<uint64_t>(stream, dest_buffer, nbytes / sizeof(uint64_t), fill_pattern);
     } else {
         throw GPUException(fmt::format(
