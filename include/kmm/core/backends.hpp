@@ -294,7 +294,7 @@ struct GPUmemPoolProps {
 };
 using GPUcontext = int*;
 using GPUstream_t = int*;
-using GPUdeviceptr = size_t;
+using GPUdeviceptr = unsigned long long;
 using GPUmemoryPool = int*;
 using GPUevent_t = void*;
 enum GPUmemorytype { GPU_MEMORYTYPE_HOST, GPU_MEMORYTYPE_DEVICE };
