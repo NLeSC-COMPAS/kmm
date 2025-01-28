@@ -25,7 +25,7 @@ void execute_gpu_h2d_copy_impl(
     copy_description.simplify();
     size_t dim = copy_description.effective_dimensionality();
 
-    GPUdeviceptr dst_ptr = dst_buffer + copy_description.dst_offset;
+    GPUdeviceptr dst_ptr = gpu_deviceptr_offset(dst_buffer, copy_description.dst_offset);
     const void* src_ptr = static_cast<const uint8_t*>(src_buffer) + copy_description.src_offset;
 
     if (dim == 0) {
@@ -76,7 +76,7 @@ void execute_gpu_d2h_copy_impl(
     size_t dim = copy_description.effective_dimensionality();
 
     void* dst_ptr = static_cast<uint8_t*>(dst_buffer) + copy_description.dst_offset;
-    GPUdeviceptr src_ptr = src_buffer + copy_description.src_offset;
+    GPUdeviceptr src_ptr = gpu_deviceptr_offset(src_buffer, copy_description.src_offset);
 
     if (dim == 0) {
         if (stream) {
@@ -125,8 +125,8 @@ void execute_gpu_d2d_copy_impl(
     copy_description.simplify();
     size_t dim = copy_description.effective_dimensionality();
 
-    GPUdeviceptr dst_ptr = dst_buffer + copy_description.dst_offset;
-    GPUdeviceptr src_ptr = src_buffer + copy_description.src_offset;
+    GPUdeviceptr dst_ptr = gpu_deviceptr_offset(dst_buffer, copy_description.dst_offset);
+    GPUdeviceptr src_ptr = gpu_deviceptr_offset(src_buffer, copy_description.src_offset);
 
     if (dim == 0) {
         if (stream) {

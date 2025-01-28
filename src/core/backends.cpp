@@ -266,19 +266,19 @@ void execute_gpu_fill_async(GPUstream_t stream, GPUdeviceptr dst_buffer, const F
 
 #elif defined(KMM_USE_HIP)
 
-const char* blasGetStatusName(blasStatus_t) {
+inline const char* blasGetStatusName(blasStatus_t) {
     return "";
 }
 
-GPUresult gpuMemcpyAsync(GPUdeviceptr dst, GPUdeviceptr src, size_t ByteCount, GPUstream_t hStream) {
+inline GPUresult gpuMemcpyAsync(GPUdeviceptr dst, GPUdeviceptr src, size_t ByteCount, GPUstream_t hStream) {
     return hipMemcpyAsync(dst, src, ByteCount, hipMemcpyDefault, hStream);
 }
 
-GPUresult gpuMemcpyHtoDAsync(GPUdeviceptr dstDevice, const void* srcHost, size_t ByteCount, GPUstream_t hStream) {
+inline GPUresult gpuMemcpyHtoDAsync(GPUdeviceptr dstDevice, const void* srcHost, size_t ByteCount, GPUstream_t hStream) {
     return hipMemcpyHtoDAsync(dstDevice, const_cast<void*>(srcHost), ByteCount, hStream);
 }
 
-GPUresult gpuMemcpyHtoD(GPUdeviceptr dstDevice, const void* srcHost, size_t ByteCount) {
+inline GPUresult gpuMemcpyHtoD(GPUdeviceptr dstDevice, const void* srcHost, size_t ByteCount) {
     return hipMemcpyHtoD(dstDevice, const_cast<void*>(srcHost), ByteCount);
 }
 

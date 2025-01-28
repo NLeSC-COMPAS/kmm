@@ -102,4 +102,8 @@ class GPUContextGuard {
     GPUContextHandle m_context;
 };
 
+inline GPUdeviceptr gpu_deviceptr_offset(GPUdeviceptr ptr, size_t size) {
+  return reinterpret_cast<GPUdeviceptr>(reinterpret_cast<size_t>(ptr) + size);
+}
+
 }  // namespace kmm
