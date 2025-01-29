@@ -117,9 +117,17 @@ if(KMM_USE_CUDA)
   # Define `KMM_USE_CUDA` macro so that headers can detect CUDA usage
   target_compile_definitions(${PROJECT_NAME} PUBLIC KMM_USE_CUDA=1)
 elseif(KMM_USE_HIP)
+  find_package(HIP REQUIRED)
+  find_package(ROCBLAS REQUIRED)
   set_source_files_properties(${sources} PROPERTIES LANGUAGE HIP)
   # Define `KMM_USE_HIP` macro so that headers can detect HIP usage
   target_compile_definitions(${PROJECT_NAME} PUBLIC KMM_USE_HIP=1)
+  target_link_libraries(${PROJECT_NAME}
+          PUBLIC
+          hip::host
+          hip::device
+          roc::rocblas
+  )
 endif()
 
 # Compile unit tests
