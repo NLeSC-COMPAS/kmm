@@ -10,9 +10,11 @@ void gpu_throw_exception(GPUresult result, const char* file, int line, const cha
     throw GPUDriverException(fmt::format("{} ({}:{})", expression, file, line), result);
 }
 
+#ifndef KMM_USE_HIP
 void gpu_throw_exception(gpuError_t result, const char* file, int line, const char* expression) {
     throw GPURuntimeException(fmt::format("{} ({}:{})", expression, file, line), result);
 }
+#endif
 
 void gpu_throw_exception(blasStatus_t result, const char* file, int line, const char* expression) {
     throw BlasException(fmt::format("{} ({}:{})", expression, file, line), result);

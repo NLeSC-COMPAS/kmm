@@ -140,7 +140,7 @@ using blasHandle_t = cublasHandle_t;
 using half_type = __half;
 using bfloat16_type = __hip_bfloat16;
 
-#define GPU_DEVICE_ATTRIBUTE_MAX                   NULL
+#define GPU_DEVICE_ATTRIBUTE_MAX                   0
 #define GPU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_BLOCK hipDeviceAttributeMaxThreadsPerBlock
 #define GPU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_X       hipDeviceAttributeMaxBlockDimX
 #define GPU_DEVICE_ATTRIBUTE_MAX_BLOCK_DIM_Y       hipDeviceAttributeMaxBlockDimY
@@ -167,9 +167,8 @@ using bfloat16_type = __hip_bfloat16;
 #define GPU_MEMORYTYPE_HOST                  hipMemoryTypeHost
 #define GPU_MEMORYTYPE_DEVICE                hipMemoryTypeDevice
 #define GPU_ERROR_NO_DEVICE                  hipErrorNoDevice
-#define GPU_POINTER_ATTRIBUTE_MEMORY_TYPE    hipMemoryType
 #define GPU_POINTER_ATTRIBUTE_DEVICE_ORDINAL HIP_POINTER_ATTRIBUTE_DEVICE_ORDINAL
-#define GPU_CTX_MAP_HOST                     HIP_CTX_MAP_HOST
+#define GPU_CTX_MAP_HOST                     0
 #define gpuCtxGetDevice                      hipCtxGetDevice
 #define gpuDeviceGetName                     hipDeviceGetName
 #define gpuDeviceGetAttribute                hipDeviceGetAttribute
@@ -202,13 +201,13 @@ using bfloat16_type = __hip_bfloat16;
 #define gpuMemcpyDtoH                        hipMemcpyDtoH
 #define gpuMemcpyDtoDAsync                   hipMemcpyDtoDAsync
 #define gpuMemcpyDtoD                        hipMemcpyDtoD
-#define gpuGetErrorName                      hipGetErrorName
-#define gpuGetErrorString                    hipGetErrorString
+#define gpuGetErrorName                      hipDrvGetErrorName
+#define gpuGetErrorString                    hipDrvGetErrorString
 #define GPUrtGetErrorName                    hipGetErrorName
 #define GPUrtGetErrorString                  hipGetErrorString
 #define gpuGetLastError                      hipGetLastError
 #define gpuInit                              hipInit
-#define gpuDeviceGetCount                    hipDeviceGetCount
+#define gpuDeviceGetCount                    hipGetDeviceCount
 #define gpuDeviceGet                         hipDeviceGet
 #define gpuCtxCreate                         hipCtxCreate
 #define gpuCtxDestroy                        hipCtxDestroy
@@ -236,6 +235,7 @@ using GPUmemAllocationHandleType = hipMemAllocationHandleType;
 using GPUmemLocationType = hipMemLocationType;
 using GPUevent_t = hipEvent_t;
 using GPU_MEMCPY2D = hip_Memcpy2D;
+using GPU_POINTER_ATTRIBUTE_MEMORY_TYPE = hipMemoryType;
 
 // cuBLAS
 #define blasCreate                           rocblas_create_handle
