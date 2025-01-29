@@ -72,7 +72,7 @@ using bfloat16_type = __nv_bfloat16;
 #define gpuMemPoolDestroy                    cuMemPoolDestroy
 #define gpuMemAllocFromPoolAsync             cuMemAllocFromPoolAsync
 #define gpuMemFreeAsync                      cuMemFreeAsync
-#define gpuCtxGetStreamPriorityRange         cuCtxGetStreamPriorityRange
+#define gpuGetStreamPriorityRange            cuCtxGetStreamPriorityRange
 #define gpuStreamCreateWithPriority          cuStreamCreateWithPriority
 #define gpuStreamQuery                       cuStreamQuery
 #define gpuStreamDestroy                     cuStreamDestroy
@@ -161,7 +161,7 @@ using bfloat16_type = __hip_bfloat16;
 #define GPU_MEM_LOCATION_TYPE_DEVICE         hipMemLocationTypeDevice
 #define GPU_ERROR_UNKNOWN                    hipErrorUnknown
 #define GPU_STREAM_NON_BLOCKING              hipStreamNonBlocking
-#define GPU_EVENT_WAIT_DEFAULT               hipStreamWaitEvent
+#define GPU_EVENT_WAIT_DEFAULT               0
 #define GPU_ERROR_NOT_READY                  hipErrorNotReady
 #define GPU_EVENT_DISABLE_TIMING             hipEventDisableTiming
 #define GPU_MEMORYTYPE_HOST                  hipMemoryTypeHost
@@ -186,7 +186,7 @@ using bfloat16_type = __hip_bfloat16;
 #define gpuMemPoolDestroy                    hipMemPoolDestroy
 #define gpuMemAllocFromPoolAsync             hipMallocFromPoolAsync
 #define gpuMemFreeAsync                      hipFreeAsync
-#define gpuCtxGetStreamPriorityRange         hipCtxGetStreamPriorityRange
+#define gpuGetStreamPriorityRange            hipDeviceGetStreamPriorityRange
 #define gpuStreamCreateWithPriority          hipStreamCreateWithPriority
 #define gpuStreamQuery                       hipStreamQuery
 #define gpuStreamDestroy                     hipStreamDestroy
@@ -195,7 +195,7 @@ using bfloat16_type = __hip_bfloat16;
 #define gpuStreamWaitEvent                   hipStreamWaitEvent
 #define gpuEventQuery                        hipEventQuery
 #define gpuEventDestroy                      hipEventDestroy
-#define gpuEventCreate                       hipEventCreate
+#define gpuEventCreate                       hipEventCreateWithFlags
 #define gpuMemcpy2DAsync                     hipMemcpyParam2DAsync
 #define gpuMemcpy2D                          hipMemcpyParam2D
 #define gpuMemcpyDtoH                        hipMemcpyDtoH
@@ -219,6 +219,7 @@ using bfloat16_type = __hip_bfloat16;
 #define gpuMemPoolTrimTo                     hipMemPoolTrimTo
 #define gpuDeviceGetDefaultMemPool           hipDeviceGetDefaultMemPool
 #define gpuPointerGetAttribute               hipPointerGetAttribute
+#define GPU_POINTER_ATTRIBUTE_MEMORY_TYPE    HIP_POINTER_ATTRIBUTE_MEMORY_TYPE
 
 using GPUresult = hipError_t;
 using gpuError_t = hipError_t;
@@ -235,7 +236,6 @@ using GPUmemAllocationHandleType = hipMemAllocationHandleType;
 using GPUmemLocationType = hipMemLocationType;
 using GPUevent_t = hipEvent_t;
 using GPU_MEMCPY2D = hip_Memcpy2D;
-using GPU_POINTER_ATTRIBUTE_MEMORY_TYPE = hipMemoryType;
 
 // cuBLAS
 #define blasCreate                           rocblas_create_handle
@@ -356,7 +356,7 @@ GPUresult gpuMemPoolCreate(GPUmemoryPool*, const GPUmemPoolProps*);
 GPUresult gpuMemPoolDestroy(GPUmemoryPool);
 GPUresult gpuMemAllocFromPoolAsync(GPUdeviceptr*, size_t, GPUmemoryPool, GPUstream_t);
 GPUresult gpuMemFreeAsync(GPUdeviceptr, GPUstream_t);
-GPUresult gpuCtxGetStreamPriorityRange(int*, int*);
+GPUresult gpuGetStreamPriorityRange(int*, int*);
 GPUresult gpuStreamCreateWithPriority(GPUstream_t*, unsigned int, int);
 GPUresult gpuStreamQuery(GPUstream_t);
 GPUresult gpuStreamDestroy(GPUstream_t);

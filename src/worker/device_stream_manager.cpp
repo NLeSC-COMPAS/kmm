@@ -68,7 +68,7 @@ DeviceStream DeviceStreamManager::create_stream(GPUContextHandle context, bool h
 
     int least_priority;
     int greatest_priority;
-    KMM_GPU_CHECK(gpuCtxGetStreamPriorityRange(&least_priority, &greatest_priority));
+    KMM_GPU_CHECK(gpuGetStreamPriorityRange(&least_priority, &greatest_priority));
     int priority = high_priority ? greatest_priority : least_priority;
 
     size_t index = m_streams.size();

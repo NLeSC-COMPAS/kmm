@@ -82,7 +82,7 @@ GPUresult gpuMemFreeAsync(GPUdeviceptr, GPUstream_t) {
     return GPUresult(GPU_ERROR_UNKNOWN);
 }
 
-GPUresult gpuCtxGetStreamPriorityRange(int*, int*) {
+GPUresult gpuGetStreamPriorityRange(int*, int*) {
     return GPUresult(GPU_ERROR_UNKNOWN);
 }
 
