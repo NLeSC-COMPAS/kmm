@@ -50,10 +50,10 @@ void matrix_multiply(
         CUBLAS_GEMM_DEFAULT
     ));
     #elif __HIP_DEVICE_COMPILE__
-    KMM_GPU_CHECK(rocblasGemmEx(
+    KMM_GPU_CHECK(rocblas_gemm_ex(
         device.blas(),
-        ROCBLAS_OP_T,
-        ROCBLAS_OP_T,
+        rocblas_operation_transpose,
+        rocblas_operation_transpose,
         checked_cast<int>(region.y.size()),
         checked_cast<int>(region.z.size()),
         checked_cast<int>(region.x.size()),
@@ -69,7 +69,7 @@ void matrix_multiply(
         rocblas_datatype_f32_r,
         checked_cast<int>(C.stride()),
         rocblas_datatype_f32_r,
-        ROCBLAS_GEMM_DEFAULT
+        rocblas_gemm_algo_standard
     ));
     #endif
 }
