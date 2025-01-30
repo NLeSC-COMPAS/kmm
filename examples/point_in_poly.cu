@@ -48,7 +48,7 @@ __global__ void init_points(kmm::NDRange chunk, kmm::gpu_subview_mut<float2> poi
         curand_init(1234, i, 0, &state);
         points[i] = {curand_normal(&state), curand_normal(&state)};
         #elif __HIP_DEVICE_COMPILE__
-        rocrandStatePhilox4_32_10_t state;
+        rocrand_state_philox4x32_10 state;
         rocrand_init(1234, i, 0, &state);
         points[i] = {rocrand_normal(&state), rocrand_normal(&state)};
         #endif
