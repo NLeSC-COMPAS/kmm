@@ -68,8 +68,13 @@ void matrix_multiply(
         C_ptr,
         rocblas_datatype_f32_r,
         checked_cast<int>(C.stride()),
+        C_ptr,
         rocblas_datatype_f32_r,
-        rocblas_gemm_algo_standard
+        checked_cast<int>(C.stride()),
+        rocblas_datatype_f32_r,
+        rocblas_gemm_algo_standard,
+        0,
+        0
     ));
     #endif
 }
