@@ -82,6 +82,7 @@ int main() {
             return 1;
         }
     }
+    std::cout << "Correctness check completed." << std::endl;
 
     return 0;
 }
