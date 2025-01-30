@@ -79,6 +79,7 @@ int main() {
     for (int i = 0; i < n; i++) {
         if (result[i] != float(i) + 1) {
             std::cerr << "Wrong result at " << i << " : " << result[i] << " != " << float(i) + 1 << std::endl;
+            return 1;
         }
     }
 
