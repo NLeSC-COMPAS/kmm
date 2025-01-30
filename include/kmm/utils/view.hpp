@@ -577,7 +577,7 @@ struct host_accessor {
 struct device_accessor {
     template<typename T>
     KMM_HOST_DEVICE T& dereference_pointer(T* ptr) const {
-#if __CUDA_ARCH__
+#if __CUDA_ARCH__ or __HIP_DEVICE_COMPILE__
         return *ptr;
 #else
         throw std::runtime_error("device data cannot be accessed on host");
