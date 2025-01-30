@@ -1,4 +1,8 @@
+#ifdef KMM_USE_CUDA
 #include <curand_kernel.h>
+#elif KMM_USE_HIP
+#include <rocrand/rocrand_kernel.h>
+#endif
 
 #include "kmm/api/mapper.hpp"
 #include "kmm/api/runtime.hpp"
