@@ -27,11 +27,6 @@ T div_floor(T a, T b) {
 template<typename T>
 T div_ceil(T a, T b) {
     T zero = static_cast<T>(0);
-
-    if (b == zero) {
-        return zero;
-    }
-
     T quotient = a / b;
 
     // Adjust the quotient if both a and b have the same sign
