@@ -680,6 +680,9 @@ struct basic_view:
     using ndindex_type = fixed_array<index_type, rank>;
     using ndstride_type = fixed_array<stride_type, rank>;
 
+    using origin_domain_type = views::dynamic_domain<rank, index_type>;
+    using shifted_domain_type = views::dynamic_subdomain<rank, index_type>;
+
     basic_view(const basic_view&) = default;
     basic_view(basic_view&&) noexcept = default;
 
@@ -859,6 +862,12 @@ struct basic_view:
         return result;
     }
 
+    template<typename... Indices>
+    KMM_HOST_DEVICE bool in_bounds(Indices... indices) const noexcept {
+        static_assert(sizeof...(Indices) == rank, "invalid number of indices");
+        return in_bounds(ndindex_type {indices...});
+    }
+
     KMM_HOST_DEVICE
     bool is_contiguous() const noexcept {
         stride_type curr = 1;
@@ -874,28 +883,64 @@ struct basic_view:
 
     template<size_t Axis = 0>
     KMM_HOST_DEVICE basic_view<
-        T,
+        value_type,
         typename views::drop_domain_axis<Axis, domain_type>::type,
         typename views::drop_layout_axis<Axis, layout_type>::type,
-        A>
+        accessor_type>
     drop_axis(index_type index) const noexcept {
         static_assert(Axis < rank, "axis out of bounds");
         return {
-            data() + layout().stride(Axis) * (index - offset(Axis)),
+            data() - layout().stride(Axis) * offset(Axis) + layout().stride(Axis) * index,
             views::drop_domain_axis<Axis, domain_type>::call(domain()),
             views::drop_layout_axis<Axis, layout_type>::call(layout()),
-        };
+            accessor()};
     }
 
     template<size_t Axis = 0>
     KMM_HOST_DEVICE basic_view<
-        T,
+        value_type,
         typename views::drop_domain_axis<Axis, domain_type>::type,
         typename views::drop_layout_axis<Axis, layout_type>::type,
-        A>
+        accessor_type>
     drop_axis() const noexcept {
         static_assert(Axis < rank, "axis out of bounds");
         return this->template drop_axis<Axis>(offset(Axis));
+    }
+
+    basic_view<value_type, origin_domain_type, layout_type, accessor_type>  //
+    shift_to_origin() const noexcept {
+        auto new_domain = views::dynamic_domain<rank, index_type>(sizes());
+        return {data(), new_domain, layout(), accessor()};
+    }
+
+    basic_view<value_type, shifted_domain_type, layout_type, accessor_type>  //
+    shift_to(ndindex_type new_offsets) const noexcept {
+        auto new_domain = views::dynamic_subdomain<rank, index_type>(new_offsets, sizes());
+        return {data(), new_domain, layout(), accessor()};
+    }
+
+    basic_view<value_type, shifted_domain_type, layout_type, accessor_type>  //
+    shift_by(ndindex_type amount) const noexcept {
+        auto new_offsets = offsets();
+        for (size_t i = 0; i < rank; i++) {
+            new_offsets[i] += amount[i];
+        }
+        return shift_to(new_offsets);
+    }
+
+    template<size_t Axis>
+    basic_view<value_type, shifted_domain_type, layout_type, accessor_type>  //
+    shift_axis_to(index_type new_offset) const noexcept {
+        static_assert(Axis < rank, "axis out of bounds");
+        auto new_offsets = offsets();
+        new_offsets[Axis] = new_offset;
+        return shift_to(new_offsets);
+    }
+
+    template<size_t Axis>
+    basic_view<value_type, shifted_domain_type, layout_type, accessor_type>  //
+    shift_axis_by(index_type amount) const noexcept {
+        return shift_axis_to<Axis>(offset(Axis) + amount);
     }
 
   private:
