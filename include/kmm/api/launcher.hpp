@@ -14,7 +14,7 @@ struct Host {
 
     template<typename... Args>
     void operator()(ExecutionContext& exec, WorkChunk chunk, Args... args) {
-        auto region = NDRange(chunk.offset, chunk.size);
+        auto region = NDRange::from_offset_size(chunk.offset, chunk.size);
         m_fun(region, args...);
     }
 
@@ -30,7 +30,7 @@ struct GPU {
 
     template<typename... Args>
     void operator()(ExecutionContext& exec, WorkChunk chunk, Args... args) {
-        auto region = NDRange(chunk.offset, chunk.size);
+        auto region = NDRange::from_offset_size(chunk.offset, chunk.size);
         m_fun(exec.cast<DeviceContext>(), region, args...);
     }
 
@@ -60,7 +60,7 @@ struct GPUKernel {
             checked_cast<unsigned int>((g[2] / b[2]) + int64_t(g[2] % b[2] != 0)),
         };
 
-        auto region = NDRange(chunk.offset, chunk.size);
+        auto region = NDRange::from_offset_size(chunk.offset, chunk.size);
         exec.cast<DeviceContext>().launch(  //
             grid_dim,
             block_size,
