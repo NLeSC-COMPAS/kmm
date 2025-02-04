@@ -362,184 +362,133 @@ class Size<0, T>: public fixed_array<T, 0> {
 template<size_t N, typename T = default_geometry_type>
 class Bounds {
   public:
-    Index<N, T> offset;
-    Size<N, T> sizes;
+    Index<N, T> begin;
+    Index<N, T> end;
+
+    Bounds() = default;
 
     KMM_HOST_DEVICE
-    Bounds(Index<N, T> offset, Size<N, T> sizes) : offset(offset), sizes(sizes) {}
+    Bounds(Index<N, T> begin, Index<N, T> end) : begin(begin), end(end) {}
 
     KMM_HOST_DEVICE
-    Bounds(Size<N, T> sizes) : Bounds(Index<N, T>::zero(), sizes) {}
-
-    template<typename... Ts, typename = typename std::enable_if<(sizeof...(Ts) < N)>::type>
-    KMM_HOST_DEVICE Bounds(T first, Ts&&... args) {
-        // GCC segfaults when doing this as part of initialization, do it in the body instead
-        this->offset = Index<N, T>::zero();
-        this->sizes = {first, args...};
+    Bounds(Size<N, T> sizes) {
+        this->end = sizes.to_point();
     }
 
-    KMM_HOST_DEVICE
-    Bounds() : Bounds(Size<N, T>::zero()) {}
+    KMM_HOST_DEVICE static constexpr Bounds from_offset_size(Index<N, T> offset, Size<N, T> size) {
+        return {offset, offset + size.to_point()};
+    }
 
-    KMM_HOST_DEVICE static constexpr Bounds from_bounds(
-        const Index<N, T>& begin,
-        const Index<N, T>& end
-    ) {
-        return {begin, Size<N, T>::from_point(end - begin)};
+    KMM_HOST_DEVICE static constexpr Bounds from_point(Index<N, T> offset) {
+        return from_offset_size(index, Size<N, T>::one());
+    }
+
+    KMM_HOST_DEVICE static constexpr Bounds from_bounds(Index<N, T> begin, Index<N, T> end) {
+        return {begin, end};
     }
 
     template<size_t M, typename U>
     KMM_HOST_DEVICE static constexpr Bounds from(const Bounds<M, U>& that) {
-        return {Index<N, T>::from(that.offset()), Size<N, T>::from(that.sizes())};
+        return from_bounds(Index<N, T>(that.begin()), Index<N, T>(that.end()));
+    }
+
+    KMM_HOST_DEVICE
+    T offset(size_t axis) const {
+        return begin[axis];
+    }
+
+    KMM_HOST_DEVICE
+    Index<N, T> offset() const {
+        return begin;
     }
 
     KMM_HOST_DEVICE
     T size(size_t axis) const {
-        return this->sizes.get(axis);
+        return begin[axis] <= end[axis] ? end[axis] - begin[axis] : 0;
     }
 
     KMM_HOST_DEVICE
-    T begin(size_t axis) const {
-        return this->offset.get(axis);
+    Size<N, T> sizes() const {
+        Size<N, T> result;
+        for (size_t axis = 0; is_less(axis, N); axis++) {
+            result[axis] = size(axis);
+        }
+        return result;
     }
 
     KMM_HOST_DEVICE
-    T end(size_t axis) const {
-        return begin(axis) + (size(axis) < 0 ? 0 : size(axis));
-    }
+    T size() const {
+        T result = 1;
 
-    KMM_HOST_DEVICE
-    Index<N, T> begin() const {
-        return this->offset;
-    }
-
-    KMM_HOST_DEVICE
-    Index<N, T> end() const {
-        Index<N, T> result;
         for (size_t i = 0; is_less(i, N); i++) {
-            result[i] = end(i);
+            result *= begin[i] >= end[i] ? 0 : end[i] - begin[i];
         }
 
         return result;
     }
 
     KMM_HOST_DEVICE
-    T size() const {
-        return this->sizes.volume();
-    }
-
-    KMM_HOST_DEVICE
     bool is_empty() const {
-        return this->sizes.is_empty();
+        bool result = false;
+
+        for (size_t i = 0; is_less(i, N); i++) {
+            result |= begin[i] >= end[i];
+        }
+
+        return result;
     }
 
     KMM_HOST_DEVICE
     Bounds intersection(const Bounds& that) const {
-        Index<N, T> new_offset;
-        Size<N, T> new_sizes;
-        bool is_empty = false;
+        Index<N, T> new_begin;
+        Index<N, T> new_end;
 
         for (size_t i = 0; is_less(i, N); i++) {
-            auto first_a = this->offset[i] < that.offset[i];
-
-            auto ai = first_a ? this->offset[i] : that.offset[i];
-            auto an = first_a ? this->sizes[i] : that.sizes[i];
-
-            auto bi = !first_a ? this->offset[i] : that.offset[i];
-            auto bn = !first_a ? this->sizes[i] : that.sizes[i];
-
-            if (an <= bi - ai) {
-                is_empty = true;
-            }
-
-            new_offset[i] = bi;
-            new_sizes[i] = an - (bi - ai);
-
-            if (bn < an - (bi - ai)) {
-                new_sizes[i] = bn;
-            }
+            new_begin[i] = this->begin[i] >= that.begin[i] ? this->begin[i] : that.begin[i];
+            new_end[i] = this->end[i] <= that.end[i] ? this->end[i] : that.end[i];
         }
 
-        if (is_empty) {
-            new_offset = Index<N, T>::zero();
-            new_sizes = Size<N, T>::zero();
-        }
-
-        return {new_offset, new_sizes};
+        return Bounds::from_bounds(new_begin, new_end);
     }
 
     KMM_HOST_DEVICE
     bool overlaps(const Bounds& that) const {
-        bool overlapping = true;
+        bool result = true;
 
         for (size_t i = 0; is_less(i, N); i++) {
-            auto first_this = this->offset[i] < that.offset[i];
-
-            auto ai = first_this ? this->offset[i] : that.offset[i];
-            auto an = first_this ? this->sizes[i] : that.sizes[i];
-
-            auto bi = !first_this ? this->offset[i] : that.offset[i];
-            auto bn = !first_this ? this->sizes[i] : that.sizes[i];
-
-            if (an <= bi - ai || bn <= 0) {
-                overlapping = false;
-            }
+            result &= this->begin[i] < that.end[i];
+            result &= that.begin[i] < this->end[i];
+            result &= this->begin[i] < this->end[i];
+            result &= that.begin[i] < that.end[i];
         }
 
-        return overlapping;
+        return result;
     }
 
     KMM_HOST_DEVICE
     bool contains(const Bounds& that) const {
-        if (that.is_empty()) {
-            return true;
-        }
-
-        bool contain = true;
+        bool contains = true;
+        bool is_empty = false;
 
         for (size_t i = 0; is_less(i, N); i++) {
-            auto ai = this->offset[i];
-            auto an = this->sizes[i];
-
-            auto bi = that.offset[i];
-            auto bn = that.sizes[i];
-
-            // We should have: `ai <= bi && ai+an >= bi+bn`.
-            // The inverse is: `ai > bi || ai+an < bi+bn`
-            // Rewritten we get these conditions:
-            // * `ai > bi`, or
-            // * `an <= bi - ai`, or
-            // * `an - (bi - ai) < + bn`
-            if (ai > bi) {
-                contain = false;
-            }
-
-            if (an <= bi - ai) {
-                contain = false;
-            }
-
-            if (an - (bi - ai) < bn) {
-                contain = false;
-            }
+            contains &= that.begin[i] >= this->begin[i];
+            contains &= that.end[i] <= this->end[i];
+            is_empty |= that.begin[i] >= that.end[i];
         }
 
-        return contain;
+        return contains || is_empty;
     }
 
     KMM_HOST_DEVICE
     bool contains(const Index<N, T>& that) const {
-        bool contain = true;
+        bool contains = true;
 
         for (size_t i = 0; is_less(i, N); i++) {
-            auto ai = this->offset[i];
-            auto an = this->sizes[i];
-
-            if (!(that[i] >= ai && that[i] - ai < an)) {
-                contain = false;
-            }
+            contains &= that[i] >= this->begin[i];
+            contains &= that[i] < this->end[i];
         }
 
-        return contain;
+        return contains;
     }
 
     KMM_HOST_DEVICE
@@ -559,7 +508,7 @@ class Bounds {
 
     template<size_t M>
     KMM_HOST_DEVICE Bounds<N + M> concat(const Bounds<M>& that) const {
-        return {offset.concat(that.offset), sizes.concate(that.sizes)};
+        return Bounds<N + M>::from_bounds(begin.concat(that.begin), end.concat(that.end));
     }
 };
 
@@ -597,7 +546,7 @@ KMM_HOST_DEVICE bool operator!=(const Size<N, T>& a, const Size<N, T>& b) {
 
 template<size_t N, typename T>
 KMM_HOST_DEVICE bool operator==(const Bounds<N, T>& a, const Bounds<N, T>& b) {
-    return a.offset == b.offset && a.sizes == b.sizes;
+    return a.begin == b.begin && a.end == b.end;
 }
 
 template<size_t N, typename T>
@@ -612,7 +561,6 @@ KMM_HOST_DEVICE bool operator!=(const Bounds<N, T>& a, const Bounds<N, T>& b) {
         for (size_t i = 0; is_less(i, N); i++) {                                          \
             result[i] = a[i] OP b[i];                                                     \
         }                                                                                 \
-                                                                                          \
         return result;                                                                    \
     }
 
@@ -645,7 +593,7 @@ std::ostream& operator<<(std::ostream& stream, const Bounds<N, T>& p) {
             stream << ", ";
         }
 
-        stream << p.offset[i] << "..." << (p.offset[i] + p.sizes[i]);
+        stream << p.begin[i] << "..." << p.end[i];
     }
 
     return stream << "}";
@@ -674,7 +622,7 @@ struct std::hash<kmm::Size<N, T>>: std::hash<kmm::fixed_array<T, N>> {};
 template<size_t N, typename T>
 struct std::hash<kmm::Bounds<N, T>> {
     size_t operator()(const kmm::Bounds<N, T>& p) const {
-        kmm::fixed_array<T, N> v[2] = {p.offset, p.sizes};
+        kmm::fixed_array<T, N> v[2] = {p.begin, p.end};
         return kmm::hash_range(v, v + 2);
     }
 };

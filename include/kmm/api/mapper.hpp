@@ -21,7 +21,7 @@ struct Axis {
     explicit constexpr Axis(size_t axis) : m_axis(axis) {}
 
     Bounds<1> operator()(WorkChunk chunk) const {
-        return Bounds<1> {chunk.offset.get(m_axis), chunk.size.get(m_axis)};
+        return Bounds<1>::from_offset_size(chunk.offset.get(m_axis), chunk.size.get(m_axis));
     }
 
     Bounds<1> operator()(WorkChunk chunk, Bounds<1> bounds) const {
@@ -43,7 +43,7 @@ struct Axis {
 struct IdentityMap {
     template<size_t N>
     Bounds<N> operator()(WorkChunk chunk, Bounds<N> bounds) const {
-        return {Index<N>::from(chunk.offset), Size<N>::from(chunk.size)};
+        return Bounds<N>::from_offset_size(Index<N>::from(chunk.offset), Size<N>::from(chunk.size));
     }
 };
 
@@ -156,8 +156,8 @@ struct MultiIndexMap {
 
         for (size_t i = 0; i < N; i++) {
             Bounds<1> range = (this->axes[i])(chunk);
-            result.offset[i] = range.offset[0];
-            result.sizes[i] = range.sizes[0];
+            result.begin[i] = range.begin;
+            result.end[i] = range.end;
         }
 
         return result;
@@ -167,9 +167,9 @@ struct MultiIndexMap {
         Bounds<N> result;
 
         for (size_t i = 0; i < N; i++) {
-            Bounds<1> range = (this->axes[i])(chunk, Bounds<1> {bounds.offset[i], bounds.sizes[i]});
-            result.offset[i] = range.offset[0];
-            result.sizes[i] = range.sizes[0];
+            Bounds<1> range = (this->axes[i])(chunk, Bounds<1> {bounds.begin(i), bounds.end(i)});
+            result.begin[i] = range.begin;
+            result.end[i] = range.end;
         }
 
         return result;

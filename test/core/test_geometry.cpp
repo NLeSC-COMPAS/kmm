@@ -158,102 +158,108 @@ TEST_CASE("geometry dim intersection") {
 }
 
 TEST_CASE("geometry range basics") {
-    Bounds<3> a = {{0, 0, 0}, {42, 2, 1}};
-    ASSERT_EQ(a.offset, Index(0, 0, 0));
-    ASSERT_EQ(a.sizes, Size(42, 2, 1));
-    ASSERT_EQ(a.begin(), Index(0, 0, 0));
-    ASSERT_EQ(a.end(), Index(42, 2, 1));
+    auto a = Bounds<3>::from_offset_size({0, 0, 0}, {42, 2, 1});
+    ASSERT_EQ(a.offset(), Index(0, 0, 0));
+    ASSERT_EQ(a.sizes(), Size(42, 2, 1));
+    ASSERT_EQ(a.begin, Index(0, 0, 0));
+    ASSERT_EQ(a.end, Index(42, 2, 1));
     ASSERT_EQ(a.size(), 84);
     ASSERT_EQ(a.is_empty(), false);
 
-    Bounds<3> b = {{1, 1, 1}, {3, 2, 1}};
-    ASSERT_EQ(b.offset, Index(1, 1, 1));
-    ASSERT_EQ(b.sizes, Size(3, 2, 1));
-    ASSERT_EQ(b.begin(), Index(1, 1, 1));
-    ASSERT_EQ(b.end(), Index(4, 3, 2));
+    auto b = Bounds<3>::from_offset_size({1, 1, 1}, {3, 2, 1});
+    ASSERT_EQ(b.offset(), Index(1, 1, 1));
+    ASSERT_EQ(b.sizes(), Size(3, 2, 1));
+    ASSERT_EQ(b.begin, Index(1, 1, 1));
+    ASSERT_EQ(b.end, Index(4, 3, 2));
     ASSERT_EQ(b.size(), 6);
     ASSERT_EQ(b.is_empty(), false);
 
-    Bounds<3> c = {{1, -5, 1}, {2, 2, 2}};
-    ASSERT_EQ(c.offset, Index(1, -5, 1));
-    ASSERT_EQ(c.sizes, Size(2, 2, 2));
-    ASSERT_EQ(c.begin(), Index(1, -5, 1));
-    ASSERT_EQ(c.end(), Index(3, -3, 3));
+    auto c = Bounds<3>::from_offset_size({1, -5, 1}, {2, 2, 2});
+    ASSERT_EQ(c.offset(), Index(1, -5, 1));
+    ASSERT_EQ(c.sizes(), Size(2, 2, 2));
+    ASSERT_EQ(c.begin, Index(1, -5, 1));
+    ASSERT_EQ(c.end, Index(3, -3, 3));
     ASSERT_EQ(c.size(), 8);
     ASSERT_EQ(c.is_empty(), false);
 
-    Bounds<3> d = {{5, 1, 2}, {-5, 3, 1}};
-    ASSERT_EQ(d.offset, Index(5, 1, 2));
-    ASSERT_EQ(d.sizes, Size(-5, 3, 1));
-    ASSERT_EQ(d.begin(), Index(5, 1, 2));
-    ASSERT_EQ(d.end(), Index(5, 4, 3));
+    auto d = Bounds<3>::from_offset_size({5, 1, 2}, {-5, 3, 1});
+    ASSERT_EQ(d.offset(), Index(5, 1, 2));
+    ASSERT_EQ(d.sizes(), Size(0, 3, 1));
+    ASSERT_EQ(d.begin, Index(5, 1, 2));
+    ASSERT_EQ(d.end, Index(0, 4, 3));
     ASSERT_EQ(d.size(), 0);
     ASSERT_EQ(d.is_empty(), true);
 }
 
 TEST_CASE("geometry range intersection") {
-    Bounds<3> a = {{0, 0, 0}, {42, 2, 5}};
-    Bounds<3> b = {{1, 1, 1}, {3, 1, 1}};
-    Bounds<3> c = {{1, -5, 1}, {2, 20, 2}};
-    Bounds<3> d = {{5, 1, 2}, {-3, 3, 1}};
+    auto a = Bounds<3>::from_offset_size({0, 0, 0}, {42, 2, 5});
+    auto b = Bounds<3>::from_offset_size({1, 1, 1}, {3, 1, 1});
+    auto c = Bounds<3>::from_offset_size({1, -5, 1}, {2, 20, 2});
+    auto d = Bounds<3>::from_offset_size({5, 1, 2}, {-3, 3, 1});
 
-    ASSERT_EQ(a.intersection(a), a);
-    ASSERT_EQ(a.intersection(b), (Bounds<3> {{1, 1, 1}, {3, 1, 1}}));
-    ASSERT_EQ(a.intersection(c), (Bounds<3> {{1, 0, 1}, {2, 2, 2}}));
-    ASSERT_EQ(a.intersection(d), (Bounds<3> {{5, 1, 2}, {-3, 1, 1}}));
+    SECTION("intersection") {
+        ASSERT_EQ(a.intersection(a), a);
+        ASSERT_EQ(a.intersection(b), (Bounds<3>::from_offset_size({1, 1, 1}, {3, 1, 1})));
+        ASSERT_EQ(a.intersection(c), (Bounds<3>::from_offset_size({1, 0, 1}, {2, 2, 2})));
+        ASSERT_EQ(a.intersection(d), (Bounds<3>::from_offset_size({5, 1, 2}, {-3, 1, 1})));
 
-    ASSERT_EQ(b.intersection(a), (Bounds<3> {{1, 1, 1}, {3, 1, 1}}));
-    ASSERT_EQ(b.intersection(b), b);
-    ASSERT_EQ(b.intersection(c), (Bounds<3> {{1, 1, 1}, {2, 1, 1}}));
-    ASSERT_EQ(b.intersection(d), Bounds<3>());
+        ASSERT_EQ(b.intersection(a), (Bounds<3>::from_offset_size({1, 1, 1}, {3, 1, 1})));
+        ASSERT_EQ(b.intersection(b), b);
+        ASSERT_EQ(b.intersection(c), (Bounds<3>::from_offset_size({1, 1, 1}, {2, 1, 1})));
+        ASSERT_EQ(b.intersection(d), Bounds<3>::from_bounds({5, 1, 2}, {2, 2, 2}));
 
-    ASSERT_EQ(c.intersection(a), (Bounds<3> {{1, 0, 1}, {2, 2, 2}}));
-    ASSERT_EQ(c.intersection(b), (Bounds<3> {{1, 1, 1}, {2, 1, 1}}));
-    ASSERT_EQ(c.intersection(c), c);
-    ASSERT_EQ(c.intersection(d), Bounds<3>());
+        ASSERT_EQ(c.intersection(a), (Bounds<3>::from_offset_size({1, 0, 1}, {2, 2, 2})));
+        ASSERT_EQ(c.intersection(b), (Bounds<3>::from_offset_size({1, 1, 1}, {2, 1, 1})));
+        ASSERT_EQ(c.intersection(c), c);
+        ASSERT_EQ(c.intersection(d), Bounds<3>::from_bounds({5, 1, 2}, {2, 4, 3}));
 
-    ASSERT_EQ(d.intersection(a), (Bounds<3> {{5, 1, 2}, {-3, 1, 1}}));
-    ASSERT_EQ(d.intersection(b), Bounds<3>());
-    ASSERT_EQ(d.intersection(c), Bounds<3>());
-    ASSERT_EQ(d.intersection(d), Bounds<3>());
+        ASSERT_EQ(d.intersection(a), (Bounds<3>::from_offset_size({5, 1, 2}, {-3, 1, 1})));
+        ASSERT_EQ(d.intersection(b), Bounds<3>::from_bounds({5, 1, 2}, {2, 2, 2}));
+        ASSERT_EQ(d.intersection(c), Bounds<3>::from_bounds({5, 1, 2}, {2, 4, 3}));
+        ASSERT_EQ(d.intersection(d), Bounds<3>::from_bounds({5, 1, 2}, {2, 4, 3}));
+    }
 
-    ASSERT_EQ(a.overlaps(a), true);
-    ASSERT_EQ(a.overlaps(b), true);
-    ASSERT_EQ(a.overlaps(c), true);
-    ASSERT_EQ(a.overlaps(d), false);
+    SECTION("overlaps") {
+        ASSERT_EQ(a.overlaps(a), true);
+        ASSERT_EQ(a.overlaps(b), true);
+        ASSERT_EQ(a.overlaps(c), true);
+        ASSERT_EQ(a.overlaps(d), false);
 
-    ASSERT_EQ(b.overlaps(a), true);
-    ASSERT_EQ(b.overlaps(b), true);
-    ASSERT_EQ(b.overlaps(c), true);
-    ASSERT_EQ(b.overlaps(d), false);
+        ASSERT_EQ(b.overlaps(a), true);
+        ASSERT_EQ(b.overlaps(b), true);
+        ASSERT_EQ(b.overlaps(c), true);
+        ASSERT_EQ(b.overlaps(d), false);
 
-    ASSERT_EQ(c.overlaps(a), true);
-    ASSERT_EQ(c.overlaps(b), true);
-    ASSERT_EQ(c.overlaps(c), true);
-    ASSERT_EQ(c.overlaps(d), false);
+        ASSERT_EQ(c.overlaps(a), true);
+        ASSERT_EQ(c.overlaps(b), true);
+        ASSERT_EQ(c.overlaps(c), true);
+        ASSERT_EQ(c.overlaps(d), false);
 
-    ASSERT_EQ(d.overlaps(a), false);
-    ASSERT_EQ(d.overlaps(b), false);
-    ASSERT_EQ(d.overlaps(c), false);
-    ASSERT_EQ(d.overlaps(d), false);
+        ASSERT_EQ(d.overlaps(a), false);
+        ASSERT_EQ(d.overlaps(b), false);
+        ASSERT_EQ(d.overlaps(c), false);
+        ASSERT_EQ(d.overlaps(d), false);
+    }
 
-    ASSERT_EQ(a.contains(a), true);
-    ASSERT_EQ(a.contains(b), true);
-    ASSERT_EQ(a.contains(c), false);
-    ASSERT_EQ(a.contains(d), true);
+    SECTION("contains") {
+        ASSERT_EQ(a.contains(a), true);
+        ASSERT_EQ(a.contains(b), true);
+        ASSERT_EQ(a.contains(c), false);
+        ASSERT_EQ(a.contains(d), true);
 
-    ASSERT_EQ(b.contains(a), false);
-    ASSERT_EQ(b.contains(b), true);
-    ASSERT_EQ(b.contains(c), false);
-    ASSERT_EQ(b.contains(d), true);
+        ASSERT_EQ(b.contains(a), false);
+        ASSERT_EQ(b.contains(b), true);
+        ASSERT_EQ(b.contains(c), false);
+        ASSERT_EQ(b.contains(d), true);
 
-    ASSERT_EQ(c.contains(a), false);
-    ASSERT_EQ(c.contains(b), false);
-    ASSERT_EQ(c.contains(c), true);
-    ASSERT_EQ(c.contains(d), true);
+        ASSERT_EQ(c.contains(a), false);
+        ASSERT_EQ(c.contains(b), false);
+        ASSERT_EQ(c.contains(c), true);
+        ASSERT_EQ(c.contains(d), true);
 
-    ASSERT_EQ(d.contains(a), false);
-    ASSERT_EQ(d.contains(b), false);
-    ASSERT_EQ(d.contains(c), false);
-    ASSERT_EQ(d.contains(d), true);
+        ASSERT_EQ(d.contains(a), false);
+        ASSERT_EQ(d.contains(b), false);
+        ASSERT_EQ(d.contains(c), false);
+        ASSERT_EQ(d.contains(d), true);
+    }
 }

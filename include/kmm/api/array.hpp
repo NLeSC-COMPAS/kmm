@@ -296,7 +296,7 @@ struct ArgumentHandler<Access<Array<T, N>, Write<M>>> {
             m_builder.add_chunk(task.graph, task.memory_id, access_region)
         );
 
-        auto domain = views::dynamic_subdomain<N> {access_region.offset, access_region.sizes};
+        auto domain = views::dynamic_subdomain<N> {access_region.offset(), access_region.sizes()};
         return {buffer_index, domain};
     }
 
@@ -389,9 +389,8 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<M, P>>> {
         );
 
         views::dynamic_subdomain<K + N> domain = {
-            private_region.offset.concat(access_region.offset),
-            private_region.sizes.concat(access_region.sizes),
-        };
+            private_region.concat(access_region).offset(),
+            private_region.concat(access_region).sizes()};
 
         return {buffer_index, domain};
     }

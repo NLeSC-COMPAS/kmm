@@ -15,8 +15,8 @@ BufferRequirement ArrayBuilder<N>::add_chunk(
     m_buffers.push_back(buffer_id);
     m_chunks.push_back(DataChunk<N> {
         .owner_id = memory_id,
-        .offset = access_region.offset,
-        .size = access_region.sizes});
+        .offset = access_region.offset(),
+        .size = access_region.sizes()});
 
     return {//
             .buffer_id = buffer_id,
@@ -126,8 +126,8 @@ std::pair<DataDistribution<N>, std::vector<BufferId>> ArrayReductionBuilder<N>::
         buffers.push_back(buffer_id);
         chunks.push_back(DataChunk<N> {
             .owner_id = memory_id,
-            .offset = access_region.offset,
-            .size = access_region.sizes});
+            .offset = access_region.offset(),
+            .size = access_region.sizes()});
 
         for (const auto& input : inputs) {
             graph.delete_buffer(input.buffer_id, {event_id});
