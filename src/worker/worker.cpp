@@ -2,7 +2,7 @@
 
 #include "spdlog/spdlog.h"
 
-#include "kmm/allocators/arena.hpp"
+#include "kmm/allocators/block.hpp"
 #include "kmm/allocators/device.hpp"
 #include "kmm/allocators/system.hpp"
 #include "kmm/worker/worker.hpp"
@@ -191,7 +191,7 @@ std::shared_ptr<Worker> make_worker(const WorkerConfig& config) {
     }
 
     if (config.host_memory_block_size > 0) {
-        host_mem = std::make_unique<ArenaAllocator>(  //
+        host_mem = std::make_unique<BlockAllocator>(  //
             std::move(host_mem),
             config.host_memory_block_size
         );
@@ -199,7 +199,7 @@ std::shared_ptr<Worker> make_worker(const WorkerConfig& config) {
 
     if (config.device_memory_block_size > 0) {
         for (size_t i = 0; i < devices.size(); i++) {
-            device_mems[i] = std::make_unique<ArenaAllocator>(
+            device_mems[i] = std::make_unique<BlockAllocator>(
                 std::move(device_mems[i]),
                 config.device_memory_block_size
             );
