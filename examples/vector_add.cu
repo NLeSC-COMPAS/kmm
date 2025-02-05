@@ -49,7 +49,7 @@ int main() {
     auto C = kmm::Array<float> {n};
 
     rt.parallel_submit(
-        kmm::Size {n},
+        kmm::Dim {n},
         kmm::ChunkPartitioner {chunk_size},
         kmm::GPUKernel(initialize_range, block_size),
         write(A(_x))

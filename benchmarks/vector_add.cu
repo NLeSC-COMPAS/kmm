@@ -47,7 +47,7 @@ bool inner_loop(kmm::Runtime &rt, int n, int chunk_size, std::chrono::duration<d
 
     // Initialize input arrays
     rt.parallel_submit(
-        kmm::Size {n},
+        kmm::Dim {n},
         kmm::ChunkPartitioner {chunk_size},
         kmm::GPUKernel(initialize_range, block_size),
         write(A(_x))
