@@ -45,33 +45,35 @@ int main() {
 
     auto rt = kmm::make_runtime();
     int n = 2'000'000'000;
-    int chunk_size = n / 10;
-    dim3 block_size = 256;
-
-    auto A = kmm::Array<real_type> {n};
-    auto B = kmm::Array<real_type> {n};
-    auto C = kmm::Array<real_type> {n};
-
-    // Initialize input arrays
-    rt.parallel_submit(
-        kmm::Size {n},
-        kmm::ChunkPartitioner {chunk_size},
-        kmm::GPUKernel(initialize_range, block_size),
-        write(A(_x))
-    );
-    rt.parallel_submit(
-        {n},
-        {chunk_size},
-        kmm::GPUKernel(fill_range, block_size),
-        float(1.0),
-        write(B(_x))
-    );
-
-    // Benchmark
     unsigned long long int ops = n * max_iterations;
     unsigned long long int mem = (n * 3 * sizeof(real_type)) * max_iterations;
-    auto timing_start = std::chrono::steady_clock::now();
+    int chunk_size = n / 10;
+    dim3 block_size = 256;
+    std::chrono::duration<double> elapsed_time;
+
     for ( unsigned int iteration = 0; iteration < max_iterations; ++iteration ) {
+        auto A = kmm::Array<real_type> {n};
+        auto B = kmm::Array<real_type> {n};
+        auto C = kmm::Array<real_type> {n};
+
+        // Initialize input arrays
+        rt.parallel_submit(
+            kmm::Size {n},
+            kmm::ChunkPartitioner {chunk_size},
+            kmm::GPUKernel(initialize_range, block_size),
+            write(A(_x))
+        );
+        rt.parallel_submit(
+            {n},
+            {chunk_size},
+            kmm::GPUKernel(fill_range, block_size),
+            float(1.0),
+            write(B(_x))
+        );
+        rt.synchronize();
+        // Benchmark
+
+        auto timing_start = std::chrono::steady_clock::now();
         rt.parallel_submit(
             {n},
             {chunk_size},
@@ -80,20 +82,21 @@ int main() {
             A(_x),
             B(_x)
         );
-    }
-    rt.synchronize();
-    auto timing_stop = std::chrono::steady_clock::now();
-    std::chrono::duration<double> elapsed_time = timing_stop - timing_start;
+        rt.synchronize();
+        auto timing_stop = std::chrono::steady_clock::now();
+        elapsed_time += timing_stop - timing_start;
 
-    // Correctness check
-    std::vector<real_type> result(n);
-    C.copy_to(result.data(), n);
-    for (int i = 0; i < n; i++) {
-        if (result[i] != static_cast<real_type>(i) + 1) {
-            std::cerr << "Wrong result at " << i << " : " << result[i] << " != " << float(i) + 1 << std::endl;
-            return 1;
+        // Correctness check
+        std::vector<real_type> result(n);
+        C.copy_to(result.data(), n);
+        for (int i = 0; i < n; i++) {
+            if (result[i] != static_cast<real_type>(i) + 1) {
+                std::cerr << "Wrong result at " << i << " : " << result[i] << " != " << float(i) + 1 << std::endl;
+                return 1;
+            }
         }
     }
+
     std::cout << "Total time: " << elapsed_time.count() << " seconds" << std::endl;
     std::cout << "Average iteration time: " << elapsed_time.count() / max_iterations << " seconds" << std::endl;
     std::cout << "Throughput: " << (ops / elapsed_time.count()) / 1'000'000'000 << " GFLOP/s" << std::endl;
