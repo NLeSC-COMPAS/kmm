@@ -13,6 +13,7 @@ option(KMM_USE_HIP  "Build the HIP backend" OFF)
 option(KMM_ENABLE_LINTER  "Enable clang-tidy linter" OFF)
 option(KMM_BUILD_TESTS    "Build tests" OFF)
 option(KMM_BUILD_EXAMPLES "Build examples" OFF)
+option(KMM_BUILD_BENCHMARKS "Build benchmarks" OFF)
 
 # Check options
 if(KMM_USE_CUDA AND KMM_USE_HIP)
@@ -140,4 +141,9 @@ endif()
 # Compile examples
 if(KMM_BUILD_EXAMPLES)
   add_subdirectory(examples)
+endif()
+
+# Compile benchmarks
+if(KMM_BUILD_BENCHMARKS)
+  add_subdirectory(benchmarks)
 endif()
