@@ -9,9 +9,9 @@
 
 namespace kmm {
 
-using default_geometry_type = int64_t;
+using default_index_type = int64_t;
 
-template<size_t N, typename T = default_geometry_type>
+template<size_t N, typename T = default_index_type>
 class Index: public fixed_array<T, N> {
   public:
     using storage_type = fixed_array<T, N>;
@@ -139,23 +139,23 @@ class Index<0, T>: public fixed_array<T, 0> {
     }
 };
 
-template<size_t N, typename T = default_geometry_type>
-class Size: public fixed_array<T, N> {
+template<size_t N, typename T = default_index_type>
+class Dim: public fixed_array<T, N> {
   public:
     using storage_type = fixed_array<T, N>;
 
     KMM_HOST_DEVICE
-    explicit constexpr Size(const storage_type& storage) : storage_type(storage) {}
+    explicit constexpr Dim(const storage_type& storage) : storage_type(storage) {}
 
     KMM_HOST_DEVICE
-    constexpr Size() {
+    constexpr Dim() {
         for (size_t i = 0; i < N; i++) {
             (*this)[i] = static_cast<T>(1);
         }
     }
 
     template<typename... Ts, typename = typename std::enable_if<(sizeof...(Ts) < N)>::type>
-    KMM_HOST_DEVICE Size(T first, Ts&&... args) : Size() {
+    KMM_HOST_DEVICE Dim(T first, Ts&&... args) : Dim() {
         (*this)[0] = first;
 
         size_t index = 0;
@@ -163,13 +163,13 @@ class Size: public fixed_array<T, N> {
     }
 
     KMM_HOST_DEVICE
-    static constexpr Size from_point(const Index<N, T>& that) {
-        return Size {that};
+    static constexpr Dim from_point(const Index<N, T>& that) {
+        return Dim {that};
     }
 
     template<size_t M, typename U>
-    KMM_HOST_DEVICE static constexpr Size from(const fixed_array<U, M>& that) {
-        Size result;
+    KMM_HOST_DEVICE static constexpr Dim from(const fixed_array<U, M>& that) {
+        Dim result;
 
         for (size_t i = 0; i < N && is_less(i, M); i++) {
             result[i] = that[i];
@@ -179,12 +179,12 @@ class Size: public fixed_array<T, N> {
     }
 
     KMM_HOST_DEVICE
-    static constexpr Size zero() {
+    static constexpr Dim zero() {
         return from_point(Index<N, T>::zero());
     }
 
     KMM_HOST_DEVICE
-    static constexpr Size one() {
+    static constexpr Dim one() {
         return from_point(Index<N, T>::one());
     }
 
@@ -229,8 +229,8 @@ class Size: public fixed_array<T, N> {
     }
 
     KMM_HOST_DEVICE
-    Size intersection(const Size& that) const {
-        Size<N, T> new_sizes;
+    Dim intersection(const Dim& that) const {
+        Dim<N, T> new_sizes;
 
         for (size_t i = 0; i < N; i++) {
             if (that[i] <= 0 || (*this)[i] <= 0) {
@@ -246,12 +246,12 @@ class Size: public fixed_array<T, N> {
     }
 
     KMM_HOST_DEVICE
-    bool overlaps(const Size& that) const {
+    bool overlaps(const Dim& that) const {
         return !this->is_empty() && !that.is_empty();
     }
 
     KMM_HOST_DEVICE
-    bool contains(const Size& that) const {
+    bool contains(const Dim& that) const {
         return that.is_empty() || intersection(that) == that;
     }
 
@@ -272,39 +272,39 @@ class Size: public fixed_array<T, N> {
     }
 
     template<size_t M>
-    KMM_HOST_DEVICE Size<N + M> concat(const Size<M>& that) const {
-        return Size<N + M>(to_point().concat(that.to_point()));
+    KMM_HOST_DEVICE Dim<N + M> concat(const Dim<M>& that) const {
+        return Dim<N + M>(to_point().concat(that.to_point()));
     }
 };
 
 template<typename T>
-class Size<0, T>: public fixed_array<T, 0> {
+class Dim<0, T>: public fixed_array<T, 0> {
   public:
     using storage_type = fixed_array<T, 0>;
 
     KMM_HOST_DEVICE
-    explicit constexpr Size(const storage_type& storage) : storage_type(storage) {}
+    explicit constexpr Dim(const storage_type& storage) : storage_type(storage) {}
 
     KMM_HOST_DEVICE
-    constexpr Size() {}
+    constexpr Dim() {}
 
     KMM_HOST_DEVICE
-    static constexpr Size from_point(const Index<0, T>& that) {
+    static constexpr Dim from_point(const Index<0, T>& that) {
         return {};
     }
 
     template<size_t M, typename U>
-    KMM_HOST_DEVICE static constexpr Size from(const fixed_array<U, M>& that) {
+    KMM_HOST_DEVICE static constexpr Dim from(const fixed_array<U, M>& that) {
         return that;
     }
 
     KMM_HOST_DEVICE
-    static constexpr Size zero() {
+    static constexpr Dim zero() {
         return {};
     }
 
     KMM_HOST_DEVICE
-    static constexpr Size one() {
+    static constexpr Dim one() {
         return {};
     }
 
@@ -329,17 +329,17 @@ class Size<0, T>: public fixed_array<T, 0> {
     }
 
     KMM_HOST_DEVICE
-    Size intersection(const Size& that) const {
+    Dim intersection(const Dim& that) const {
         return {};
     }
 
     KMM_HOST_DEVICE
-    bool overlaps(const Size& that) const {
+    bool overlaps(const Dim& that) const {
         return true;
     }
 
     KMM_HOST_DEVICE
-    bool contains(const Size& that) const {
+    bool contains(const Dim& that) const {
         return true;
     }
 
@@ -354,12 +354,12 @@ class Size<0, T>: public fixed_array<T, 0> {
     }
 
     template<size_t M>
-    KMM_HOST_DEVICE Size<M> concat(const Size<M>& that) const {
+    KMM_HOST_DEVICE Dim<M> concat(const Dim<M>& that) const {
         return that;
     }
 };
 
-template<size_t N, typename T = default_geometry_type>
+template<size_t N, typename T = default_index_type>
 class Bounds {
   public:
     Index<N, T> begin;
@@ -371,16 +371,15 @@ class Bounds {
     Bounds(Index<N, T> begin, Index<N, T> end) : begin(begin), end(end) {}
 
     KMM_HOST_DEVICE
-    Bounds(Size<N, T> sizes) {
+    Bounds(Index<N, T> end) : end(end) {}
+
+    KMM_HOST_DEVICE
+    Bounds(Dim<N, T> sizes) {
         this->end = sizes.to_point();
     }
 
-    KMM_HOST_DEVICE static constexpr Bounds from_offset_size(Index<N, T> offset, Size<N, T> size) {
+    KMM_HOST_DEVICE static constexpr Bounds from_offset_size(Index<N, T> offset, Dim<N, T> size) {
         return {offset, offset + size.to_point()};
-    }
-
-    KMM_HOST_DEVICE static constexpr Bounds from_point(Index<N, T> offset) {
-        return from_offset_size(index, Size<N, T>::one());
     }
 
     KMM_HOST_DEVICE static constexpr Bounds from_bounds(Index<N, T> begin, Index<N, T> end) {
@@ -394,7 +393,7 @@ class Bounds {
 
     KMM_HOST_DEVICE
     T offset(size_t axis) const {
-        return begin[axis];
+        return begin.get(axis);
     }
 
     KMM_HOST_DEVICE
@@ -408,8 +407,8 @@ class Bounds {
     }
 
     KMM_HOST_DEVICE
-    Size<N, T> sizes() const {
-        Size<N, T> result;
+    Dim<N, T> sizes() const {
+        Dim<N, T> result;
         for (size_t axis = 0; is_less(axis, N); axis++) {
             result[axis] = size(axis);
         }
@@ -421,10 +420,10 @@ class Bounds {
         T result = 1;
 
         for (size_t i = 0; is_less(i, N); i++) {
-            result *= begin[i] >= end[i] ? 0 : end[i] - begin[i];
+            result *= end[i] - begin[i];
         }
 
-        return result;
+        return is_empty() ? T {0} : result;
     }
 
     KMM_HOST_DEVICE
@@ -492,17 +491,17 @@ class Bounds {
     }
 
     KMM_HOST_DEVICE
-    Bounds intersection(const Size<N, T>& that) const {
+    Bounds intersection(const Dim<N, T>& that) const {
         return intersection(Bounds<N, T> {that});
     }
 
     KMM_HOST_DEVICE
-    bool overlaps(const Size<N, T>& that) const {
+    bool overlaps(const Dim<N, T>& that) const {
         return overlaps(Bounds<N, T> {that});
     }
 
     KMM_HOST_DEVICE
-    bool contains(const Size<N, T>& that) const {
+    bool contains(const Dim<N, T>& that) const {
         return contains(Bounds<N, T> {that});
     }
 
@@ -516,13 +515,13 @@ template<typename... Ts>
 KMM_HOST_DEVICE_NOINLINE Index(Ts...) -> Index<sizeof...(Ts)>;
 
 template<typename... Ts>
-KMM_HOST_DEVICE_NOINLINE Size(Ts...) -> Size<sizeof...(Ts)>;
+KMM_HOST_DEVICE_NOINLINE Dim(Ts...) -> Dim<sizeof...(Ts)>;
 
 template<size_t N, typename T>
-KMM_HOST_DEVICE_NOINLINE Bounds(Index<N, T> offset, Size<N, T> sizes) -> Bounds<N, T>;
+KMM_HOST_DEVICE_NOINLINE Bounds(Index<N, T> offset, Dim<N, T> sizes) -> Bounds<N, T>;
 
 template<size_t N, typename T>
-KMM_HOST_DEVICE_NOINLINE Bounds(Size<N, T> sizes) -> Bounds<N, T>;
+KMM_HOST_DEVICE_NOINLINE Bounds(Dim<N, T> sizes) -> Bounds<N, T>;
 
 template<size_t N, typename T>
 KMM_HOST_DEVICE bool operator==(const Index<N, T>& a, const Index<N, T>& b) {
@@ -535,12 +534,12 @@ KMM_HOST_DEVICE bool operator!=(const Index<N, T>& a, const Index<N, T>& b) {
 }
 
 template<size_t N, typename T>
-KMM_HOST_DEVICE bool operator==(const Size<N, T>& a, const Size<N, T>& b) {
+KMM_HOST_DEVICE bool operator==(const Dim<N, T>& a, const Dim<N, T>& b) {
     return (const fixed_array<T, N>&)a == (const fixed_array<T, N>&)b;
 }
 
 template<size_t N, typename T>
-KMM_HOST_DEVICE bool operator!=(const Size<N, T>& a, const Size<N, T>& b) {
+KMM_HOST_DEVICE bool operator!=(const Dim<N, T>& a, const Dim<N, T>& b) {
     return !(a == b);
 }
 
@@ -581,7 +580,7 @@ std::ostream& operator<<(std::ostream& stream, const Index<N, T>& p) {
 }
 
 template<size_t N, typename T>
-std::ostream& operator<<(std::ostream& stream, const Size<N, T>& p) {
+std::ostream& operator<<(std::ostream& stream, const Dim<N, T>& p) {
     return stream << fixed_array<T, N>(p);
 }
 
@@ -606,7 +605,7 @@ template<size_t N, typename T>
 struct fmt::formatter<kmm::Index<N, T>>: fmt::ostream_formatter {};
 
 template<size_t N, typename T>
-struct fmt::formatter<kmm::Size<N, T>>: fmt::ostream_formatter {};
+struct fmt::formatter<kmm::Dim<N, T>>: fmt::ostream_formatter {};
 
 template<size_t N, typename T>
 struct fmt::formatter<kmm::Bounds<N, T>>: fmt::ostream_formatter {};
@@ -617,7 +616,7 @@ template<size_t N, typename T>
 struct std::hash<kmm::Index<N, T>>: std::hash<kmm::fixed_array<T, N>> {};
 
 template<size_t N, typename T>
-struct std::hash<kmm::Size<N, T>>: std::hash<kmm::fixed_array<T, N>> {};
+struct std::hash<kmm::Dim<N, T>>: std::hash<kmm::fixed_array<T, N>> {};
 
 template<size_t N, typename T>
 struct std::hash<kmm::Bounds<N, T>> {

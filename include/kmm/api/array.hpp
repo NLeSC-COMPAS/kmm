@@ -29,7 +29,7 @@ class ArrayBase {
 template<typename T, size_t N = 1>
 class Array: public ArrayBase {
   public:
-    Array(Size<N> shape = {}) : m_shape(shape) {}
+    Array(Dim<N> shape = {}) : m_shape(shape) {}
 
     explicit Array(std::shared_ptr<ArrayHandle<N>> b) :
         m_handle(b),
@@ -43,7 +43,7 @@ class Array: public ArrayBase {
         return N;
     }
 
-    Size<N> sizes() const {
+    Dim<N> sizes() const {
         return m_shape;
     }
 
@@ -72,7 +72,7 @@ class Array: public ArrayBase {
         return handle().distribution();
     }
 
-    Size<N> chunk_size() const {
+    Dim<N> chunk_size() const {
         return distribution().chunk_size();
     }
 
@@ -155,7 +155,7 @@ class Array: public ArrayBase {
   private:
     std::shared_ptr<ArrayHandle<N>> m_handle;
     Index<N> m_offset;  // Unused for now, always zero
-    Size<N> m_shape;
+    Dim<N> m_shape;
 };
 
 template<typename T>

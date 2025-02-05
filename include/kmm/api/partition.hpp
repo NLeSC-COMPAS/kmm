@@ -3,8 +3,8 @@
 #include <cstddef>
 #include <vector>
 
-#include "kmm/core/domain.hpp"
 #include "kmm/core/identifiers.hpp"
+#include "kmm/core/range.hpp"
 #include "kmm/core/system_info.hpp"
 #include "kmm/core/task.hpp"
 
