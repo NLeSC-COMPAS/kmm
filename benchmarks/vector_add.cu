@@ -40,6 +40,8 @@ __global__ void vector_add(
 }
 
 bool inner_loop(kmm::Runtime &rt, int n, int chunk_size, std::chrono::duration<double> &init_time, std::chrono::duration<double> &run_time) {
+    using namespace kmm::placeholders;
+    dim3 block_size = 256;
     auto timing_start_init = std::chrono::steady_clock::now();
     auto A = kmm::Array<real_type> {n};
     auto B = kmm::Array<real_type> {n};
@@ -90,14 +92,11 @@ bool inner_loop(kmm::Runtime &rt, int n, int chunk_size, std::chrono::duration<d
 }
 
 int main() {
-    using namespace kmm::placeholders;
-
     auto rt = kmm::make_runtime();
     bool status = false;
     int n = 1'000'000'000;
     unsigned long int ops = n * max_iterations;
     unsigned long int mem = (n * 3.0 * sizeof(real_type)) * max_iterations;
-    dim3 block_size = 256;
     std::chrono::duration<double> init_time, vector_add_time;
 
     // Warm-up run
