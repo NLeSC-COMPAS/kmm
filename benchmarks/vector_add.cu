@@ -45,13 +45,14 @@ int main() {
 
     auto rt = kmm::make_runtime();
     int n = 2'000'000'000;
-    unsigned long long int ops = n * max_iterations;
-    unsigned long long int mem = (n * 3 * sizeof(real_type)) * max_iterations;
+    unsigned long int ops = n * max_iterations;
+    unsigned long int mem = (n * 3 * sizeof(real_type)) * max_iterations;
     int chunk_size = n / 10;
     dim3 block_size = 256;
-    std::chrono::duration<double> elapsed_time;
+    std::chrono::duration<double> init_time, vector_add_time;
 
     for ( unsigned int iteration = 0; iteration < max_iterations; ++iteration ) {
+        auto timing_start_init = std::chrono::steady_clock::now();
         auto A = kmm::Array<real_type> {n};
         auto B = kmm::Array<real_type> {n};
         auto C = kmm::Array<real_type> {n};
@@ -71,6 +72,8 @@ int main() {
             write(B(_x))
         );
         rt.synchronize();
+        auto timing_stop_init = std::chrono::steady_clock::now();
+        init_time += timing_stop_inint - timing_start_ininit;
         // Benchmark
 
         auto timing_start = std::chrono::steady_clock::now();
@@ -84,7 +87,7 @@ int main() {
         );
         rt.synchronize();
         auto timing_stop = std::chrono::steady_clock::now();
-        elapsed_time += timing_stop - timing_start;
+        vector_add_time += timing_stop - timing_start;
 
         // Correctness check
         std::vector<real_type> result(n);
@@ -97,10 +100,13 @@ int main() {
         }
     }
 
-    std::cout << "Total time: " << elapsed_time.count() << " seconds" << std::endl;
-    std::cout << "Average iteration time: " << elapsed_time.count() / max_iterations << " seconds" << std::endl;
-    std::cout << "Throughput: " << (ops / elapsed_time.count()) / 1'000'000'000 << " GFLOP/s" << std::endl;
-    std::cout << "Memory bandwidth: " << (mem / elapsed_time.count()) / 1'000'000'000 << " GB/s" << std::endl;
+    std::cout << "Total time (init): " << init_time.count() << " seconds" << std::endl;
+    std::cout << "Average iteration time (init): " << init_time.count() / max_iterations << " seconds" << std::endl;
+
+    std::cout << "Total time: " << vector_add_time.count() << " seconds" << std::endl;
+    std::cout << "Average iteration time: " << vector_add_time.count() / max_iterations << " seconds" << std::endl;
+    std::cout << "Throughput: " << (ops / vector_add_time.count()) / 1'000'000'000 << " GFLOP/s" << std::endl;
+    std::cout << "Memory bandwidth: " << (mem / vector_add_time.count()) / 1'000'000'000 << " GB/s" << std::endl;
 
     return 0;
 }
