@@ -12,8 +12,8 @@ template<size_t N>
 Bounds<N> index2region(
     size_t index,
     std::array<size_t, N> num_chunks,
-    Size<N> chunk_size,
-    Size<N> array_size
+    Dim<N> chunk_size,
+    Dim<N> array_size
 ) {
     Bounds<N> result;
 
@@ -30,7 +30,7 @@ Bounds<N> index2region(
 }
 
 template<size_t N>
-DataDistribution<N>::DataDistribution(Size<N> array_size, std::vector<DataChunk<N>> chunks) :
+DataDistribution<N>::DataDistribution(Dim<N> array_size, std::vector<DataChunk<N>> chunks) :
     m_chunks(std::move(chunks)),
     m_array_size(array_size) {
     for (const auto& chunk : m_chunks) {
@@ -54,7 +54,7 @@ DataDistribution<N>::DataDistribution(Size<N> array_size, std::vector<DataChunk<
         const auto chunk = m_chunks[index];
         size_t linear_index = 0;
         Index<N> expected_offset;
-        Size<N> expected_size;
+        Dim<N> expected_size;
 
         for (size_t i = 0; compare_less(i, N); i++) {
             auto k = div_floor(chunk.offset[i], m_chunk_size[i]);
@@ -174,7 +174,7 @@ void ArrayHandle<N>::synchronize() const {
 template<size_t N>
 class CopyOutTask: public Task {
   public:
-    CopyOutTask(void* data, size_t element_size, Size<N> array_size, Bounds<N> region) :
+    CopyOutTask(void* data, size_t element_size, Dim<N> array_size, Bounds<N> region) :
         m_dst_addr(data) {
         size_t src_stride = 1;
         size_t dst_stride = 1;

@@ -34,67 +34,67 @@ TEST_CASE("geometry index basics") {
 }
 
 TEST_CASE("geometry dim basics") {
-    Size<3> x = {};
-    ASSERT_EQ(x, Size(1, 1, 1));
+    Dim<3> x = {};
+    ASSERT_EQ(x, Dim(1, 1, 1));
     ASSERT_EQ(x.is_empty(), false);
     ASSERT_EQ(x.volume(), 1);
 
-    Size<3> y = {1, 2, 3};
-    ASSERT_EQ(y, Size(1, 2, 3));
+    Dim<3> y = {1, 2, 3};
+    ASSERT_EQ(y, Dim(1, 2, 3));
     ASSERT_EQ(y.is_empty(), false);
     ASSERT_EQ(y.volume(), 6);
 
-    Size<3> z = {-5, 3, 1};
-    ASSERT_EQ(z, Size(-5, 3, 1));
+    Dim<3> z = {-5, 3, 1};
+    ASSERT_EQ(z, Dim(-5, 3, 1));
     ASSERT_EQ(z.is_empty(), true);
     ASSERT_EQ(z.volume(), 0);
 
-    auto a = Size<3, float>::from(Size<3, int> {4, 5, 6});
-    ASSERT_EQ(a, (Size<3, float>(4.0F, 5.0F, 6.0F)));
+    auto a = Dim<3, float>::from(Dim<3, int> {4, 5, 6});
+    ASSERT_EQ(a, (Dim<3, float>(4.0F, 5.0F, 6.0F)));
     ASSERT_EQ(a.is_empty(), false);
     ASSERT_EQ(a.volume(), 120.0F);
 
-    Size<3> zero = Size<3>::zero();
-    ASSERT_EQ(zero, Size(0, 0, 0));
+    Dim<3> zero = Dim<3>::zero();
+    ASSERT_EQ(zero, Dim(0, 0, 0));
     ASSERT_EQ(zero.is_empty(), true);
     ASSERT_EQ(zero.volume(), 0);
 
-    Size<3> one = Size<3>::one();
-    ASSERT_EQ(one, Size(1, 1, 1));
+    Dim<3> one = Dim<3>::one();
+    ASSERT_EQ(one, Dim(1, 1, 1));
     ASSERT_EQ(one.is_empty(), false);
     ASSERT_EQ(one.volume(), 1);
 
     one[0] = 42;
-    ASSERT_EQ(one, Size(42, 1, 1));
+    ASSERT_EQ(one, Dim(42, 1, 1));
     ASSERT_EQ(one.is_empty(), false);
     ASSERT_EQ(one.volume(), 42);
 }
 
 TEST_CASE("geometry dim intersection") {
-    Size<3> x = {5, 42, 1};
-    Size<3> y = {1, 2, 3};
-    Size<3> z = {1, 1, 1};
-    Size<3> w = {-5, 2, 1};
+    Dim<3> x = {5, 42, 1};
+    Dim<3> y = {1, 2, 3};
+    Dim<3> z = {1, 1, 1};
+    Dim<3> w = {-5, 2, 1};
 
-    ASSERT_EQ(x.intersection(x), Size(5, 42, 1));
-    ASSERT_EQ(x.intersection(y), Size(1, 2, 1));
-    ASSERT_EQ(x.intersection(z), Size(1, 1, 1));
-    ASSERT_EQ(x.intersection(w), Size(0, 2, 1));
+    ASSERT_EQ(x.intersection(x), Dim(5, 42, 1));
+    ASSERT_EQ(x.intersection(y), Dim(1, 2, 1));
+    ASSERT_EQ(x.intersection(z), Dim(1, 1, 1));
+    ASSERT_EQ(x.intersection(w), Dim(0, 2, 1));
 
-    ASSERT_EQ(y.intersection(x), Size(1, 2, 1));
-    ASSERT_EQ(y.intersection(y), Size(1, 2, 3));
-    ASSERT_EQ(y.intersection(z), Size(1, 1, 1));
-    ASSERT_EQ(y.intersection(w), Size(0, 2, 1));
+    ASSERT_EQ(y.intersection(x), Dim(1, 2, 1));
+    ASSERT_EQ(y.intersection(y), Dim(1, 2, 3));
+    ASSERT_EQ(y.intersection(z), Dim(1, 1, 1));
+    ASSERT_EQ(y.intersection(w), Dim(0, 2, 1));
 
-    ASSERT_EQ(z.intersection(x), Size(1, 1, 1));
-    ASSERT_EQ(z.intersection(y), Size(1, 1, 1));
-    ASSERT_EQ(z.intersection(z), Size(1, 1, 1));
-    ASSERT_EQ(z.intersection(w), Size(0, 1, 1));
+    ASSERT_EQ(z.intersection(x), Dim(1, 1, 1));
+    ASSERT_EQ(z.intersection(y), Dim(1, 1, 1));
+    ASSERT_EQ(z.intersection(z), Dim(1, 1, 1));
+    ASSERT_EQ(z.intersection(w), Dim(0, 1, 1));
 
-    ASSERT_EQ(w.intersection(x), Size(0, 2, 1));
-    ASSERT_EQ(w.intersection(y), Size(0, 2, 1));
-    ASSERT_EQ(w.intersection(z), Size(0, 1, 1));
-    ASSERT_EQ(w.intersection(w), Size(0, 2, 1));
+    ASSERT_EQ(w.intersection(x), Dim(0, 2, 1));
+    ASSERT_EQ(w.intersection(y), Dim(0, 2, 1));
+    ASSERT_EQ(w.intersection(z), Dim(0, 1, 1));
+    ASSERT_EQ(w.intersection(w), Dim(0, 2, 1));
 
     ASSERT_EQ(x.overlaps(x), true);
     ASSERT_EQ(x.overlaps(y), true);
@@ -160,7 +160,7 @@ TEST_CASE("geometry dim intersection") {
 TEST_CASE("geometry range basics") {
     auto a = Bounds<3>::from_offset_size({0, 0, 0}, {42, 2, 1});
     ASSERT_EQ(a.offset(), Index(0, 0, 0));
-    ASSERT_EQ(a.sizes(), Size(42, 2, 1));
+    ASSERT_EQ(a.sizes(), Dim(42, 2, 1));
     ASSERT_EQ(a.begin, Index(0, 0, 0));
     ASSERT_EQ(a.end, Index(42, 2, 1));
     ASSERT_EQ(a.size(), 84);
@@ -168,7 +168,7 @@ TEST_CASE("geometry range basics") {
 
     auto b = Bounds<3>::from_offset_size({1, 1, 1}, {3, 2, 1});
     ASSERT_EQ(b.offset(), Index(1, 1, 1));
-    ASSERT_EQ(b.sizes(), Size(3, 2, 1));
+    ASSERT_EQ(b.sizes(), Dim(3, 2, 1));
     ASSERT_EQ(b.begin, Index(1, 1, 1));
     ASSERT_EQ(b.end, Index(4, 3, 2));
     ASSERT_EQ(b.size(), 6);
@@ -176,7 +176,7 @@ TEST_CASE("geometry range basics") {
 
     auto c = Bounds<3>::from_offset_size({1, -5, 1}, {2, 2, 2});
     ASSERT_EQ(c.offset(), Index(1, -5, 1));
-    ASSERT_EQ(c.sizes(), Size(2, 2, 2));
+    ASSERT_EQ(c.sizes(), Dim(2, 2, 2));
     ASSERT_EQ(c.begin, Index(1, -5, 1));
     ASSERT_EQ(c.end, Index(3, -3, 3));
     ASSERT_EQ(c.size(), 8);
@@ -184,7 +184,7 @@ TEST_CASE("geometry range basics") {
 
     auto d = Bounds<3>::from_offset_size({5, 1, 2}, {-5, 3, 1});
     ASSERT_EQ(d.offset(), Index(5, 1, 2));
-    ASSERT_EQ(d.sizes(), Size(0, 3, 1));
+    ASSERT_EQ(d.sizes(), Dim(0, 3, 1));
     ASSERT_EQ(d.begin, Index(5, 1, 2));
     ASSERT_EQ(d.end, Index(0, 4, 3));
     ASSERT_EQ(d.size(), 0);

@@ -18,14 +18,14 @@ using NDIndex = Index<ND_DIMS>;
 /**
  * Type alias for the size of the work space.
  */
-using NDSize = Size<ND_DIMS>;
+using NDSize = Dim<ND_DIMS>;
 
 /**
  * A one-dimensional range from `begin` up to, but not included, `end`.
  */
-template<typename T = default_geometry_type>
+template<typename T = default_index_type>
 struct Range {
-    using value_type = default_geometry_type;
+    using value_type = default_index_type;
 
     value_type begin {};
     value_type end {};
@@ -102,15 +102,15 @@ struct Range {
     }
 };
 
-struct NDRange: fixed_array<Range<default_geometry_type>, ND_DIMS> {
-    using value_type = default_geometry_type;
+struct NDRange: fixed_array<Range<default_index_type>, ND_DIMS> {
+    using value_type = default_index_type;
 
     /**
      * Initializes from range objects
      */
     KMM_HOST_DEVICE
     NDRange(Range<value_type> x, Range<value_type> y = 1, Range<value_type> z = 1) :
-        fixed_array<Range<default_geometry_type>, ND_DIMS> {x, y, z} {}
+        fixed_array<Range<default_index_type>, ND_DIMS> {x, y, z} {}
 
     /**
      * Initializes from sizes along each axis.
@@ -120,35 +120,17 @@ struct NDRange: fixed_array<Range<default_geometry_type>, ND_DIMS> {
         NDRange(Range<value_type>(x), Range<value_type>(y), Range<value_type>(z)) {}
 
     /**
-     * Initialize from a given begin and end index.
-     */
-    template<size_t N = ND_DIMS>
-    KMM_HOST_DEVICE NDRange(Index<N> begin, Index<N> end) {
-        if constexpr (N > 0) {
-            x = {begin[0], end[0]};
-        }
-
-        if constexpr (N > 1) {
-            y = {begin[1], end[1]};
-        }
-
-        if constexpr (N > 2) {
-            z = {begin[2], end[2]};
-        }
-    }
-
-    /**
      * Constructs a range with a given size.
      */
     template<size_t N = ND_DIMS>
-    KMM_HOST_DEVICE NDRange(Size<N> size) : NDRange(size.get(0), size.get(1), size.get(2)) {}
+    KMM_HOST_DEVICE NDRange(Dim<N> size) : NDRange(size.get(0), size.get(1), size.get(2)) {}
 
     /**
      * Constructs a range with a given size.
      */
     template<size_t N = ND_DIMS>
     KMM_HOST_DEVICE NDRange(Index<N> end) {
-        *this = NDRange(Size<N>::from(end));
+        *this = NDRange(Dim<N>::from(end));
     }
 
     /**
@@ -156,14 +138,26 @@ struct NDRange: fixed_array<Range<default_geometry_type>, ND_DIMS> {
      */
     template<size_t N = ND_DIMS>
     KMM_HOST_DEVICE NDRange(Bounds<N> m) {
-        *this = NDRange(m.begin, m.end);
+        *this = from_bounds(m.begin, m.end);
+    }
+
+    /**
+     * Initialize from a given begin and end index.
+     */
+    template<size_t N = ND_DIMS>
+    KMM_HOST_DEVICE static NDRange from_bounds(Index<N> begin, Index<N> end) {
+        return NDRange {
+            N > 0 ? Range {begin[0], end[0]} : 1,
+            N > 1 ? Range {begin[1], end[1]} : 1,
+            N > 2 ? Range {begin[2], end[2]} : 1,
+        };
     }
 
     /**
      * Initialize from a given offset and size.
      */
     template<size_t N = ND_DIMS>
-    KMM_HOST_DEVICE static NDRange from_offset_size(Index<N> offset, Size<N> size) {
+    KMM_HOST_DEVICE static NDRange from_offset_size(Index<N> offset, Dim<N> size) {
         return NDRange(size).shift_by(offset);
     }
 
@@ -247,8 +241,8 @@ struct NDRange: fixed_array<Range<default_geometry_type>, ND_DIMS> {
      * Returns an `Size<N>` of the sizes of each axis.
      */
     template<size_t N = ND_DIMS>
-    KMM_HOST_DEVICE Size<N> sizes() const {
-        auto result = Size<N>::one();
+    KMM_HOST_DEVICE Dim<N> sizes() const {
+        auto result = Dim<N>::one();
 
         for (size_t i = 0; i < N && i < ND_DIMS; i++) {
             result[i] = get(i).size();

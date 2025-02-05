@@ -13,13 +13,13 @@ template<size_t N>
 struct DataChunk {
     MemoryId owner_id;
     Index<N> offset;
-    Size<N> size;
+    Dim<N> size;
 };
 
 template<size_t N>
 class DataDistribution {
   public:
-    DataDistribution(Size<N> array_size, std::vector<DataChunk<N>> chunks);
+    DataDistribution(Dim<N> array_size, std::vector<DataChunk<N>> chunks);
 
     size_t region_to_chunk_index(Bounds<N> region) const;
 
@@ -33,11 +33,11 @@ class DataDistribution {
         return m_chunks;
     }
 
-    Size<N> chunk_size() const {
+    Dim<N> chunk_size() const {
         return m_chunk_size;
     }
 
-    Size<N> array_size() const {
+    Dim<N> array_size() const {
         return m_array_size;
     }
 
@@ -45,26 +45,26 @@ class DataDistribution {
     std::vector<DataChunk<N>> m_chunks;
     std::vector<size_t> m_mapping;
     std::array<size_t, N> m_chunks_count;
-    Size<N> m_array_size = Size<N>::zero();
-    Size<N> m_chunk_size = Size<N>::zero();
+    Dim<N> m_array_size = Dim<N>::zero();
+    Dim<N> m_chunk_size = Dim<N>::zero();
 };
 
 template<size_t N>
 class ArrayBuilder {
   public:
-    ArrayBuilder(Size<N> sizes, DataLayout element_layout) :
+    ArrayBuilder(Dim<N> sizes, DataLayout element_layout) :
         m_sizes(sizes),
         m_element_layout(element_layout) {}
 
     BufferRequirement add_chunk(TaskGraph& graph, MemoryId memory_id, Bounds<N> access_region);
     std::pair<DataDistribution<N>, std::vector<BufferId>> build(TaskGraph& graph);
 
-    Size<N> sizes() const {
+    Dim<N> sizes() const {
         return m_sizes;
     }
 
   private:
-    Size<N> m_sizes;
+    Dim<N> m_sizes;
     DataLayout m_element_layout;
     std::vector<DataChunk<N>> m_chunks;
     std::vector<BufferId> m_buffers;
@@ -73,7 +73,7 @@ class ArrayBuilder {
 template<size_t N>
 class ArrayReductionBuilder {
   public:
-    ArrayReductionBuilder(Size<N> sizes, DataType data_type, Reduction operation) :
+    ArrayReductionBuilder(Dim<N> sizes, DataType data_type, Reduction operation) :
         m_sizes(sizes),
         m_dtype(data_type),
         m_reduction(operation) {}
@@ -89,12 +89,12 @@ class ArrayReductionBuilder {
 
     std::pair<DataDistribution<N>, std::vector<BufferId>> build(TaskGraph& graph);
 
-    Size<N> sizes() const {
+    Dim<N> sizes() const {
         return m_sizes;
     }
 
   private:
-    Size<N> m_sizes;
+    Dim<N> m_sizes;
     DataType m_dtype;
     Reduction m_reduction;
     std::unordered_map<Bounds<N>, std::vector<ReductionInput>> m_partial_inputs;

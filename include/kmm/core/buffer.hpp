@@ -10,7 +10,7 @@
 namespace kmm {
 
 /**
- * Represents the layout of a buffer, including its size and alignment.
+ * Represents the layout of a buffer. For now, this is just its size and alignment.
  */
 struct DataLayout {
     DataLayout repeat(size_t n) {

@@ -6,7 +6,7 @@
 #include "array.hpp"
 #include "launcher.hpp"
 
-#include "kmm/core/domain.hpp"
+#include "kmm/core/range.hpp"
 #include "kmm/core/system_info.hpp"
 #include "kmm/utils/checked_math.hpp"
 #include "kmm/utils/panic.hpp"
@@ -103,7 +103,7 @@ class Runtime {
      * @return The allocated Array object.
      */
     template<size_t N = 1, typename T>
-    Array<T, N> allocate(const T* data, Size<N> shape, MemoryId memory_id) const {
+    Array<T, N> allocate(const T* data, Dim<N> shape, MemoryId memory_id) const {
         auto layout = DataLayout::for_type<T>().repeat(checked_cast<size_t>(shape.volume()));
         auto buffer_id = allocate_bytes(data, layout, memory_id);
 
@@ -130,7 +130,7 @@ class Runtime {
      * @return The allocated Array object.
      */
     template<size_t N = 1, typename T>
-    Array<T, N> allocate(const T* data, Size<N> shape) const {
+    Array<T, N> allocate(const T* data, Dim<N> shape) const {
         return allocate(data, shape, memory_affinity_for_address(data));
     }
 
@@ -147,7 +147,7 @@ class Runtime {
      */
     template<typename T, typename... Is>
     Array<T, sizeof...(Is)> allocate(const T* data, const Is&... num_elements) const {
-        return allocate(data, Size<sizeof...(Is)> {checked_cast<int64_t>(num_elements)...});
+        return allocate(data, Dim<sizeof...(Is)> {checked_cast<int64_t>(num_elements)...});
     }
 
     /**
