@@ -1,8 +1,7 @@
 #include <iostream>
 #include <chrono>
 
-#include "kmm/api/mapper.hpp"
-#include "kmm/api/runtime.hpp"
+#include "kmm/kmm.hpp"
 
 using real_type = float;
 const unsigned int max_iterations = 10;
@@ -40,73 +39,95 @@ __global__ void vector_add(
     output[i] = left[i] + right[i];
 }
 
+bool inner_loop(kmm::Runtime &rt, int n, int chunk_size, std::chrono::duration<double> &init_time, std::chrono::duration<double> &run_time) {
+    auto timing_start_init = std::chrono::steady_clock::now();
+    auto A = kmm::Array<real_type> {n};
+    auto B = kmm::Array<real_type> {n};
+    auto C = kmm::Array<real_type> {n};
+
+    // Initialize input arrays
+    rt.parallel_submit(
+        kmm::Size {n},
+        kmm::ChunkPartitioner {chunk_size},
+        kmm::GPUKernel(initialize_range, block_size),
+        write(A(_x))
+    );
+    rt.parallel_submit(
+        {n},
+        {chunk_size},
+        kmm::GPUKernel(fill_range, block_size),
+        static_cast<real_type>(1.0),
+        write(B(_x))
+    );
+    rt.synchronize();
+    auto timing_stop_init = std::chrono::steady_clock::now();
+    init_time += timing_stop_init - timing_start_init;
+
+    // Benchmark
+    auto timing_start = std::chrono::steady_clock::now();
+    rt.parallel_submit(
+        {n},
+        {chunk_size},
+        kmm::GPUKernel(vector_add, block_size),
+        write(C(_x)),
+        A(_x),
+        B(_x)
+    );
+    rt.synchronize();
+    auto timing_stop = std::chrono::steady_clock::now();
+    run_time += timing_stop - timing_start;
+
+    // Correctness check
+    std::vector<real_type> result(n);
+    C.copy_to(result.data(), n);
+    for (int i = 0; i < n; i++) {
+        if (result[i] != static_cast<real_type>(i) + 1) {
+            std::cerr << "Wrong result at " << i << " : " << result[i] << " != " << static_cast<real_type>(i) + 1 << std::endl;
+            return false;
+        }
+    }
+    return true;
+}
+
 int main() {
     using namespace kmm::placeholders;
 
     auto rt = kmm::make_runtime();
-    int n = 2'000'000'000;
+    bool status = false;
+    int n = 1'000'000'000;
     unsigned long int ops = n * max_iterations;
-    unsigned long int mem = (n * 3 * sizeof(real_type)) * max_iterations;
-    int chunk_size = n / 10;
+    unsigned long int mem = (n * 3.0 * sizeof(real_type)) * max_iterations;
     dim3 block_size = 256;
     std::chrono::duration<double> init_time, vector_add_time;
 
-    for ( unsigned int iteration = 0; iteration < max_iterations; ++iteration ) {
-        auto timing_start_init = std::chrono::steady_clock::now();
-        auto A = kmm::Array<real_type> {n};
-        auto B = kmm::Array<real_type> {n};
-        auto C = kmm::Array<real_type> {n};
+    // Warm-up run
+    status = inner_loop(rt, n, 1, init_time, vector_add_time);
+    if (!status) {
+        std::cerr << "Warm-up run failed." << std::endl;
+        return 1;
+    }
+    init_time = std::chrono::duration<double>();
+    vector_add_time = std::chrono::duration<double>();
 
-        // Initialize input arrays
-        rt.parallel_submit(
-            kmm::Size {n},
-            kmm::ChunkPartitioner {chunk_size},
-            kmm::GPUKernel(initialize_range, block_size),
-            write(A(_x))
-        );
-        rt.parallel_submit(
-            {n},
-            {chunk_size},
-            kmm::GPUKernel(fill_range, block_size),
-            float(1.0),
-            write(B(_x))
-        );
-        rt.synchronize();
-        auto timing_stop_init = std::chrono::steady_clock::now();
-        init_time += timing_stop_init - timing_start_init;
-        // Benchmark
-
-        auto timing_start = std::chrono::steady_clock::now();
-        rt.parallel_submit(
-            {n},
-            {chunk_size},
-            kmm::GPUKernel(vector_add, block_size),
-            write(C(_x)),
-            A(_x),
-            B(_x)
-        );
-        rt.synchronize();
-        auto timing_stop = std::chrono::steady_clock::now();
-        vector_add_time += timing_stop - timing_start;
-
-        // Correctness check
-        std::vector<real_type> result(n);
-        C.copy_to(result.data(), n);
-        for (int i = 0; i < n; i++) {
-            if (result[i] != static_cast<real_type>(i) + 1) {
-                std::cerr << "Wrong result at " << i << " : " << result[i] << " != " << float(i) + 1 << std::endl;
+    for ( int chunk_size = 1; chunk_size < 128; chunk_size *= 2 ) {
+        for ( unsigned int iteration = 0; iteration < max_iterations; ++iteration ) {
+            status = inner_loop(rt, n, 1, init_time, vector_add_time);
+            if (!status) {
+                std::cerr << "Warm-up run failed." << std::endl;
                 return 1;
             }
         }
+        std::cout << "Performance for chunk size " << chunk_size << std::endl;
+
+        std::cout << "Total time (init): " << init_time.count() << " seconds" << std::endl;
+        std::cout << "Average iteration time (init): " << init_time.count() / max_iterations << " seconds" << std::endl;
+
+        std::cout << "Total time: " << vector_add_time.count() << " seconds" << std::endl;
+        std::cout << "Average iteration time: " << vector_add_time.count() / max_iterations << " seconds" << std::endl;
+        std::cout << "Throughput: " << (ops / vector_add_time.count()) / 1'000'000'000.0 << " GFLOP/s" << std::endl;
+        std::cout << "Memory bandwidth: " << (mem / vector_add_time.count()) / 1'000'000'000.0 << " GB/s" << std::endl;
+        std::cout << std::endl;
     }
-
-    std::cout << "Total time (init): " << init_time.count() << " seconds" << std::endl;
-    std::cout << "Average iteration time (init): " << init_time.count() / max_iterations << " seconds" << std::endl;
-
-    std::cout << "Total time: " << vector_add_time.count() << " seconds" << std::endl;
-    std::cout << "Average iteration time: " << vector_add_time.count() / max_iterations << " seconds" << std::endl;
-    std::cout << "Throughput: " << (ops / vector_add_time.count()) / 1'000'000'000 << " GFLOP/s" << std::endl;
-    std::cout << "Memory bandwidth: " << (mem / vector_add_time.count()) / 1'000'000'000 << " GB/s" << std::endl;
 
     return 0;
 }
