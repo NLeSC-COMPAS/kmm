@@ -105,14 +105,14 @@ int main() {
         std::cerr << "Warm-up run failed." << std::endl;
         return 1;
     }
-    init_time = std::chrono::duration<double>();
-    vector_add_time = std::chrono::duration<double>();
 
     for ( int chunk_size = 1; chunk_size < 128; chunk_size *= 2 ) {
+        init_time = std::chrono::duration<double>();
+        vector_add_time = std::chrono::duration<double>();
         for ( unsigned int iteration = 0; iteration < max_iterations; ++iteration ) {
             status = inner_loop(rt, n, 1, init_time, vector_add_time);
             if (!status) {
-                std::cerr << "Warm-up run failed." << std::endl;
+                std::cerr << "Run for chunk size " << chunk_size << " failed." << std::endl;
                 return 1;
             }
         }
