@@ -73,7 +73,7 @@ int main() {
         );
         rt.synchronize();
         auto timing_stop_init = std::chrono::steady_clock::now();
-        init_time += timing_stop_inint - timing_start_ininit;
+        init_time += timing_stop_init - timing_start_init;
         // Benchmark
 
         auto timing_start = std::chrono::steady_clock::now();
