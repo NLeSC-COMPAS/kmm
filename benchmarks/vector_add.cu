@@ -104,6 +104,7 @@ int main(int argc, char *argv[]) {
 
     if ( argc != 3 ) {
         std::cerr << "Usage: " << argv[0] << " <threads> <num_chunks> <size>" << std::endl;
+        return 1;
     }
     else {
         num_threads = std::stoi(argv[1]);
@@ -127,7 +128,7 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
-    std::cout << "Performance with " << num_chunks << " chunks" << std::endl;
+    std::cout << "Performance with " << num_threads << " threads, " << num_chunks << " chunks, and n = " << n << std::endl;
 
     std::cout << "Total time (init): " << init_time.count() << " seconds" << std::endl;
     std::cout << "Average iteration time (init): " << init_time.count() / max_iterations << " seconds" << std::endl;
