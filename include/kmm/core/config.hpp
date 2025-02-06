@@ -36,6 +36,10 @@ struct WorkerConfig {
     /// If nonzero, use an arena allocator on each device. This will allocate large blocks of the
     /// specified size, from which smaller allocations are subsequently sub-allocated.
     size_t device_memory_block_size = 0;
+
+    /// Enable this run the system in debug mode. This will be significantly slower, but can be
+    /// used to track down synchronization bugs.
+    bool debug_mode = false;
 };
 
 WorkerConfig default_config_from_environment();

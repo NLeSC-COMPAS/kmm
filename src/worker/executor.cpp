@@ -453,11 +453,13 @@ class PrefetchJob: public Executor::Job {
 Executor::Executor(
     std::vector<GPUContextHandle> contexts,
     std::shared_ptr<DeviceStreamManager> stream_manager,
-    std::shared_ptr<MemorySystem> memory_system
+    std::shared_ptr<MemorySystem> memory_system,
+    bool debug_mode
 ) :
     m_buffer_registry(std::make_unique<BufferRegistry>()),
     m_memory_manager(std::make_unique<MemoryManager>(memory_system)),
-    m_stream_manager(stream_manager) {
+    m_stream_manager(stream_manager),
+    m_debug_mode(debug_mode) {
     for (size_t i = 0; i < contexts.size(); i++) {
         m_devices.emplace_back(
             std::make_unique<DeviceState>(DeviceId(i), contexts[i], *stream_manager)
@@ -472,15 +474,20 @@ bool Executor::is_idle() const {
 }
 
 void Executor::make_progress(Scheduler& scheduler) {
+    bool should_poll = true;
     Job* prev = nullptr;
     std::unique_ptr<Job>* current_ptr = &m_jobs_head;
 
     while (auto* current = current_ptr->get()) {
-        if (current->poll(*this, scheduler) == Poll::Ready) {
+        if (should_poll && current->poll(*this, scheduler) == Poll::Ready) {
             *current_ptr = std::move(current->next);
         } else {
             prev = current;
             current_ptr = &current->next;
+        }
+
+        if (m_debug_mode) {
+            should_poll = false;
         }
     }
 

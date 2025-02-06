@@ -127,11 +127,12 @@ SystemInfo make_system_info(const std::vector<GPUContextHandle>& contexts) {
 Worker::Worker(
     std::vector<GPUContextHandle> contexts,
     std::shared_ptr<DeviceStreamManager> stream_manager,
-    std::shared_ptr<MemorySystem> memory_system
+    std::shared_ptr<MemorySystem> memory_system,
+    const WorkerConfig& config
 ) :
     m_info(make_system_info(contexts)),
     m_scheduler(contexts.size()),
-    m_executor(contexts, stream_manager, memory_system),
+    m_executor(contexts, stream_manager, memory_system, config.debug_mode),
     m_stream_manager(stream_manager),
     m_memory_system(memory_system) {}
 
@@ -172,7 +173,6 @@ std::shared_ptr<Worker> make_worker(const WorkerConfig& config) {
 
     auto stream_manager = std::make_shared<DeviceStreamManager>();
     auto contexts = std::vector<GPUContextHandle>();
-
     auto devices = get_gpu_devices();
 
     if (devices.empty()) {
@@ -216,6 +216,6 @@ std::shared_ptr<Worker> make_worker(const WorkerConfig& config) {
         std::move(device_mems)
     );
 
-    return std::make_shared<Worker>(contexts, stream_manager, memory_system);
+    return std::make_shared<Worker>(contexts, stream_manager, memory_system, config);
 }
 }  // namespace kmm

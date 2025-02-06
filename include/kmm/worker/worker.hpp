@@ -20,7 +20,8 @@ class Worker: public std::enable_shared_from_this<Worker> {
     Worker(
         std::vector<GPUContextHandle> contexts,
         std::shared_ptr<DeviceStreamManager> stream_manager,
-        std::shared_ptr<MemorySystem> memory_system
+        std::shared_ptr<MemorySystem> memory_system,
+        const WorkerConfig& config
     );
     ~Worker();
 
