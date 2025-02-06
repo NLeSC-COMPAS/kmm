@@ -40,7 +40,7 @@ __global__ void vector_add(
     output[i] = left[i] + right[i];
 }
 
-bool inner_loop(kmm::Runtime &rt, int threads, int n, int chunk_size, std::chrono::duration<double> &init_time, std::chrono::duration<double> &run_time) {
+bool inner_loop(kmm::Runtime &rt, unsigned int threads, unsigned int n, unsigned int chunk_size, std::chrono::duration<double> &init_time, std::chrono::duration<double> &run_time) {
     using namespace kmm::placeholders;
     dim3 block_size = threads;
     auto timing_start_init = std::chrono::steady_clock::now();
@@ -83,9 +83,9 @@ bool inner_loop(kmm::Runtime &rt, int threads, int n, int chunk_size, std::chron
     // Correctness check
     std::vector<real_type> result(n);
     C.copy_to(result.data(), n);
-    for (int i = 0; i < n; i++) {
+    for ( unsigned int i = 0; i < n; i++ ) {
         if (result[i] != static_cast<real_type>(i) + 1) {
-            std::cerr << "Wrong result at " << i << " : " << result[i] << " != " << static_cast<real_type>(i) + 1 << std::endl;
+            std::cerr << "Wrong result at " << i << " : " << result[i] << " != " << static_cast<real_type>(i) + 1.0 << std::endl;
             return false;
         }
     }
@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
     init_time = std::chrono::duration<double>();
     vector_add_time = std::chrono::duration<double>();
     for ( unsigned int iteration = 0; iteration < max_iterations; ++iteration ) {
-        status = inner_loop(rt, n, n / num_chunks, init_time, vector_add_time);
+        status = inner_loop(rt, num_threads, n, n / num_chunks, init_time, vector_add_time);
         if ( !status ) {
             std::cerr << "Run with " << num_chunks << " chunks failed." << std::endl;
             return 1;
