@@ -27,7 +27,7 @@ void matrix_multiply(
     const float* B_ptr = B.data_at({region.x.begin, region.z.begin});
     float* C_ptr = C.data_at({region.y.begin, region.z.begin});
 
-    #if __CUDA_ARCH__
+#if __CUDA_ARCH__
     KMM_GPU_CHECK(cublasGemmEx(
         device.blas(),
         CUBLAS_OP_T,
@@ -49,7 +49,7 @@ void matrix_multiply(
         CUDA_R_32F,
         CUBLAS_GEMM_DEFAULT
     ));
-    #elif __HIP_DEVICE_COMPILE__
+#elif __HIP_DEVICE_COMPILE__
     KMM_GPU_CHECK(rocblas_gemm_ex(
         device.blas(),
         rocblas_operation_transpose,
@@ -76,7 +76,7 @@ void matrix_multiply(
         0,
         0
     ));
-    #endif
+#endif
 }
 
 int main() {
