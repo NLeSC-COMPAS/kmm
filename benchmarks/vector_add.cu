@@ -95,12 +95,12 @@ int main() {
     auto rt = kmm::make_runtime();
     bool status = false;
     int n = 1'000'000'000;
-    unsigned long int ops = n * max_iterations;
-    unsigned long int mem = (n * 3 * sizeof(real_type)) * max_iterations;
+    double ops = n * max_iterations;
+    double mem = (n * 3.0 * sizeof(real_type)) * max_iterations;
     std::chrono::duration<double> init_time, vector_add_time;
 
     // Warm-up run
-    status = inner_loop(rt, n, n / 16, init_time, vector_add_time);
+    status = inner_loop(rt, n, n, init_time, vector_add_time);
     if ( !status ) {
         std::cerr << "Warm-up run failed." << std::endl;
         return 1;
