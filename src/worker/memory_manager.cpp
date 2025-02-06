@@ -216,6 +216,7 @@ struct MemoryManager::Device {
 
   public:
     DeviceId device_id;
+    bool printed_offload_warning = false;
 
     Buffer* lru_oldest = nullptr;
     Buffer* lru_newest = nullptr;
@@ -589,7 +590,8 @@ void MemoryManager::deallocate_host(Buffer& buffer) {
 }
 
 bool MemoryManager::try_free_device_memory(DeviceId device_id) {
-    auto* victim = device_at(device_id).lru_oldest;
+    auto& device = device_at(device_id);
+    auto* victim = device.lru_oldest;
 
     if (victim == nullptr) {
         return false;
@@ -605,6 +607,15 @@ bool MemoryManager::try_free_device_memory(DeviceId device_id) {
         }
 
         if (!valid_anywhere) {
+            if (!device.printed_offload_warning) {
+                device.printed_offload_warning = true;
+                spdlog::warn(
+                    "GPU {} is out of memory. The system will now offload data from GPU memory to "
+                    "host memory as a fallback, which may significantly reduce performance.",
+                    device_id
+                );
+            }
+
             if (!victim->host_entry.is_allocated) {
                 allocate_host(*victim);
             }

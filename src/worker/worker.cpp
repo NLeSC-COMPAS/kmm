@@ -135,50 +135,55 @@ Worker::Worker(
     m_stream_manager(stream_manager),
     m_memory_system(memory_system) {}
 
+std::unique_ptr<AsyncAllocator> create_device_allocator(
+    const WorkerConfig& config,
+    GPUContextHandle context,
+    std::shared_ptr<DeviceStreamManager> stream_manager
+) {
+    switch (config.device_memory_kind) {
+        case DeviceMemoryKind::NoPool:
+            return std::make_unique<DeviceMemoryAllocator>(
+                context,
+                stream_manager,
+                config.device_memory_limit
+            );
+
+        case DeviceMemoryKind::DefaultPool:
+            return std::make_unique<DevicePoolAllocator>(
+                context,
+                stream_manager,
+                DevicePoolKind::Default,
+                config.device_memory_limit
+            );
+
+        case DeviceMemoryKind::PrivatePool:
+            return std::make_unique<DevicePoolAllocator>(
+                context,
+                stream_manager,
+                DevicePoolKind::Create,
+                config.device_memory_limit
+            );
+    }
+}
+
 std::shared_ptr<Worker> make_worker(const WorkerConfig& config) {
     std::unique_ptr<AsyncAllocator> host_mem;
     std::vector<std::unique_ptr<AsyncAllocator>> device_mems;
 
     auto stream_manager = std::make_shared<DeviceStreamManager>();
     auto contexts = std::vector<GPUContextHandle>();
+
     auto devices = get_gpu_devices();
 
-    if (!devices.empty()) {
-        for (size_t i = 0; i < devices.size(); i++) {
-            std::unique_ptr<AsyncAllocator> device_mem;
-
-            auto context = GPUContextHandle::retain_primary_context_for_device(devices[i]);
+    if (devices.empty()) {
+        host_mem = std::make_unique<SystemAllocator>(stream_manager, config.host_memory_limit);
+    } else if (devices.size() > MAX_DEVICES) {
+        throw std::runtime_error(fmt::format("cannot support more than {} GPU(s)", MAX_DEVICES));
+    } else {
+        for (const auto& device : devices) {
+            auto context = GPUContextHandle::retain_primary_context_for_device(device);
             contexts.push_back(context);
-
-            switch (config.device_memory_kind) {
-                case DeviceMemoryKind::NoPool:
-                    device_mem = std::make_unique<DeviceMemoryAllocator>(
-                        context,
-                        stream_manager,
-                        config.device_memory_limit
-                    );
-                    break;
-
-                case DeviceMemoryKind::DefaultPool:
-                    device_mem = std::make_unique<DevicePoolAllocator>(
-                        context,
-                        stream_manager,
-                        DevicePoolKind::Default,
-                        config.device_memory_limit
-                    );
-                    break;
-
-                case DeviceMemoryKind::PrivatePool:
-                    device_mem = std::make_unique<DevicePoolAllocator>(
-                        context,
-                        stream_manager,
-                        DevicePoolKind::Create,
-                        config.device_memory_limit
-                    );
-                    break;
-            }
-
-            device_mems.push_back(std::move(device_mem));
+            device_mems.push_back(create_device_allocator(config, context, stream_manager));
         }
 
         host_mem = std::make_unique<PinnedMemoryAllocator>(
@@ -186,8 +191,6 @@ std::shared_ptr<Worker> make_worker(const WorkerConfig& config) {
             stream_manager,
             config.host_memory_limit
         );
-    } else {
-        host_mem = std::make_unique<SystemAllocator>(stream_manager, config.host_memory_limit);
     }
 
     if (config.host_memory_block_size > 0) {
