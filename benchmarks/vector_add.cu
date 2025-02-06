@@ -98,11 +98,11 @@ int main(int argc, char *argv[]) {
     int n = 0;
     int num_threads = 0;
     int num_chunks = 0;
-    double ops = n * max_iterations;
-    double mem = (n * 3.0 * sizeof(real_type)) * max_iterations;
+    double ops = max_iterations;
+    double mem = 3.0 * sizeof(real_type) * max_iterations;
     std::chrono::duration<double> init_time, vector_add_time;
 
-    if ( argc != 3 ) {
+    if ( argc != 4 ) {
         std::cerr << "Usage: " << argv[0] << " <threads> <num_chunks> <size>" << std::endl;
         return 1;
     }
@@ -111,6 +111,8 @@ int main(int argc, char *argv[]) {
         num_chunks = std::stoi(argv[2]);
         n = std::stoi(argv[3]);
     }
+    ops *= n;
+    mem *= n;
 
     // Warm-up run
     status = inner_loop(rt, num_threads, n, n, init_time, vector_add_time);
