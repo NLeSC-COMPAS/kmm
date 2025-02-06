@@ -6,9 +6,9 @@
 #include "kmm/utils/error_ptr.hpp"
 #include "kmm/utils/poll.hpp"
 #include "kmm/worker/buffer_registry.hpp"
-#include "kmm/worker/device_stream_manager.hpp"
 #include "kmm/worker/memory_manager.hpp"
 #include "kmm/worker/scheduler.hpp"
+#include "kmm/worker/stream_manager.hpp"
 
 namespace kmm {
 

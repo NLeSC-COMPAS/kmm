@@ -4,11 +4,11 @@
 
 #include "spdlog/spdlog.h"
 
-#include "kmm/worker/device_stream_manager.hpp"
+#include "kmm/worker/stream_manager.hpp"
 
 namespace kmm {
 
-using Callback = std::pair<uint64_t, NotifyHandle>;
+using Callback = std::pair<DeviceEvent::index_type, NotifyHandle>;
 
 struct CompareCallback {
     bool operator()(const Callback& a, const Callback& b) const {
@@ -30,7 +30,7 @@ struct DeviceStreamManager::StreamState {
     GPUContextHandle context;
     GPUstream_t gpu_stream;
     std::deque<GPUevent_t> pending_events;
-    uint64_t first_pending_index = 1;
+    DeviceEvent::index_type first_pending_index = 1;
     std::priority_queue<Callback, std::vector<Callback>, CompareCallback> callbacks_heap;
 };
 
@@ -76,7 +76,7 @@ DeviceStream DeviceStreamManager::create_stream(GPUContextHandle context, bool h
     KMM_GPU_CHECK(gpuStreamCreateWithPriority(&gpu_stream, GPU_STREAM_NON_BLOCKING, priority));
     m_streams.emplace_back(pool_index, context, gpu_stream);
 
-    return DeviceStream(checked_cast<uint8_t>(index));
+    return checked_cast<DeviceStream::index_type>(index);
 }
 
 DeviceStreamManager::~DeviceStreamManager() {
@@ -184,7 +184,7 @@ DeviceEvent DeviceStreamManager::record_event(DeviceStream stream_id) {
     KMM_ASSERT(stream_id < m_streams.size());
     auto& stream = m_streams[stream_id];
 
-    uint64_t event_index = stream.first_pending_index + stream.pending_events.size();
+    auto event_index = stream.first_pending_index + stream.pending_events.size();
     auto event = DeviceEvent {stream_id, event_index};
 
     GPUevent_t gpu_event = m_event_pools[stream.pool_index].pop();
@@ -270,47 +270,55 @@ bool DeviceStreamManager::make_progress() {
     bool update_happened = false;
 
     for (size_t i = 0; i < m_streams.size(); i++) {
-        auto& stream = m_streams[i];
-
-        if (!stream.pending_events.empty()) {
-            GPUContextGuard guard {stream.context};
-
-            do {
-                GPUevent_t gpu_event = stream.pending_events[0];
-                GPUresult result = gpuEventQuery(gpu_event);
-
-                if (result == GPU_ERROR_NOT_READY) {
-                    break;
-                }
-
-                if (result != GPU_SUCCESS) {
-                    throw GPUDriverException("`gpuEventQuery` failed", result);
-                }
-
-                spdlog::trace(
-                    "GPU event {} completed",
-                    DeviceEvent(static_cast<uint8_t>(i), stream.first_pending_index)
-                );
-
-                stream.first_pending_index += 1;
-                stream.pending_events.pop_front();
-                m_event_pools[stream.pool_index].push(gpu_event);
-                update_happened = true;
-            } while (!stream.pending_events.empty());
+        if (make_progress_for_stream(static_cast<DeviceStream::index_type>(i))) {
+            update_happened = true;
         }
+    }
 
-        while (!stream.callbacks_heap.empty()) {
-            const auto& [index, handle] = stream.callbacks_heap.top();
+    return update_happened;
+}
 
-            if (index >= stream.first_pending_index) {
+bool DeviceStreamManager::make_progress_for_stream(DeviceStream stream_index) {
+    auto update_happened = false;
+    auto& stream = m_streams[stream_index];
+
+    if (!stream.pending_events.empty()) {
+        GPUContextGuard guard {stream.context};
+
+        do {
+            GPUevent_t gpu_event = stream.pending_events[0];
+            GPUresult result = gpuEventQuery(gpu_event);
+
+            if (result == GPU_ERROR_NOT_READY) {
                 break;
             }
 
-            handle.notify();
-            update_happened = true;
+            if (result != GPU_SUCCESS) {
+                throw GPUDriverException("`gpuEventQuery` failed", result);
+            }
 
-            stream.callbacks_heap.pop();
+            spdlog::trace(
+                "GPU event {} completed",
+                DeviceEvent(stream_index, stream.first_pending_index)
+            );
+
+            stream.first_pending_index += 1;
+            stream.pending_events.pop_front();
+            m_event_pools[stream.pool_index].push(gpu_event);
+            update_happened = true;
+        } while (!stream.pending_events.empty());
+    }
+
+    while (!stream.callbacks_heap.empty()) {
+        const auto& [event_index, handle] = stream.callbacks_heap.top();
+
+        if (event_index >= stream.first_pending_index) {
+            break;
         }
+
+        handle.notify();
+        stream.callbacks_heap.pop();
+        update_happened = true;
     }
 
     return update_happened;
@@ -399,9 +407,8 @@ void DeviceEventSet::insert(const DeviceEventSet& that) noexcept {
 }
 
 void DeviceEventSet::insert(DeviceEventSet&& that) noexcept {
-    if (m_events.is_empty()) {
-        m_events = std::move(that.m_events);
-        return;
+    if (that.m_events.size() > this->m_events.size()) {
+        std::swap(this->m_events, that.m_events);
     }
 
     insert(that);

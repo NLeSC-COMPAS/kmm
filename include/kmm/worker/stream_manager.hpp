@@ -23,6 +23,7 @@ class DeviceStreamManager {
     ~DeviceStreamManager();
 
     bool make_progress();
+    bool make_progress_for_stream(DeviceStream stream_index);
 
     DeviceStream create_stream(GPUContextHandle context, bool high_priority = false);
 
@@ -74,29 +75,34 @@ class DeviceStreamManager {
 
 class DeviceStream {
   public:
-    DeviceStream(uint8_t i = 0) : m_index(i) {}
+    using index_type = uint8_t;
 
-    uint8_t get() const {
+    DeviceStream(index_type i = 0) : m_index(i) {}
+
+    index_type get() const {
         return m_index;
     }
 
-    operator uint8_t() const {
+    operator index_type() const {
         return m_index;
     }
 
     friend std::ostream& operator<<(std::ostream&, const DeviceStream& e);
 
   private:
-    uint8_t m_index;
+    index_type m_index;
 };
 
 class DeviceEvent {
   public:
+    using index_type = uint64_t;
+    static constexpr index_type max_index = index_type(1) << 56;
+
     DeviceEvent() = default;
 
-    DeviceEvent(DeviceStream stream, uint64_t index) noexcept {
-        KMM_ASSERT(index < (1ULL << 56));
-        m_event_and_stream = (uint64_t(stream.get()) << 56) | index;
+    DeviceEvent(DeviceStream stream, index_type index) noexcept {
+        KMM_ASSERT(index < max_index);
+        m_event_and_stream = (index_type(stream.get()) * max_index) + index;
     }
 
     bool is_null() const noexcept {
@@ -104,11 +110,11 @@ class DeviceEvent {
     }
 
     DeviceStream stream() const noexcept {
-        return static_cast<uint8_t>(m_event_and_stream >> 56);
+        return static_cast<DeviceStream::index_type>(m_event_and_stream / max_index);
     }
 
-    uint64_t index() const noexcept {
-        return m_event_and_stream & uint64_t(0x00FFFFFFFFFFFFFF);
+    index_type index() const noexcept {
+        return m_event_and_stream % max_index;
     }
 
     constexpr bool operator==(const DeviceEvent& that) const noexcept {

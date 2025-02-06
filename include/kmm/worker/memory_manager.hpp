@@ -6,8 +6,8 @@
 
 #include "kmm/core/buffer.hpp"
 #include "kmm/utils/poll.hpp"
-#include "kmm/worker/device_stream_manager.hpp"
 #include "kmm/worker/memory_system.hpp"
+#include "kmm/worker/stream_manager.hpp"
 
 namespace kmm {
 
