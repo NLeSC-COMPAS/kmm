@@ -96,27 +96,27 @@ int main() {
     bool status = false;
     int n = 1'000'000'000;
     unsigned long int ops = n * max_iterations;
-    unsigned long int mem = (n * 3.0 * sizeof(real_type)) * max_iterations;
+    unsigned long int mem = (n * 3 * sizeof(real_type)) * max_iterations;
     std::chrono::duration<double> init_time, vector_add_time;
 
     // Warm-up run
-    status = inner_loop(rt, n, 1, init_time, vector_add_time);
-    if (!status) {
+    status = inner_loop(rt, n, n / 16, init_time, vector_add_time);
+    if ( !status ) {
         std::cerr << "Warm-up run failed." << std::endl;
         return 1;
     }
 
-    for ( int chunk_size = 1; chunk_size < 128; chunk_size *= 2 ) {
+    for ( int num_chunks = 1; num_chunks < 128; num_chunks *= 2 ) {
         init_time = std::chrono::duration<double>();
         vector_add_time = std::chrono::duration<double>();
         for ( unsigned int iteration = 0; iteration < max_iterations; ++iteration ) {
-            status = inner_loop(rt, n, 1, init_time, vector_add_time);
-            if (!status) {
-                std::cerr << "Run for chunk size " << chunk_size << " failed." << std::endl;
+            status = inner_loop(rt, n, n / num_chunks, init_time, vector_add_time);
+            if ( !status ) {
+                std::cerr << "Run with " << num_chunks << " chunks failed." << std::endl;
                 return 1;
             }
         }
-        std::cout << "Performance for chunk size " << chunk_size << std::endl;
+        std::cout << "Performance for chunk size " << num_chunks << std::endl;
 
         std::cout << "Total time (init): " << init_time.count() << " seconds" << std::endl;
         std::cout << "Average iteration time (init): " << init_time.count() / max_iterations << " seconds" << std::endl;
