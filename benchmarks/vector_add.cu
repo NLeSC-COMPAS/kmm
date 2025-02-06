@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include <chrono>
 
 #include "kmm/kmm.hpp"
@@ -39,9 +40,9 @@ __global__ void vector_add(
     output[i] = left[i] + right[i];
 }
 
-bool inner_loop(kmm::Runtime &rt, int n, int chunk_size, std::chrono::duration<double> &init_time, std::chrono::duration<double> &run_time) {
+bool inner_loop(kmm::Runtime &rt, int threads, int n, int chunk_size, std::chrono::duration<double> &init_time, std::chrono::duration<double> &run_time) {
     using namespace kmm::placeholders;
-    dim3 block_size = 256;
+    dim3 block_size = threads;
     auto timing_start_init = std::chrono::steady_clock::now();
     auto A = kmm::Array<real_type> {n};
     auto B = kmm::Array<real_type> {n};
@@ -91,42 +92,51 @@ bool inner_loop(kmm::Runtime &rt, int n, int chunk_size, std::chrono::duration<d
     return true;
 }
 
-int main() {
+int main(int argc, char *argv[]) {
     auto rt = kmm::make_runtime();
     bool status = false;
-    int n = 1'000'000'000;
+    int n = 0;
+    int num_threads = 0;
+    int num_chunks = 0;
     double ops = n * max_iterations;
     double mem = (n * 3.0 * sizeof(real_type)) * max_iterations;
     std::chrono::duration<double> init_time, vector_add_time;
 
+    if ( argc != 3 ) {
+        std::cerr << "Usage: " << argv[0] << " <threads> <num_chunks> <size>" << std::endl;
+    }
+    else {
+        num_threads = std::stoi(argv[1]);
+        num_chunks = std::stoi(argv[2]);
+        n = std::stoi(argv[3]);
+    }
+
     // Warm-up run
-    status = inner_loop(rt, n, n, init_time, vector_add_time);
+    status = inner_loop(rt, n_threads, n, n, init_time, vector_add_time);
     if ( !status ) {
         std::cerr << "Warm-up run failed." << std::endl;
         return 1;
     }
 
-    for ( int num_chunks = 1; num_chunks < 128; num_chunks *= 2 ) {
-        init_time = std::chrono::duration<double>();
-        vector_add_time = std::chrono::duration<double>();
-        for ( unsigned int iteration = 0; iteration < max_iterations; ++iteration ) {
-            status = inner_loop(rt, n, n / num_chunks, init_time, vector_add_time);
-            if ( !status ) {
-                std::cerr << "Run with " << num_chunks << " chunks failed." << std::endl;
-                return 1;
-            }
+    init_time = std::chrono::duration<double>();
+    vector_add_time = std::chrono::duration<double>();
+    for ( unsigned int iteration = 0; iteration < max_iterations; ++iteration ) {
+        status = inner_loop(rt, n, n / num_chunks, init_time, vector_add_time);
+        if ( !status ) {
+            std::cerr << "Run with " << num_chunks << " chunks failed." << std::endl;
+            return 1;
         }
-        std::cout << "Performance with " << num_chunks << " chunks" << std::endl;
-
-        std::cout << "Total time (init): " << init_time.count() << " seconds" << std::endl;
-        std::cout << "Average iteration time (init): " << init_time.count() / max_iterations << " seconds" << std::endl;
-
-        std::cout << "Total time: " << vector_add_time.count() << " seconds" << std::endl;
-        std::cout << "Average iteration time: " << vector_add_time.count() / max_iterations << " seconds" << std::endl;
-        std::cout << "Throughput: " << (ops / vector_add_time.count()) / 1'000'000'000.0 << " GFLOP/s" << std::endl;
-        std::cout << "Memory bandwidth: " << (mem / vector_add_time.count()) / 1'000'000'000.0 << " GB/s" << std::endl;
-        std::cout << std::endl;
     }
+    std::cout << "Performance with " << num_chunks << " chunks" << std::endl;
+
+    std::cout << "Total time (init): " << init_time.count() << " seconds" << std::endl;
+    std::cout << "Average iteration time (init): " << init_time.count() / max_iterations << " seconds" << std::endl;
+
+    std::cout << "Total time: " << vector_add_time.count() << " seconds" << std::endl;
+    std::cout << "Average iteration time: " << vector_add_time.count() / max_iterations << " seconds" << std::endl;
+    std::cout << "Throughput: " << (ops / vector_add_time.count()) / 1'000'000'000.0 << " GFLOP/s" << std::endl;
+    std::cout << "Memory bandwidth: " << (mem / vector_add_time.count()) / 1'000'000'000.0 << " GB/s" << std::endl;
+    std::cout << std::endl;
 
     return 0;
 }
