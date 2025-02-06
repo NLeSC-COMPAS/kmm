@@ -116,7 +116,7 @@ int main() {
                 return 1;
             }
         }
-        std::cout << "Performance for chunk size " << num_chunks << std::endl;
+        std::cout << "Performance with " << num_chunks << " chunks" << std::endl;
 
         std::cout << "Total time (init): " << init_time.count() << " seconds" << std::endl;
         std::cout << "Average iteration time (init): " << init_time.count() / max_iterations << " seconds" << std::endl;
