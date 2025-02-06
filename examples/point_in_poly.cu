@@ -1,7 +1,7 @@
 #ifdef KMM_USE_CUDA
-#include <curand_kernel.h>
+    #include <curand_kernel.h>
 #elif KMM_USE_HIP
-#include <rocrand/rocrand_kernel.h>
+    #include <rocrand/rocrand_kernel.h>
 #endif
 
 #include "kmm/api/mapper.hpp"
@@ -43,15 +43,15 @@ __global__ void init_points(kmm::NDRange chunk, kmm::gpu_subview_mut<float2> poi
     int i = blockIdx.x * blockDim.x + threadIdx.x + chunk.begin(0);
 
     if (i < chunk.end(0)) {
-        #if __CUDA_ARCH__
+#if __CUDA_ARCH__
         curandStatePhilox4_32_10_t state;
         curand_init(1234, i, 0, &state);
         points[i] = {curand_normal(&state), curand_normal(&state)};
-        #elif __HIP_DEVICE_COMPILE__
+#elif __HIP_DEVICE_COMPILE__
         rocrand_state_philox4x32_10 state;
         rocrand_init(1234, i, 0, &state);
         points[i] = {rocrand_normal(&state), rocrand_normal(&state)};
-        #endif
+#endif
     }
 }
 

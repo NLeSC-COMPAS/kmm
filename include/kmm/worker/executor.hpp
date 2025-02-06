@@ -6,9 +6,9 @@
 #include "kmm/utils/error_ptr.hpp"
 #include "kmm/utils/poll.hpp"
 #include "kmm/worker/buffer_registry.hpp"
-#include "kmm/worker/device_stream_manager.hpp"
 #include "kmm/worker/memory_manager.hpp"
 #include "kmm/worker/scheduler.hpp"
+#include "kmm/worker/stream_manager.hpp"
 
 namespace kmm {
 
@@ -47,7 +47,8 @@ class Executor {
     Executor(
         std::vector<GPUContextHandle> contexts,
         std::shared_ptr<DeviceStreamManager> stream_manager,
-        std::shared_ptr<MemorySystem> memory_system
+        std::shared_ptr<MemorySystem> memory_system,
+        bool debug_mode
     );
 
     ~Executor();
@@ -88,6 +89,7 @@ class Executor {
     std::unique_ptr<MemoryManager> m_memory_manager;
     std::shared_ptr<DeviceStreamManager> m_stream_manager;
     std::vector<std::unique_ptr<DeviceState>> m_devices;
+    bool m_debug_mode = false;
 };
 
 }  // namespace kmm

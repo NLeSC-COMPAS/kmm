@@ -233,26 +233,30 @@ void execute_gpu_reduction_async(
     GPUdeviceptr dst_buffer,
     ReductionDef reduction
 ) {
-#define KMM_CALL_REDUCTION_FOR_TYPE(T)                             \
-    execute_reduction_for_type<T>(                                 \
-        stream,                                                    \
-        reduction.operation,                                       \
-        (GPUdeviceptr)((unsigned long long)(src_buffer) + reduction.input_offset_elements * sizeof(T)),  \
-        (GPUdeviceptr)((unsigned long long)(dst_buffer) + reduction.output_offset_elements * sizeof(T)), \
-        reduction.num_outputs,                                     \
-        reduction.num_inputs_per_output,                           \
-        reduction.input_stride_elements                            \
+#define KMM_CALL_REDUCTION_FOR_TYPE(T)                                  \
+    execute_reduction_for_type<T>(                                      \
+        stream,                                                         \
+        reduction.operation,                                            \
+        (GPUdeviceptr)((unsigned long long)(src_buffer)                 \
+                       + reduction.input_offset_elements * sizeof(T)),  \
+        (GPUdeviceptr)((unsigned long long)(dst_buffer)                 \
+                       + reduction.output_offset_elements * sizeof(T)), \
+        reduction.num_outputs,                                          \
+        reduction.num_inputs_per_output,                                \
+        reduction.input_stride_elements                                 \
     );
 
-#define KMM_CALL_REDUCTION_FOR_COMPLEX(T)                              \
-    execute_reduction_for_type<T>(                                     \
-        stream,                                                        \
-        reduction.operation,                                           \
-        (GPUdeviceptr)((unsigned long long)(src_buffer) + reduction.input_offset_elements * 2 * sizeof(T)),  \
-        (GPUdeviceptr)((unsigned long long)(dst_buffer) + reduction.output_offset_elements * 2 * sizeof(T)), \
-        2 * reduction.num_outputs,                                     \
-        reduction.num_inputs_per_output,                               \
-        2 * reduction.input_stride_elements                            \
+#define KMM_CALL_REDUCTION_FOR_COMPLEX(T)                                   \
+    execute_reduction_for_type<T>(                                          \
+        stream,                                                             \
+        reduction.operation,                                                \
+        (GPUdeviceptr)((unsigned long long)(src_buffer)                     \
+                       + reduction.input_offset_elements * 2 * sizeof(T)),  \
+        (GPUdeviceptr)((unsigned long long)(dst_buffer)                     \
+                       + reduction.output_offset_elements * 2 * sizeof(T)), \
+        2 * reduction.num_outputs,                                          \
+        reduction.num_inputs_per_output,                                    \
+        2 * reduction.input_stride_elements                                 \
     );
 
     switch (reduction.data_type.get()) {

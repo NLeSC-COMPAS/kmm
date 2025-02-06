@@ -62,6 +62,18 @@ WorkerConfig default_config_from_environment() {
         config.device_memory_block_size = parse_byte_size(s);
     }
 
+    if (auto* s = getenv("KMM_DEBUG")) {
+        auto mode = std::string(s);
+
+        if (mode == "1" || mode == "true" || mode == "TRUE") {
+            config.debug_mode = true;
+        } else if (mode.empty() || mode == "0" || mode == "false" || mode == "FALSE") {
+            config.debug_mode = false;
+        } else {
+            throw std::runtime_error(fmt::format("invalid value given for KMM_DEBUG: {}", mode));
+        }
+    }
+
     return config;
 }
 

@@ -1,6 +1,6 @@
 #include "kmm/allocators/base.hpp"
 #include "kmm/core/macros.hpp"
-#include "kmm/worker/device_stream_manager.hpp"
+#include "kmm/worker/stream_manager.hpp"
 
 namespace kmm {
 
