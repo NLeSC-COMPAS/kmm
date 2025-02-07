@@ -40,7 +40,7 @@ __global__ void vector_add(
     output[i] = left[i] + right[i];
 }
 
-bool inner_loop(kmm::Runtime &rt, unsigned int threads, unsigned long int n, unsigned int chunk_size, std::chrono::duration<double> &init_time, std::chrono::duration<double> &run_time) {
+bool inner_loop(kmm::Runtime &rt, unsigned int threads, unsigned long int n, unsigned long int chunk_size, std::chrono::duration<double> &init_time, std::chrono::duration<double> &run_time) {
     using namespace kmm::placeholders;
     dim3 block_size = threads;
     auto timing_start_init = std::chrono::steady_clock::now();
