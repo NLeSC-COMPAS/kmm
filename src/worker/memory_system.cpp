@@ -44,7 +44,7 @@ MemorySystem::MemorySystem(
 
 {
     KMM_ASSERT(device_contexts.size() == device_mems.size());
-    KMM_ASSERT(device_contexts.size() < MAX_DEVICES);
+    KMM_ASSERT(device_contexts.size() <= MAX_DEVICES);
 
     for (size_t i = 0; i < device_contexts.size(); i++) {
         m_devices[i] = std::make_unique<Device>(

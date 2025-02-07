@@ -56,8 +56,8 @@ struct NodeId {
     uint8_t m_value;
 };
 
-// Maximum of 4 devices per node
-static constexpr size_t MAX_DEVICES = 4;
+// Maximum of 8 devices per node
+static constexpr size_t MAX_DEVICES = 8;
 
 struct DeviceId {
     template<typename T>
