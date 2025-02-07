@@ -40,7 +40,7 @@ __global__ void vector_add(
     output[i] = left[i] + right[i];
 }
 
-bool inner_loop(kmm::Runtime &rt, unsigned int threads, unsigned int n, unsigned int chunk_size, std::chrono::duration<double> &init_time, std::chrono::duration<double> &run_time) {
+bool inner_loop(kmm::Runtime &rt, unsigned int threads, unsigned long int n, unsigned int chunk_size, std::chrono::duration<double> &init_time, std::chrono::duration<double> &run_time) {
     using namespace kmm::placeholders;
     dim3 block_size = threads;
     auto timing_start_init = std::chrono::steady_clock::now();
@@ -95,9 +95,9 @@ bool inner_loop(kmm::Runtime &rt, unsigned int threads, unsigned int n, unsigned
 int main(int argc, char *argv[]) {
     auto rt = kmm::make_runtime();
     bool status = false;
-    int n = 0;
-    int num_threads = 0;
-    int num_chunks = 0;
+    unsigned long int n = 0;
+    unsigned int num_threads = 0;
+    unsigned int num_chunks = 0;
     double ops = max_iterations;
     double mem = 3.0 * sizeof(real_type) * max_iterations;
     std::chrono::duration<double> init_time, vector_add_time;
@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
     else {
         num_threads = std::stoi(argv[1]);
         num_chunks = std::stoi(argv[2]);
-        n = std::stoi(argv[3]);
+        n = std::stol(argv[3]);
     }
     ops *= n;
     mem *= n;
