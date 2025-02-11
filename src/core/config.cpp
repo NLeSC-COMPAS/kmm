@@ -5,11 +5,22 @@
 #include <string>
 
 #include "fmt/format.h"
+#include "spdlog/spdlog.h"
 
 #include "kmm/core/config.hpp"
 #include "kmm/utils/checked_math.hpp"
 
 namespace kmm {
+
+static bool is_one_of(const std::string& input, std::initializer_list<const char*> options) {
+    for (const char* option : options) {
+        if (input == option) {
+            return true;
+        }
+    }
+
+    return false;
+}
 
 static size_t parse_byte_size(const char* input) {
     char* end;
@@ -22,15 +33,15 @@ static size_t parse_byte_size(const char* input) {
     auto unit = std::string(end);
     std::transform(unit.begin(), unit.end(), unit.begin(), ::tolower);
 
-    if (unit.empty() || unit == "b") {
+    if (is_one_of(unit, {"", "b"})) {
         //
-    } else if (unit == "k" || unit == "kb") {
+    } else if (is_one_of(unit, {"k", "kb"})) {
         result *= 1000;
-    } else if (unit == "m" || unit == "mb") {
+    } else if (is_one_of(unit, {"m", "mb"})) {
         result *= 1000'0000;
-    } else if (unit == "g" || unit == "gb") {
+    } else if (is_one_of(unit, {"g", "gb"})) {
         result *= 1000'000'000;
-    } else if (unit == "t" || unit == "tb") {
+    } else if (is_one_of(unit, {"t", "tb"})) {
         result *= 1000'000'000'000;
     } else {
         throw std::runtime_error(fmt::format("invalid size in bytes: {}", input));
@@ -63,18 +74,45 @@ WorkerConfig default_config_from_environment() {
     }
 
     if (auto* s = getenv("KMM_DEBUG")) {
-        auto mode = std::string(s);
-
-        if (mode == "1" || mode == "true" || mode == "TRUE") {
+        if (is_one_of(s, {"1", "true", "TRUE"})) {
             config.debug_mode = true;
-        } else if (mode.empty() || mode == "0" || mode == "false" || mode == "FALSE") {
+        } else if (is_one_of(s, {"0", "false", "FALSE", ""})) {
             config.debug_mode = false;
         } else {
-            throw std::runtime_error(fmt::format("invalid value given for KMM_DEBUG: {}", mode));
+            throw std::runtime_error(
+                fmt::format("invalid value given for KMM_DEBUG: {}", std::string(s))
+            );
         }
+    }
+
+    if (auto* s = getenv("KMM_LOG_LEVEL")) {
+        set_global_log_level(s);
     }
 
     return config;
 }
 
+void set_global_log_level(const std::string& name) {
+    spdlog::level::level_enum log_level;
+
+    if (name.empty()) {
+        return;  // No log level specified
+    } else if (is_one_of(name, {"trace", "TRACE"})) {
+        log_level = spdlog::level::level_enum::trace;
+    } else if (is_one_of(name, {"debug", "DEBUG"})) {
+        log_level = spdlog::level::level_enum::debug;
+    } else if (is_one_of(name, {"info", "INFO"})) {
+        log_level = spdlog::level::level_enum::info;
+    } else if (is_one_of(name, {"warn", "WARN", "warning", "WARNING"})) {
+        log_level = spdlog::level::level_enum::warn;
+    } else if (is_one_of(name, {"err", "ERR", "error", "ERROR"})) {
+        log_level = spdlog::level::level_enum::err;
+    } else if (is_one_of(name, {"critical", "CRITICAL"})) {
+        log_level = spdlog::level::level_enum::critical;
+    } else {
+        throw std::runtime_error(fmt::format("invalid log level specified: {}", std::string(name)));
+    }
+
+    spdlog::set_level(log_level);
+}
 }  // namespace kmm

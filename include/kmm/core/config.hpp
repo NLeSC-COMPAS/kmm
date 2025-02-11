@@ -21,7 +21,7 @@ struct WorkerConfig {
     size_t host_memory_limit = std::numeric_limits<size_t>::max();
 
     /// If nonzero, use an arena allocator on the host. This will allocate large blocks of the
-    /// specified size, which are further split into smaller allocations by the runtime system.
+    /// specified size, which are further split into smaller allocations by the KMM runtime system.
     /// This reduces the number of memory allocation requests to the OS.
     size_t host_memory_block_size = 0;
 
@@ -43,5 +43,7 @@ struct WorkerConfig {
 };
 
 WorkerConfig default_config_from_environment();
+
+void set_global_log_level(const std::string& name);
 
 }  // namespace kmm
