@@ -64,7 +64,7 @@ class TaskGraph {
     EventId shutdown();
 
     void rollback();
-    void commit();
+    EventId commit();
 
     std::vector<CommandNode> flush();
 

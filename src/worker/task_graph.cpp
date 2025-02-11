@@ -334,7 +334,7 @@ EventId TaskGraph::insert_fill(
 
 EventId TaskGraph::insert_barrier() {
     EventList deps = std::move(m_events_since_last_barrier);
-    return insert_event(CommandEmpty {}, std::move(deps));
+    return join_events(std::move(deps));
 }
 
 EventId TaskGraph::shutdown() {
@@ -355,7 +355,7 @@ void TaskGraph::rollback() {
     m_tentative_buffers.clear();
 }
 
-void TaskGraph::commit() {
+EventId TaskGraph::commit() {
     for (auto& [id, meta] : m_tentative_buffers) {
         m_persistent_buffers.insert_or_assign(id, std::move(meta));
     }
@@ -366,6 +366,7 @@ void TaskGraph::commit() {
 
     m_tentative_deletions.clear();
     m_tentative_buffers.clear();
+    return insert_barrier();
 }
 
 std::vector<CommandNode> TaskGraph::flush() {
