@@ -97,7 +97,7 @@ int main() {
         {n, k},
         {chunk_size, chunk_size},
         kmm::Host(fill_array),
-        write(A, one_to_one),
+        write(A(_x, _y)),
         1.0F
     );
 
@@ -105,7 +105,7 @@ int main() {
         {k, m},
         {chunk_size, chunk_size},
         kmm::Host(fill_array),
-        write(B, one_to_one),
+        write(B(_x, _y)),
         1.0F
     );
 
@@ -119,9 +119,9 @@ int main() {
             n,
             m,
             k,
-            reduce(kmm::Reduction::Sum, C, slice(_1, _2)),
-            A(_1, _0),
-            B(_0, _2)
+            reduce(kmm::Reduction::Sum, C, slice(_y, _z)),
+            A(_y, _x),
+            B(_x, _z)
         );
 
         rt.synchronize();
