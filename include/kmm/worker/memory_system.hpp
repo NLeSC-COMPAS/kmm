@@ -40,6 +40,19 @@ class MemorySystemBase {
         size_t nbytes,
         DeviceEventSet deps
     ) = 0;
+
+    virtual DeviceEvent copy_device_to_device(
+        DeviceId src_device,
+        DeviceId dst_device,
+        GPUdeviceptr src_addr,
+        GPUdeviceptr dst_addr,
+        size_t nbytes,
+        DeviceEventSet deps
+    ) = 0;
+
+    virtual bool is_copy_supported(MemoryId src, MemoryId dst) {
+        return true;
+    }
 };
 
 class MemorySystem: public MemorySystemBase {
@@ -85,6 +98,15 @@ class MemorySystem: public MemorySystemBase {
         DeviceId device_id,
         GPUdeviceptr src_addr,
         void* dst_addr,
+        size_t nbytes,
+        DeviceEventSet deps
+    ) final;
+
+    DeviceEvent copy_device_to_device(
+        DeviceId src_device_id,
+        DeviceId dst_device_id,
+        GPUdeviceptr src_addr,
+        GPUdeviceptr dst_addr,
         size_t nbytes,
         DeviceEventSet deps
     ) final;

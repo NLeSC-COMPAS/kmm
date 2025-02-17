@@ -869,12 +869,16 @@ void MemoryManager::make_entry_valid(MemoryId memory_id, Buffer& buffer, DeviceE
         }
 
         if (auto src_id = find_valid_device_entry(buffer)) {
-            if (!buffer.host_entry.is_allocated) {
-                allocate_host(buffer);
+            if (m_memory->is_copy_supported(*src_id, memory_id)) {
+                deps_out->insert(copy_d2d(*src_id, device_id, buffer));
+            } else {
+                if (!buffer.host_entry.is_allocated) {
+                    allocate_host(buffer);
+                }
+                deps_out->insert(copy_d2h(*src_id, buffer));
+                deps_out->insert(copy_h2d(device_id, buffer));
             }
 
-            deps_out->insert(copy_d2h(*src_id, buffer));
-            deps_out->insert(copy_h2d(device_id, buffer));
             return;
         }
     }
@@ -968,8 +972,47 @@ DeviceEvent MemoryManager::copy_d2h(DeviceId device_id, Buffer& buffer) {
     host_entry.epoch_event.insert(event);
     host_entry.access_events.insert(event);
     host_entry.write_events.insert(event);
-
     host_entry.is_valid = true;
+
+    return event;
+}
+
+DeviceEvent MemoryManager::copy_d2d(
+    DeviceId device_src_id,
+    DeviceId device_dst_id,
+    Buffer& buffer
+) {
+    spdlog::trace(
+        "copy {} bytes from GPU {} to GPU {} for buffer {}",
+        buffer.layout.size_in_bytes,
+        device_src_id,
+        device_dst_id,
+        buffer.name
+    );
+
+    auto& src_entry = buffer.device_entry[device_src_id];
+    auto& dst_entry = buffer.device_entry[device_dst_id];
+
+    KMM_ASSERT(src_entry.is_allocated && dst_entry.is_allocated);
+    KMM_ASSERT(src_entry.is_valid && !dst_entry.is_valid);
+
+    DeviceEventSet deps = dst_entry.access_events | src_entry.write_events;
+
+    auto event = m_memory->copy_device_to_device(
+        device_src_id,
+        device_dst_id,
+        src_entry.data,
+        dst_entry.data,
+        buffer.layout.size_in_bytes,
+        std::move(deps)
+    );
+
+    src_entry.access_events.insert(event);
+    dst_entry.epoch_event = {event};
+    dst_entry.access_events = {event};
+    dst_entry.write_events = {event};
+    dst_entry.is_valid = true;
+
     return event;
 }
 

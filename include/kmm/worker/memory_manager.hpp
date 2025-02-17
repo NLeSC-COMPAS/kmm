@@ -76,6 +76,7 @@ class MemoryManager {
 
     DeviceEvent copy_h2d(DeviceId device_id, Buffer& buffer);
     DeviceEvent copy_d2h(DeviceId device_id, Buffer& buffer);
+    DeviceEvent copy_d2d(DeviceId device_src_id, DeviceId device_dst_id, Buffer& buffer);
 
     Device& device_at(DeviceId id) noexcept;
     bool is_out_of_memory(DeviceId device_id, Request& req);

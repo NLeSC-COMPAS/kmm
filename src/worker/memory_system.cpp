@@ -169,4 +169,31 @@ DeviceEvent MemorySystem::copy_device_to_host(
     });
 }
 
+DeviceEvent MemorySystem::copy_device_to_device(
+    DeviceId src_device_id,
+    DeviceId dst_device_id,
+    GPUdeviceptr src_addr,
+    GPUdeviceptr dst_addr,
+    size_t nbytes,
+    DeviceEventSet deps
+) {
+    KMM_ASSERT(m_devices[dst_device_id] && m_devices[src_device_id]);
+    auto& src_device = *m_devices[src_device_id];
+    auto& dst_device = *m_devices[dst_device_id];
+    auto stream =
+        nbytes <= HIGH_PRIORITY_THRESHOLD ? dst_device.h2d_hi_stream : dst_device.h2d_stream;
+
+    GPUContextGuard guard {dst_device.context};
+    return m_streams->with_stream(stream, deps, [&](auto stream) {
+        KMM_GPU_CHECK(gpuMemcpyPeerAsync(
+            dst_addr,
+            dst_device.context,
+            src_addr,
+            src_device.context,
+            nbytes,
+            stream
+        ));
+    });
+}
+
 }  // namespace kmm
