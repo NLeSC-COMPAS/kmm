@@ -221,7 +221,7 @@ struct Dim: public fixed_array<T, N> {
         bool result = true;
 
         for (size_t i = 0; is_less(i, N); i++) {
-            result &= p[i] < (*this)[i];
+            result &= p[i] >= 0 && p[i] < (*this)[i];
         }
 
         return result;
@@ -234,7 +234,7 @@ struct Dim: public fixed_array<T, N> {
             result &= p[i] <= (*this)[i];
         }
 
-        return result;
+        return p.is_empty() || result;
     }
 
     KMM_HOST_DEVICE
@@ -242,7 +242,13 @@ struct Dim: public fixed_array<T, N> {
         storage_type result;
 
         for (size_t i = 0; is_less(i, N); i++) {
-            result[i] = (*this)[i] <= that[i] ? (*this)[i] : that[i];
+            if ((*this)[i] < 0 || that[i] < 0) {
+                result[i] = static_cast<T>(0);
+            } else if ((*this)[i] <= that[i]) {
+                result[i] = (*this)[i];
+            } else {
+                result[i] = that[i];
+            }
         }
 
         return Dim(result);
@@ -250,7 +256,7 @@ struct Dim: public fixed_array<T, N> {
 
     KMM_HOST_DEVICE
     bool overlaps(const Dim& that) const {
-        return !this->is_empty() && that.is_empty();
+        return !this->is_empty() && !that.is_empty();
     }
 };
 
@@ -265,7 +271,7 @@ class Range {
     Range& operator=(Range&&) = default;
 
     KMM_HOST_DEVICE
-    constexpr Range() : begin(T {}), end(T {}) {}
+    constexpr Range() : begin(T {}), end(static_cast<T>(1)) {}
 
     KMM_HOST_DEVICE
     constexpr Range(T end) : begin(T {}), end(end) {}
@@ -456,7 +462,7 @@ class Bounds: public fixed_array<Range<T>, N> {
         storage_type result;
 
         for (size_t i = 0; is_less(i, N); i++) {
-            result[i] = i < M ? static_cast<T>(that[i]) : Range<T>();
+            result[i] = is_less(i, M) ? Range<T>::from(that[i]) : Range<T>();
         }
 
         return Bounds(result);
@@ -470,7 +476,7 @@ class Bounds: public fixed_array<Range<T>, N> {
             if (i < M) {
                 result &= (*this)[i].template is_convertible_to<U>();
             } else {
-                result &= (*this)[i] == Range<U>();
+                result &= (*this)[i] == Range<T>();
             }
         }
 

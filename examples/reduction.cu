@@ -1,7 +1,7 @@
 #include "kmm/kmm.hpp"
 
 __global__ void initialize_matrix_kernel(
-    kmm::NDRange chunk,
+    kmm::Bounds<2, int> chunk,
     kmm::gpu_subview_mut<float, 2> matrix
 ) {
     int i = blockIdx.y * blockDim.y + threadIdx.y + chunk.y.begin;
@@ -13,7 +13,7 @@ __global__ void initialize_matrix_kernel(
 }
 
 __global__ void sum_total_kernel(
-    kmm::NDRange chunk,
+    kmm::Bounds<2, int> chunk,
     kmm::gpu_subview<float, 2> matrix,
     kmm::gpu_subview_mut<float, 2> sum
 ) {
@@ -26,7 +26,7 @@ __global__ void sum_total_kernel(
 }
 
 __global__ void sum_rows_kernel(
-    kmm::NDRange chunk,
+    kmm::Bounds<2, int> chunk,
     kmm::gpu_subview<float, 2> matrix,
     kmm::gpu_subview_mut<float, 2> rows_sum
 ) {
@@ -39,7 +39,7 @@ __global__ void sum_rows_kernel(
 }
 
 __global__ void sum_cols_kernel(
-    kmm::NDRange chunk,
+    kmm::Bounds<2, int> chunk,
     kmm::gpu_subview<float, 2> matrix,
     kmm::gpu_subview_mut<float, 2> cols_sum
 ) {
@@ -67,7 +67,8 @@ int main() {
         {width, height},
         {chunk_width, chunk_height},
         kmm::GPUKernel(initialize_matrix_kernel, {16, 16}),
-        write(matrix, slice(_y, _x))
+        bounds(_x, _y),
+        write(matrix(_y, _x))
     );
 
     rt.synchronize();
@@ -80,6 +81,7 @@ int main() {
         {width, height},
         {chunk_width, chunk_height},
         kmm::GPUKernel(sum_total_kernel, {16, 16}),
+        bounds(_x, _y),
         matrix(_y, _x),
         reduce(kmm::Reduction::Sum, privatize(_y, _x), total_sum)
     );
@@ -90,6 +92,7 @@ int main() {
         {width, height},
         {chunk_width, chunk_height},
         kmm::GPUKernel(sum_rows_kernel, {16, 16}),
+        bounds(_x, _y),
         matrix(_y, _x),
         reduce(kmm::Reduction::Sum, privatize(_y), rows_sum(_x))
     );
@@ -100,6 +103,7 @@ int main() {
         {width, height},
         {chunk_width, chunk_height},
         kmm::GPUKernel(sum_cols_kernel, {16, 16}),
+        bounds(_x, _y),
         matrix(_y, _x),
         reduce(kmm::Reduction::Sum, privatize(_x), cols_sum(_y))
     );

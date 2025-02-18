@@ -2,18 +2,22 @@
 
 #include "kmm/kmm.hpp"
 
-__global__ void initialize_range(kmm::NDRange chunk, kmm::gpu_subview_mut<float> output) {
-    int64_t i = blockIdx.x * blockDim.x + threadIdx.x + chunk.x.begin;
-    if (i >= chunk.x.end) {
+__global__ void initialize_range(kmm::Range<int64_t> range, kmm::gpu_subview_mut<float> output) {
+    int64_t i = blockIdx.x * blockDim.x + threadIdx.x + range.begin;
+    if (i >= range.end) {
         return;
     }
 
     output[i] = float(i);
 }
 
-__global__ void fill_range(kmm::NDRange chunk, float value, kmm::gpu_subview_mut<float> output) {
-    int64_t i = blockIdx.x * blockDim.x + threadIdx.x + chunk.x.begin;
-    if (i >= chunk.x.end) {
+__global__ void fill_range(
+    kmm::Range<int64_t> range,
+    float value,
+    kmm::gpu_subview_mut<float> output
+) {
+    int64_t i = blockIdx.x * blockDim.x + threadIdx.x + range.begin;
+    if (i >= range.end) {
         return;
     }
 
@@ -21,14 +25,14 @@ __global__ void fill_range(kmm::NDRange chunk, float value, kmm::gpu_subview_mut
 }
 
 __global__ void vector_add(
-    kmm::NDRange range,
+    kmm::Range<int64_t> range,
     kmm::gpu_subview_mut<float> output,
     kmm::gpu_subview<float> left,
     kmm::gpu_subview<float> right
 ) {
-    int64_t i = blockIdx.x * blockDim.x + threadIdx.x + range.x.begin;
+    int64_t i = blockIdx.x * blockDim.x + threadIdx.x + range.begin;
 
-    if (i >= range.x.end) {
+    if (i >= range.end) {
         return;
     }
 
@@ -40,8 +44,8 @@ int main() {
     spdlog::set_level(spdlog::level::trace);
 
     auto rt = kmm::make_runtime();
-    int n = 2'000'000'000;
-    int chunk_size = n / 10;
+    long n = 2'000'000'000;
+    long chunk_size = n / 10;
     dim3 block_size = 256;
 
     auto A = kmm::Array<float> {n};
@@ -52,37 +56,40 @@ int main() {
         kmm::Dim {n},
         kmm::ChunkPartitioner {chunk_size},
         kmm::GPUKernel(initialize_range, block_size),
-        write(A(_x))
+        _x,
+        write(A[_x])
     );
 
     rt.parallel_submit(
         {n},
         {chunk_size},
         kmm::GPUKernel(fill_range, block_size),
+        _x,
         float(1.0),
-        write(B(_x))
+        write(B[_x])
     );
 
     rt.parallel_submit(
         {n},
         {chunk_size},
         kmm::GPUKernel(vector_add, block_size),
-        write(C(_x)),
-        A(_x),
-        B(_x)
+        _x,
+        write(C[_x]),
+        A[_x],
+        B[_x]
     );
 
-    std::vector<float> result(n);
-    C.copy_to(result.data(), n);
+    auto result = std::vector<float>(n);
+    C.copy_to(result);
+
     // Correctness check
     for (int i = 0; i < n; i++) {
-        if (result[i] != float(i) + 1) {
+        if (result[i] != float(i + 1)) {
             std::cerr << "Wrong result at " << i << " : " << result[i] << " != " << float(i) + 1
                       << std::endl;
             return 1;
         }
     }
     std::cout << "Correctness check completed." << std::endl;
-
     return 0;
 }

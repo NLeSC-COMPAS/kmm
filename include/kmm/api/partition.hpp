@@ -12,8 +12,8 @@ namespace kmm {
 
 struct WorkChunk {
     ProcessorId owner_id;
-    NDIndex offset;
-    NDSize size;
+    WorkIndex offset;
+    WorkDim size;
 };
 
 struct WorkPartition {
@@ -24,7 +24,7 @@ template<typename P>
 struct IntoWorkPartition {
     static WorkPartition call(
         P partitioner,
-        NDRange index_space,
+        WorkBounds index_space,
         const SystemInfo& info,
         ExecutionSpace space
     ) {
@@ -33,7 +33,7 @@ struct IntoWorkPartition {
 };
 
 struct ChunkPartitioner {
-    ChunkPartitioner(NDSize chunk_size) : m_chunk_size(chunk_size) {}
+    ChunkPartitioner(WorkDim chunk_size) : m_chunk_size(chunk_size) {}
     ChunkPartitioner(
         int64_t x,
         int64_t y = std::numeric_limits<int64_t>::max(),
@@ -41,11 +41,11 @@ struct ChunkPartitioner {
     ) :
         m_chunk_size(x, y, z) {}
 
-    WorkPartition operator()(NDRange index_space, const SystemInfo& info, ExecutionSpace space)
+    WorkPartition operator()(WorkBounds index_space, const SystemInfo& info, ExecutionSpace space)
         const;
 
   private:
-    NDSize m_chunk_size;
+    WorkDim m_chunk_size;
 };
 
 }  // namespace kmm

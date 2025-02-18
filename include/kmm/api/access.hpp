@@ -63,7 +63,7 @@ struct Privatize {
 
 template<typename... Is>
 Privatize<MultiIndexMap<sizeof...(Is)>> privatize(const Is&... slices) {
-    return Privatize {slice(slices...)};
+    return Privatize {bounds(slices...)};
 }
 
 template<typename M = All, typename Arg>

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "kmm/api/mapper.hpp"
 #include "kmm/api/task_builder.hpp"
 #include "kmm/core/task.hpp"
 

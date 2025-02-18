@@ -31,7 +31,7 @@ class Runtime {
      * @return The event identifier for the submitted task.
      */
     template<typename L, typename... Args>
-    EventId submit(NDRange index_space, ProcessorId target, L&& launcher, Args&&... args) const {
+    EventId submit(WorkBounds index_space, ProcessorId target, L&& launcher, Args&&... args) const {
         WorkChunk chunk = {
             .owner_id = target,  //
             .offset = index_space.begin(),
@@ -75,7 +75,7 @@ class Runtime {
      * @return The event identifier for the submitted task.
      */
     template<typename P = ChunkPartitioner, typename L, typename... Args>
-    EventId parallel_submit(NDRange index_space, P&& partitioner, L&& launcher, Args&&... args)
+    EventId parallel_submit(WorkBounds index_space, P&& partitioner, L&& launcher, Args&&... args)
         const {
         return kmm::parallel_submit(
             *m_worker,

@@ -3,6 +3,7 @@
 #include "partition.hpp"
 #include "spdlog/spdlog.h"
 
+#include "kmm/api/argument.hpp"
 #include "kmm/core/geometry.hpp"
 #include "kmm/core/reduction.hpp"
 #include "kmm/utils/integer_fun.hpp"
@@ -201,7 +202,7 @@ inline IndexMap into_index_map(All m) {
 }
 
 template<typename... Is>
-MultiIndexMap<sizeof...(Is)> slice(const Is&... slices) {
+MultiIndexMap<sizeof...(Is)> bounds(const Is&... slices) {
     return {into_index_map(slices)...};
 }
 
@@ -215,6 +216,47 @@ MultiIndexMap<sizeof...(Is)> tile(const Is&... length) {
         checked_cast<int64_t>(length)
     )...};
 }
+
+template<>
+struct ArgumentHandler<IndexMap> {
+    using type = Argument<Range<default_index_type>>;
+
+    ArgumentHandler(IndexMap mapper) : m_mapper(mapper) {}
+
+    void initialize(const TaskGroupInfo& init) {}
+
+    type process_chunk(TaskInstance& builder) {
+        return m_mapper(builder.chunk).get_or_default(0);
+    }
+
+    void finalize(const TaskGroupResult& result) {}
+
+  private:
+    IndexMap m_mapper;
+};
+
+template<>
+struct ArgumentHandler<Axis>: ArgumentHandler<IndexMap> {
+    ArgumentHandler(Axis mapper) : ArgumentHandler<IndexMap>(mapper) {}
+};
+
+template<size_t N>
+struct ArgumentHandler<MultiIndexMap<N>> {
+    using type = Argument<Bounds<N>>;
+
+    ArgumentHandler(MultiIndexMap<N> mapper) : m_mapper(mapper) {}
+
+    void initialize(const TaskGroupInfo& init) {}
+
+    type process_chunk(TaskInstance& builder) {
+        return m_mapper(builder.chunk);
+    }
+
+    void finalize(const TaskGroupResult& result) {}
+
+  private:
+    MultiIndexMap<N> m_mapper;
+};
 
 namespace detail {
 template<typename T>

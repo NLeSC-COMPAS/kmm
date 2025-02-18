@@ -19,28 +19,28 @@ void initialize_image(
 }
 
 void initialize_images(
-    kmm::NDRange subrange,
+    kmm::Range<int> subrange,
     int width,
     int height,
     kmm::subview_mut<uint8_t, 3> images
 ) {
-    for (auto i = subrange.begin(0); i < subrange.end(0); i++) {
+    for (auto i = subrange.begin; i < subrange.end; i++) {
         initialize_image(i, width, height, images.drop_axis<0>(i));
     }
 }
 
 __global__ void calculate_histogram(
-    kmm::NDRange subrange,
+    kmm::Range<int> image_ids,
     int width,
     int height,
     kmm::gpu_subview<uint8_t, 3> images,
     kmm::gpu_subview_mut<int, 2> histogram
 ) {
-    int image_id = blockIdx.z * blockDim.z + threadIdx.z + subrange.z.begin;
+    int image_id = blockIdx.z * blockDim.z + threadIdx.z + image_ids.begin;
     int i = blockIdx.y * blockDim.y + threadIdx.y;
     int j = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (image_id < int(subrange.z.end) && i < height && j < width) {
+    if (image_id < int(image_ids.end) && i < height && j < width) {
         uint8_t value = images[image_id][i][j];
         atomicAdd(&histogram[image_id][value], 1);
     }
@@ -60,29 +60,31 @@ int main() {
     auto histogram = kmm::Array<int> {{256}};
     auto images = kmm::Array<uint8_t, 3> {{num_images, height, width}};
 
+    auto _imageid = kmm::Axis(2);
+    auto _i = kmm::Axis(1);
+    auto _j = kmm::Axis(0);
+
     rt.parallel_submit(
         {num_images},
         {images_per_chunk},
         kmm::Host(initialize_images),
+        _imageid,
         width,
         height,
-        write(images(_0, _, _))
+        write(images(_imageid, _, _))
     );
 
     rt.synchronize();
-
-    auto image_id = kmm::Axis(2);
-    auto i = kmm::Axis(1);
-    auto j = kmm::Axis(0);
 
     rt.parallel_submit(
         {width, height, num_images},
         {width, height, images_per_chunk},
         kmm::GPUKernel(calculate_histogram, block_size),
+        _imageid,
         width,
         height,
-        images(i, j, image_id),
-        reduce(kmm::Reduction::Sum, privatize(image_id), histogram(_))
+        images(_i, _j, _imageid),
+        reduce(kmm::Reduction::Sum, privatize(_imageid), histogram(_))
     );
 
     rt.synchronize();

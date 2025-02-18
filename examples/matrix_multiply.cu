@@ -1,8 +1,8 @@
 #include "kmm/kmm.hpp"
 
-void fill_array(kmm::NDRange region, kmm::subview_mut<float, 2> array, float value) {
-    for (auto i = region.begin(0); i < region.end(0); i++) {
-        for (auto j = region.begin(1); j < region.end(1); j++) {
+void fill_array(kmm::Bounds<2> region, kmm::subview_mut<float, 2> array, float value) {
+    for (auto i = region.x.begin; i < region.x.end; i++) {
+        for (auto j = region.y.begin; j < region.y.end; j++) {
             array[i][j] = value;
         }
     }
@@ -10,7 +10,7 @@ void fill_array(kmm::NDRange region, kmm::subview_mut<float, 2> array, float val
 
 void matrix_multiply(
     kmm::DeviceContext& device,
-    kmm::NDRange region,
+    kmm::Bounds<3> region,
     int n,
     int m,
     int k,
@@ -97,6 +97,7 @@ int main() {
         {n, k},
         {chunk_size, chunk_size},
         kmm::Host(fill_array),
+        bounds(_x, _y),
         write(A(_x, _y)),
         1.0F
     );
@@ -105,6 +106,7 @@ int main() {
         {k, m},
         {chunk_size, chunk_size},
         kmm::Host(fill_array),
+        bounds(_x, _y),
         write(B(_x, _y)),
         1.0F
     );
@@ -116,10 +118,11 @@ int main() {
             {k, n, m},
             {chunk_size, chunk_size, chunk_size},
             kmm::GPU(matrix_multiply),
+            bounds(_x, _y, _z),
             n,
             m,
             k,
-            reduce(kmm::Reduction::Sum, C, slice(_y, _z)),
+            reduce(kmm::Reduction::Sum, C(_y, _z)),
             A(_y, _x),
             B(_x, _z)
         );

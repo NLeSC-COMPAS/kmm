@@ -1,5 +1,6 @@
 #pragma once
 
+#include "kmm/api/partition.hpp"
 #include "kmm/core/buffer.hpp"
 #include "kmm/core/identifiers.hpp"
 

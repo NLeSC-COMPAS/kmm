@@ -116,12 +116,12 @@ class Array: public ArrayBase {
 
     template<typename... Is>
     Access<Array<T, N>, Read<MultiIndexMap<N>>> operator()(const Is&... index) {
-        return access(slice(index...));
+        return access(bounds(index...));
     }
 
     template<typename... Is>
     Access<const Array<T, N>, Read<MultiIndexMap<N>>> operator()(const Is&... index) const {
-        return access(slice(index...));
+        return access(bounds(index...));
     }
 
     void copy_bytes_to(void* output, size_t num_bytes) const {
@@ -143,7 +143,7 @@ class Array: public ArrayBase {
 
     void copy_to(std::vector<T>& output) const {
         output.resize(checked_cast<size_t>(size()));
-        handle().copy_bytes(output, sizeof(T));
+        handle().copy_bytes(output.data(), sizeof(T));
     }
 
     std::vector<T> copy() const {

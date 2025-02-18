@@ -5,7 +5,7 @@
 using namespace kmm;
 
 TEST_CASE("Range basics") {
-    Range<> a;
+    Range<> a {0, 0};
     CHECK(a.begin == 0);
     CHECK(a.end == 0);
 
@@ -17,7 +17,7 @@ TEST_CASE("Range basics") {
     CHECK(c.begin == 1);
     CHECK(c.end == 5);
 
-    Range<> d {Range<long> {3, 8}};
+    Range<> d {Range<char> {3, 8}};
     CHECK(d.begin == 3);
     CHECK(d.end == 8);
 
@@ -101,7 +101,7 @@ TEST_CASE("Range basics") {
         CHECK_FALSE(d.is_empty());
     }
 
-    SECTION("split_at") {
+    SECTION("split_off") {
         auto x = d.split_off(5);
         CHECK(x.begin == 5);
         CHECK(x.end == 8);
@@ -111,9 +111,9 @@ TEST_CASE("Range basics") {
     }
 }
 
-TEST_CASE("NDRange constructor") {
+TEST_CASE("WorkBounds constructor") {
     SECTION("default") {
-        auto a = NDRange {};
+        auto a = WorkBounds {};
         CHECK(a.x.begin == 0);
         CHECK(a.y.begin == 0);
         CHECK(a.z.begin == 0);
@@ -123,7 +123,7 @@ TEST_CASE("NDRange constructor") {
     }
 
     SECTION("number") {
-        auto a = NDRange {3, 5};
+        auto a = WorkBounds {3, 5};
         CHECK(a.x.begin == 0);
         CHECK(a.y.begin == 0);
         CHECK(a.z.begin == 0);
@@ -133,7 +133,7 @@ TEST_CASE("NDRange constructor") {
     }
 
     SECTION("range") {
-        auto a = NDRange {Range {1, 5}, 3};
+        auto a = WorkBounds {Range {1, 5}, 3};
         CHECK(a.x.begin == 1);
         CHECK(a.y.begin == 0);
         CHECK(a.z.begin == 0);
@@ -143,7 +143,7 @@ TEST_CASE("NDRange constructor") {
     }
 
     SECTION("offset and size") {
-        auto a = Bounds<3>::from_offset_size(Index {1, 2}, Dim {3, 8});
+        auto a = WorkBounds::from_offset_size(Index {1, 2}, Dim {3, 8});
         CHECK(a.x.begin == 1);
         CHECK(a.y.begin == 2);
         CHECK(a.z.begin == 0);

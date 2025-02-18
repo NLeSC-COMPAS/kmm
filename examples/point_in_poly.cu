@@ -8,15 +8,15 @@
 #include "kmm/api/runtime.hpp"
 
 __global__ void cn_pnpoly(
-    kmm::NDRange chunk,
+    kmm::Range<int> chunk,
     kmm::gpu_subview_mut<int> bitmap,
     kmm::gpu_subview<float2> points,
     int nvertices,
     kmm::gpu_view<float2> vertices
 ) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x + chunk.begin(0);
+    int i = blockIdx.x * blockDim.x + threadIdx.x + chunk.begin;
 
-    if (i < chunk.end(0)) {
+    if (i < chunk.end) {
         int c = 0;
         float2 p = points[i];
 
@@ -39,10 +39,10 @@ __global__ void cn_pnpoly(
     }
 }
 
-__global__ void init_points(kmm::NDRange chunk, kmm::gpu_subview_mut<float2> points) {
-    int i = blockIdx.x * blockDim.x + threadIdx.x + chunk.begin(0);
+__global__ void init_points(kmm::Range<int> chunk, kmm::gpu_subview_mut<float2> points) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x + chunk.begin;
 
-    if (i < chunk.end(0)) {
+    if (i < chunk.end) {
 #if __CUDA_ARCH__
         curandStatePhilox4_32_10_t state;
         curand_init(1234, i, 0, &state);
@@ -55,8 +55,8 @@ __global__ void init_points(kmm::NDRange chunk, kmm::gpu_subview_mut<float2> poi
     }
 }
 
-void init_polygon(kmm::NDRange chunk, int nvertices, kmm::view_mut<float2> vertices) {
-    for (int64_t i = chunk.begin(0); i < chunk.end(0); i++) {
+void init_polygon(kmm::Range<int> chunk, int nvertices, kmm::view_mut<float2> vertices) {
+    for (int64_t i = chunk.begin; i < chunk.end; i++) {
         float angle = float(i) / float(nvertices) * float(2.0F * M_PI);
         vertices[i] = {cosf(angle), sinf(angle)};
     }
@@ -80,6 +80,7 @@ int main() {
         {nvertices},
         kmm::ProcessorId::host(),
         kmm::Host(init_polygon),
+        _x,
         nvertices,
         write(vertices)
     );
@@ -88,6 +89,7 @@ int main() {
         {npoints},
         {npoints_per_chunk},
         kmm::GPUKernel(init_points, block_size),
+        _x,
         write(points(_x))
     );
 
@@ -95,6 +97,7 @@ int main() {
         {npoints},
         {npoints_per_chunk},
         kmm::GPUKernel(cn_pnpoly, block_size),
+        _x,
         write(bitmap(_x)),
         points(_x),
         nvertices,
