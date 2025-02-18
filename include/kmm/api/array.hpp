@@ -77,7 +77,7 @@ class Array: public ArrayBase {
     }
 
     int64_t chunk_size(size_t axis) const {
-        return chunk_size().get(axis);
+        return chunk_size().get_or_default(axis);
     }
 
     const Worker& worker() const final {

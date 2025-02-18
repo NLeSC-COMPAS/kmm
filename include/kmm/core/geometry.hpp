@@ -294,7 +294,7 @@ class Range {
     }
 
     template<typename U>
-    KMM_HOST_DEVICE constexpr bool is_convertible_to() const {
+    constexpr bool is_convertible_to() const {
         return in_range<U>(begin) && in_range<U>(end);
     }
 
@@ -604,7 +604,7 @@ class Bounds: public fixed_array<Range<T>, N> {
         bool result = true;
 
         for (size_t i = 0; is_less(i, N); i++) {
-            result &= (this)[i].contains(that[i]);
+            result &= (*this)[i].contains(that[i]);
         }
 
         return result;
