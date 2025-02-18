@@ -159,34 +159,30 @@ TEST_CASE("geometry dim intersection") {
 
 TEST_CASE("geometry range basics") {
     auto a = Bounds<3>::from_offset_size({0, 0, 0}, {42, 2, 1});
-    ASSERT_EQ(a.offset(), Index(0, 0, 0));
     ASSERT_EQ(a.sizes(), Dim(42, 2, 1));
-    ASSERT_EQ(a.begin, Index(0, 0, 0));
-    ASSERT_EQ(a.end, Index(42, 2, 1));
+    ASSERT_EQ(a.begin(), Index(0, 0, 0));
+    ASSERT_EQ(a.end(), Index(42, 2, 1));
     ASSERT_EQ(a.size(), 84);
     ASSERT_EQ(a.is_empty(), false);
 
     auto b = Bounds<3>::from_offset_size({1, 1, 1}, {3, 2, 1});
-    ASSERT_EQ(b.offset(), Index(1, 1, 1));
     ASSERT_EQ(b.sizes(), Dim(3, 2, 1));
-    ASSERT_EQ(b.begin, Index(1, 1, 1));
-    ASSERT_EQ(b.end, Index(4, 3, 2));
+    ASSERT_EQ(b.begin(), Index(1, 1, 1));
+    ASSERT_EQ(b.end(), Index(4, 3, 2));
     ASSERT_EQ(b.size(), 6);
     ASSERT_EQ(b.is_empty(), false);
 
     auto c = Bounds<3>::from_offset_size({1, -5, 1}, {2, 2, 2});
-    ASSERT_EQ(c.offset(), Index(1, -5, 1));
     ASSERT_EQ(c.sizes(), Dim(2, 2, 2));
-    ASSERT_EQ(c.begin, Index(1, -5, 1));
-    ASSERT_EQ(c.end, Index(3, -3, 3));
+    ASSERT_EQ(c.begin(), Index(1, -5, 1));
+    ASSERT_EQ(c.end(), Index(3, -3, 3));
     ASSERT_EQ(c.size(), 8);
     ASSERT_EQ(c.is_empty(), false);
 
     auto d = Bounds<3>::from_offset_size({5, 1, 2}, {-5, 3, 1});
-    ASSERT_EQ(d.offset(), Index(5, 1, 2));
     ASSERT_EQ(d.sizes(), Dim(0, 3, 1));
-    ASSERT_EQ(d.begin, Index(5, 1, 2));
-    ASSERT_EQ(d.end, Index(0, 4, 3));
+    ASSERT_EQ(d.begin(), Index(5, 1, 2));
+    ASSERT_EQ(d.end(), Index(0, 4, 3));
     ASSERT_EQ(d.size(), 0);
     ASSERT_EQ(d.is_empty(), true);
 }

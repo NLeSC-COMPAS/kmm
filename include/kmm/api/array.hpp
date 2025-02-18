@@ -48,7 +48,7 @@ class Array: public ArrayBase {
     }
 
     int64_t size(size_t axis) const final {
-        return m_shape.get(axis);
+        return m_shape.get_or_default(axis);
     }
 
     int64_t size() const {
@@ -296,7 +296,7 @@ struct ArgumentHandler<Access<Array<T, N>, Write<M>>> {
             m_builder.add_chunk(task.graph, task.memory_id, access_region)
         );
 
-        auto domain = views::dynamic_subdomain<N> {access_region.offset(), access_region.sizes()};
+        auto domain = views::dynamic_subdomain<N> {access_region.begin(), access_region.sizes()};
         return {buffer_index, domain};
     }
 
@@ -383,14 +383,14 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<M, P>>> {
     type process_chunk(TaskInstance& task) {
         auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_builder.sizes()));
         auto private_region = m_private_mapper(task.chunk);
-        auto rep = private_region.size();
+        auto rep = checked_cast<size_t>(private_region.size());
         size_t buffer_index = task.add_buffer_requirement(
             m_builder.add_chunk(task.graph, task.memory_id, access_region, rep)
         );
 
         views::dynamic_subdomain<K + N> domain = {
-            private_region.concat(access_region).offset(),
-            private_region.concat(access_region).sizes()};
+            concat(private_region, access_region).begin(),
+            concat(private_region, access_region).sizes()};
 
         return {buffer_index, domain};
     }

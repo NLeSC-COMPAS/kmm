@@ -90,8 +90,8 @@ IndexMap IndexMap::negate() const {
 }
 
 Bounds<1> IndexMap::apply(WorkChunk chunk) const {
-    int64_t a0 = chunk.offset.get(m_variable.get());
-    int64_t an = chunk.size.get(m_variable.get());
+    int64_t a0 = chunk.offset.get_or_default(m_variable.get());
+    int64_t an = chunk.size.get_or_default(m_variable.get());
 
     int64_t b0;
     int64_t bn;
@@ -116,7 +116,7 @@ Bounds<1> IndexMap::apply(WorkChunk chunk) const {
         bn = (bn + remainder + m_divisor - 1) / m_divisor;
     }
 
-    return {b0, b0 + bn};
+    return Range {b0, b0 + bn};
 }
 
 static void write_mapping(std::ostream& f, Axis v, int64_t scale, int64_t offset, int64_t divisor) {

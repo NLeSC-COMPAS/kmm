@@ -22,8 +22,8 @@ Bounds<N> index2region(
         auto k = index % num_chunks[i];
         index /= num_chunks[i];
 
-        result.begin[i] = int64_t(k) * chunk_size[i];
-        result.end[i] = std::min(result.begin[i] + chunk_size[i], array_size[i]);
+        result[i].begin = int64_t(k) * chunk_size[i];
+        result[i].end = std::min(result[i].begin + chunk_size[i], array_size[i]);
     }
 
     return result;
@@ -107,7 +107,7 @@ size_t DataDistribution<N>::region_to_chunk_index(Bounds<N> region) const {
     size_t index = 0;
 
     for (size_t i = 0; compare_less(i, N); i++) {
-        auto k = div_floor(region.begin[i], m_chunk_size[i]);
+        auto k = div_floor(region.begin(i), m_chunk_size[i]);
 
         if (!in_range(k, m_chunks_count[i])) {
             throw std::out_of_range(fmt::format(
@@ -117,7 +117,7 @@ size_t DataDistribution<N>::region_to_chunk_index(Bounds<N> region) const {
             ));
         }
 
-        if (region.end[i] > (k + 1) * m_chunk_size[i]) {
+        if (region.end(i) > (k + 1) * m_chunk_size[i]) {
             throw std::out_of_range(fmt::format(
                 "invalid read pattern, the region {} does not align to the chunk size of {}",
                 region,
@@ -193,7 +193,7 @@ class CopyOutTask: public Task {
             );
 
             src_stride *= checked_cast<size_t>(region.size(i));
-            dst_stride *= checked_cast<size_t>(array_size.get(i));
+            dst_stride *= checked_cast<size_t>(array_size.get_or_default(i));
         }
     }
 

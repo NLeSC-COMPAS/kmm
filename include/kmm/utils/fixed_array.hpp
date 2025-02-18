@@ -11,6 +11,8 @@ KMM_HOST_DEVICE bool is_less(I a, I b) {
 
 template<typename T, size_t N>
 struct fixed_array {
+    using value_type = T;
+
     KMM_HOST_DEVICE
     T& operator[](size_t axis) {
         if (axis >= N) {
@@ -34,6 +36,8 @@ struct fixed_array {
 
 template<typename T>
 struct fixed_array<T, 0> {
+    using value_type = T;
+
     KMM_HOST_DEVICE
     T& operator[](size_t axis) {
         __builtin_unreachable();
@@ -47,6 +51,8 @@ struct fixed_array<T, 0> {
 
 template<typename T>
 struct fixed_array<T, 1> {
+    using value_type = T;
+
     KMM_HOST_DEVICE
     T& operator[](size_t axis) {
         return x;
@@ -73,6 +79,8 @@ struct fixed_array<T, 1> {
 
 template<typename T>
 struct fixed_array<T, 2> {
+    using value_type = T;
+
     KMM_HOST_DEVICE
     T& operator[](size_t axis) {
         switch (axis) {
@@ -103,6 +111,8 @@ struct fixed_array<T, 2> {
 
 template<typename T>
 struct fixed_array<T, 3> {
+    using value_type = T;
+
     KMM_HOST_DEVICE
     T& operator[](size_t axis) {
         switch (axis) {
@@ -138,6 +148,8 @@ struct fixed_array<T, 3> {
 
 template<typename T>
 struct fixed_array<T, 4> {
+    using value_type = T;
+
     KMM_HOST_DEVICE
     T& operator[](size_t axis) {
         switch (axis) {
@@ -176,8 +188,8 @@ struct fixed_array<T, 4> {
     T w {};
 };
 
-template<typename T, size_t N, typename U, size_t M>
-KMM_HOST_DEVICE bool operator==(const fixed_array<T, N>& lhs, const fixed_array<U, M>& rhs) {
+template<typename T, size_t N, size_t M>
+KMM_HOST_DEVICE bool operator==(const fixed_array<T, N>& lhs, const fixed_array<T, M>& rhs) {
     if (N != M) {
         return false;
     }
@@ -191,9 +203,27 @@ KMM_HOST_DEVICE bool operator==(const fixed_array<T, N>& lhs, const fixed_array<
     return result;
 }
 
-template<typename T, size_t N, typename U, size_t M>
-KMM_HOST_DEVICE bool operator!=(const fixed_array<T, N>& lhs, const fixed_array<U, M>& rhs) {
+template<typename T, size_t N, size_t M>
+KMM_HOST_DEVICE bool operator!=(const fixed_array<T, N>& lhs, const fixed_array<T, M>& rhs) {
     return !(lhs == rhs);
+}
+
+template<typename T, size_t N, size_t M>
+KMM_HOST_DEVICE fixed_array<T, N + M> concat(
+    const fixed_array<T, N>& lhs,
+    const fixed_array<T, M>& rhs
+) {
+    fixed_array<T, N + M> result;
+
+    for (size_t i = 0; is_less(i, N); i++) {
+        result[i] = lhs[i];
+    }
+
+    for (size_t i = 0; is_less(i, M); i++) {
+        result[i + N] = rhs[i];
+    }
+
+    return result;
 }
 
 }  // namespace kmm

@@ -15,7 +15,7 @@ BufferRequirement ArrayBuilder<N>::add_chunk(
     m_buffers.push_back(buffer_id);
     m_chunks.push_back(DataChunk<N> {
         .owner_id = memory_id,
-        .offset = access_region.offset(),
+        .offset = access_region.begin(),
         .size = access_region.sizes()});
 
     return {//
@@ -126,7 +126,7 @@ std::pair<DataDistribution<N>, std::vector<BufferId>> ArrayReductionBuilder<N>::
         buffers.push_back(buffer_id);
         chunks.push_back(DataChunk<N> {
             .owner_id = memory_id,
-            .offset = access_region.offset(),
+            .offset = access_region.begin(),
             .size = access_region.sizes()});
 
         for (const auto& input : inputs) {

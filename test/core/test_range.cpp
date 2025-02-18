@@ -102,7 +102,7 @@ TEST_CASE("Range basics") {
     }
 
     SECTION("split_at") {
-        auto x = d.split_at(5);
+        auto x = d.split_off(5);
         CHECK(x.begin == 5);
         CHECK(x.end == 8);
 
@@ -143,7 +143,7 @@ TEST_CASE("NDRange constructor") {
     }
 
     SECTION("offset and size") {
-        auto a = NDRange::from_offset_size(Index {1, 2}, Dim {3, 8});
+        auto a = Bounds<3>::from_offset_size(Index {1, 2}, Dim {3, 8});
         CHECK(a.x.begin == 1);
         CHECK(a.y.begin == 2);
         CHECK(a.z.begin == 0);

@@ -21,7 +21,10 @@ struct Axis {
     explicit constexpr Axis(size_t axis) : m_axis(axis) {}
 
     Bounds<1> operator()(WorkChunk chunk) const {
-        return Bounds<1>::from_offset_size(chunk.offset.get(m_axis), chunk.size.get(m_axis));
+        return Bounds<1>::from_offset_size(
+            chunk.offset.get_or_default(m_axis),
+            chunk.size.get_or_default(m_axis)
+        );
     }
 
     Bounds<1> operator()(WorkChunk chunk, Bounds<1> bounds) const {
@@ -155,9 +158,7 @@ struct MultiIndexMap {
         Bounds<N> result;
 
         for (size_t i = 0; i < N; i++) {
-            Bounds<1> range = (this->axes[i])(chunk);
-            result.begin[i] = range.begin;
-            result.end[i] = range.end;
+            result[i] = (this->axes[i])(chunk);
         }
 
         return result;
@@ -167,9 +168,7 @@ struct MultiIndexMap {
         Bounds<N> result;
 
         for (size_t i = 0; i < N; i++) {
-            Bounds<1> range = (this->axes[i])(chunk, Bounds<1> {bounds.begin(i), bounds.end(i)});
-            result.begin[i] = range.begin;
-            result.end[i] = range.end;
+            result[i] = (this->axes[i])(chunk, Bounds<1> {bounds[i]});
         }
 
         return result;
