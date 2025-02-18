@@ -51,30 +51,13 @@ struct IdentityMap {
     }
 };
 
-namespace placeholders {
-static constexpr All _;
-
-static constexpr Axis _x = Axis(0);
-static constexpr Axis _y = Axis(1);
-static constexpr Axis _z = Axis(2);
-
-static constexpr Axis _i = Axis(0);
-static constexpr Axis _j = Axis(1);
-static constexpr Axis _k = Axis(2);
-
-static constexpr Axis _0 = Axis(0);
-static constexpr Axis _1 = Axis(1);
-static constexpr Axis _2 = Axis(2);
-
-static constexpr IdentityMap one_to_one;
-static constexpr All all;
-}  // namespace placeholders
-
 // (scale * variable + offset + [0...length]) / divisor
 struct IndexMap {
+    constexpr IndexMap(Axis variable = {}) : m_variable(variable) {}
+
     IndexMap(
-        Axis variable = {},
-        int64_t scale = 1,
+        Axis variable,
+        int64_t scale,
         int64_t offset = 0,
         int64_t length = 1,
         int64_t divisor = 1
@@ -98,11 +81,11 @@ struct IndexMap {
     friend std::ostream& operator<<(std::ostream& f, const IndexMap& that);
 
   private:
-    Axis m_variable;
-    int64_t m_scale;
-    int64_t m_offset;
-    int64_t m_length;
-    int64_t m_divisor;
+    Axis m_variable = {};
+    int64_t m_scale = 1;
+    int64_t m_offset = 0;
+    int64_t m_length = 1;
+    int64_t m_divisor = 1;
 };
 
 inline IndexMap range(IndexMap begin, IndexMap end) {
@@ -216,6 +199,31 @@ MultiIndexMap<sizeof...(Is)> tile(const Is&... length) {
         checked_cast<int64_t>(length)
     )...};
 }
+
+namespace placeholders {
+static constexpr All _;
+
+static constexpr Axis _x = Axis(0);
+static constexpr Axis _y = Axis(1);
+static constexpr Axis _z = Axis(2);
+
+static constexpr Axis _i = Axis(0);
+static constexpr Axis _j = Axis(1);
+static constexpr Axis _k = Axis(2);
+
+static constexpr Axis _0 = Axis(0);
+static constexpr Axis _1 = Axis(1);
+static constexpr Axis _2 = Axis(2);
+
+static constexpr MultiIndexMap<2> _xy = {_x, _y};
+static constexpr MultiIndexMap<3> _xyz = {_x, _y, _z};
+
+static constexpr MultiIndexMap<2> _ij = {_x, _y};
+static constexpr MultiIndexMap<3> _ijk = {_x, _y, _z};
+
+static constexpr IdentityMap one_to_one;
+static constexpr All all;
+}  // namespace placeholders
 
 template<>
 struct ArgumentHandler<IndexMap> {
