@@ -10,15 +10,15 @@ PinnedMemoryAllocator::PinnedMemoryAllocator(
     SyncAllocator(streams, max_bytes),
     m_context(context) {}
 
-bool PinnedMemoryAllocator::allocate(size_t nbytes, void** addr_out) {
+AllocationResult PinnedMemoryAllocator::allocate(size_t nbytes, void** addr_out) {
     GPUContextGuard guard {m_context};
     GPUresult result =
         gpuMemHostAlloc(addr_out, nbytes, GPU_MEMHOSTALLOC_PORTABLE | GPU_MEMHOSTALLOC_DEVICEMAP);
 
     if (result == GPU_SUCCESS) {
-        return true;
+        return AllocationResult::Success;
     } else if (result == GPU_ERROR_OUT_OF_MEMORY) {
-        return false;
+        return AllocationResult::ErrorOutOfMemory;
     } else {
         throw GPUDriverException("error when calling `cuMemHostAlloc`", result);
     }
@@ -37,16 +37,16 @@ DeviceMemoryAllocator::DeviceMemoryAllocator(
     SyncAllocator(streams, max_bytes),
     m_context(context) {}
 
-bool DeviceMemoryAllocator::allocate(size_t nbytes, void** addr_out) {
+AllocationResult DeviceMemoryAllocator::allocate(size_t nbytes, void** addr_out) {
     GPUContextGuard guard {m_context};
     GPUdeviceptr ptr;
     GPUresult result = gpuMemAlloc(&ptr, nbytes);
 
     if (result == GPU_SUCCESS) {
         *addr_out = (void*)ptr;
-        return true;
+        return AllocationResult::Success;
     } else if (result == GPU_ERROR_OUT_OF_MEMORY) {
-        return false;
+        return AllocationResult::ErrorOutOfMemory;
     } else {
         throw GPUDriverException("error when calling `cuMemAlloc`", result);
     }
@@ -113,12 +113,16 @@ DevicePoolAllocator::~DevicePoolAllocator() {
     }
 }
 
-bool DevicePoolAllocator::allocate_async(size_t nbytes, void** addr_out, DeviceEventSet* deps_out) {
+AllocationResult DevicePoolAllocator::allocate_async(
+    size_t nbytes,
+    void** addr_out,
+    DeviceEventSet* deps_out
+) {
     make_progress();
 
     while (m_bytes_limit - m_bytes_in_use < nbytes) {
         if (m_pending_deallocs.empty()) {
-            return false;
+            return AllocationResult::ErrorOutOfMemory;
         }
 
         auto& d = m_pending_deallocs.front();
@@ -139,9 +143,9 @@ bool DevicePoolAllocator::allocate_async(size_t nbytes, void** addr_out, DeviceE
         m_bytes_in_use += nbytes;
         deps_out->insert(event);
         *addr_out = (void*)device_ptr;
-        return true;
+        return AllocationResult::Success;
     } else if (result == GPU_ERROR_OUT_OF_MEMORY) {
-        return false;
+        return AllocationResult::ErrorOutOfMemory;
     } else {
         throw GPUDriverException("error while calling `cuMemAllocFromPoolAsync`", result);
     }

@@ -13,7 +13,7 @@ class SystemAllocator: public SyncAllocator {
         SyncAllocator(streams, max_bytes) {}
 
   protected:
-    bool allocate(size_t nbytes, void** addr_out) final;
+    AllocationResult allocate(size_t nbytes, void** addr_out) final;
     void deallocate(void* addr, size_t nbytes) final;
 };
 

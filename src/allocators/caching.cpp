@@ -35,7 +35,11 @@ size_t round_up_allocation_size(size_t nbytes) {
     }
 }
 
-bool CachingAllocator::allocate_async(size_t nbytes, void** addr_out, DeviceEventSet* deps_out) {
+AllocationResult CachingAllocator::allocate_async(
+    size_t nbytes,
+    void** addr_out,
+    DeviceEventSet* deps_out
+) {
     nbytes = round_up_allocation_size(nbytes);
     auto& [head, _] = m_allocations[nbytes];
 
@@ -43,16 +47,18 @@ bool CachingAllocator::allocate_async(size_t nbytes, void** addr_out, DeviceEven
         while (true) {
             if (nbytes < m_bytes_watermark - m_bytes_allocated
                 || m_bytes_in_use == m_bytes_allocated) {
-                if (m_allocator->allocate_async(nbytes, addr_out, deps_out)) {
+                auto result = m_allocator->allocate_async(nbytes, addr_out, deps_out);
+
+                if (result == AllocationResult::Success) {
                     m_bytes_allocated += nbytes;
                     m_bytes_in_use += nbytes;
                     m_bytes_watermark = std::max(m_bytes_watermark, m_bytes_in_use);
-                    return true;
+                    return AllocationResult::Success;
                 }
             }
 
             if (free_some_memory() == 0) {
-                return false;
+                return AllocationResult::ErrorOutOfMemory;
             }
         }
     }
@@ -75,7 +81,7 @@ bool CachingAllocator::allocate_async(size_t nbytes, void** addr_out, DeviceEven
     m_bytes_in_use += nbytes;
     *addr_out = slot->addr;
     deps_out->insert(std::move(slot->dependencies));
-    return true;
+    return AllocationResult::Success;
 }
 
 void CachingAllocator::deallocate_async(void* addr, size_t nbytes, DeviceEventSet deps) {

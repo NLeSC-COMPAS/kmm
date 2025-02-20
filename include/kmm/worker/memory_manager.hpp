@@ -48,7 +48,7 @@ class MemoryManager {
     void deallocate_host(Buffer& buffer);
 
     bool try_free_device_memory(DeviceId device_id);
-    bool try_allocate_device_async(DeviceId device_id, Buffer& buffer);
+    AllocationResult try_allocate_device_async(DeviceId device_id, Buffer& buffer);
     void deallocate_device_async(DeviceId device_id, Buffer& buffer);
 
     void lock_allocation_host(Buffer& buffer, Request& req);

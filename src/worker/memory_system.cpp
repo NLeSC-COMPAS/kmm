@@ -73,13 +73,18 @@ void MemorySystem::trim_host(size_t bytes_remaining) {
     m_host->trim(bytes_remaining);
 }
 
-bool MemorySystem::allocate_host(size_t nbytes, void** ptr_out, DeviceEventSet* deps_out) {
-    if (!m_host->allocate_async(nbytes, ptr_out, deps_out)) {
-        return false;
+AllocationResult MemorySystem::allocate_host(
+    size_t nbytes,
+    void** ptr_out,
+    DeviceEventSet* deps_out
+) {
+    auto result = m_host->allocate_async(nbytes, ptr_out, deps_out);
+    if (result != AllocationResult::Success) {
+        return result;
     }
 
     deps_out->remove_ready(*m_streams);
-    return true;
+    return AllocationResult::Success;
 }
 
 void MemorySystem::deallocate_host(void* ptr, size_t nbytes, DeviceEventSet deps) {
@@ -95,7 +100,7 @@ void MemorySystem::trim_device(size_t bytes_remaining) {
     }
 }
 
-bool MemorySystem::allocate_device(
+AllocationResult MemorySystem::allocate_device(
     DeviceId device_id,
     size_t nbytes,
     GPUdeviceptr* ptr_out,
@@ -106,13 +111,15 @@ bool MemorySystem::allocate_device(
     void* addr;
 
     GPUContextGuard guard {device.context};
-    if (!device.allocator->allocate_async(nbytes, &addr, deps_out)) {
-        return false;
+
+    auto result = device.allocator->allocate_async(nbytes, &addr, deps_out);
+    if (result != AllocationResult::Success) {
+        return result;
     }
 
     deps_out->remove_ready(*m_streams);
     *ptr_out = (GPUdeviceptr)addr;
-    return true;
+    return AllocationResult::Success;
 }
 
 void MemorySystem::deallocate_device(

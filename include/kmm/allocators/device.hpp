@@ -18,7 +18,7 @@ class PinnedMemoryAllocator: public SyncAllocator {
         size_t max_bytes = std::numeric_limits<size_t>::max()
     );
 
-    bool allocate(size_t nbytes, void** addr_out) final;
+    AllocationResult allocate(size_t nbytes, void** addr_out) final;
     void deallocate(void* addr, size_t nbytes) final;
 
   private:
@@ -33,7 +33,7 @@ class DeviceMemoryAllocator: public SyncAllocator {
         size_t max_bytes = std::numeric_limits<size_t>::max()
     );
 
-    bool allocate(size_t nbytes, void** addr_out) final;
+    AllocationResult allocate(size_t nbytes, void** addr_out) final;
     void deallocate(void* addr, size_t nbytes) final;
 
   private:
@@ -51,7 +51,7 @@ class DevicePoolAllocator: public AsyncAllocator {
         size_t max_bytes = std::numeric_limits<size_t>::max()
     );
     ~DevicePoolAllocator();
-    bool allocate_async(size_t nbytes, void** addr_out, DeviceEventSet* deps_out) final;
+    AllocationResult allocate_async(size_t nbytes, void** addr_out, DeviceEventSet* deps_out) final;
     void deallocate_async(void* addr, size_t nbytes, DeviceEventSet deps) final;
     void make_progress() final;
     void trim(size_t nbytes_remaining = 0) final;

@@ -69,7 +69,11 @@ BlockAllocator::~BlockAllocator() {
     }
 }
 
-bool BlockAllocator::allocate_async(size_t nbytes, void** addr_out, DeviceEventSet* deps_out) {
+AllocationResult BlockAllocator::allocate_async(
+    size_t nbytes,
+    void** addr_out,
+    DeviceEventSet* deps_out
+) {
     size_t alignment = std::min(round_up_to_power_of_two(nbytes), MAX_ALIGNMENT);
     nbytes = round_up_to_multiple(nbytes, alignment);
 
@@ -79,7 +83,7 @@ bool BlockAllocator::allocate_async(size_t nbytes, void** addr_out, DeviceEventS
         region = allocate_block(nbytes);
 
         if (region == nullptr) {
-            return false;
+            return AllocationResult::ErrorOutOfMemory;
         }
     }
 
@@ -99,7 +103,7 @@ bool BlockAllocator::allocate_async(size_t nbytes, void** addr_out, DeviceEventS
     deps_out->insert(region->dependencies);
 
     m_active_regions.emplace(addr_out, region);
-    return true;
+    return AllocationResult::Success;
 }
 
 BlockAllocator::BlockRegion* BlockAllocator::allocate_block(size_t min_nbytes) {
@@ -107,7 +111,13 @@ BlockAllocator::BlockRegion* BlockAllocator::allocate_block(size_t min_nbytes) {
     void* base_addr;
     size_t block_size = std::max(min_nbytes, m_min_block_size);
 
-    while (!m_allocator->allocate_async(block_size, &base_addr, &deps)) {
+    while (true) {
+        auto result = m_allocator->allocate_async(block_size, &base_addr, &deps);
+
+        if (result == AllocationResult::Success) {
+            break;
+        }
+
         block_size /= 2;
 
         if (block_size < min_nbytes) {

@@ -445,7 +445,7 @@ Poll MemoryManager::poll_request(Request& req, DeviceEventSet* deps_out) {
         if (memory_id.is_host()) {
             lock_allocation_host(buffer, req);
         } else {
-            if (!try_lock_allocation_device(memory_id.as_device(), buffer, req)) {
+            if (try_lock_allocation_device(memory_id.as_device(), buffer, req)) {
                 return Poll::Pending;
             }
         }
@@ -545,9 +545,9 @@ void MemoryManager::allocate_host(Buffer& buffer) {
 
     void* ptr;
     DeviceEventSet events;
-    bool success = m_memory->allocate_host(size_in_bytes, &ptr, &events);
+    AllocationResult result = m_memory->allocate_host(size_in_bytes, &ptr, &events);
 
-    if (!success) {
+    if (result != AllocationResult::Success) {
         throw std::runtime_error("could not allocate, out of host memory");
     }
 
@@ -635,11 +635,11 @@ bool MemoryManager::try_free_device_memory(DeviceId device_id) {
     return true;
 }
 
-bool MemoryManager::try_allocate_device_async(DeviceId device_id, Buffer& buffer) {
+AllocationResult MemoryManager::try_allocate_device_async(DeviceId device_id, Buffer& buffer) {
     auto& device_entry = buffer.device_entry[device_id];
 
     if (device_entry.is_allocated) {
-        return true;
+        return AllocationResult::Success;
     }
 
     KMM_ASSERT(device_entry.num_allocation_locks == 0);
@@ -652,11 +652,11 @@ bool MemoryManager::try_allocate_device_async(DeviceId device_id, Buffer& buffer
 
     GPUdeviceptr ptr_out;
     DeviceEventSet events;
-    auto success =
+    auto result =
         m_memory->allocate_device(device_id, buffer.layout.size_in_bytes, &ptr_out, &events);
 
-    if (!success) {
-        return false;
+    if (result != AllocationResult::Success) {
+        return result;
     }
 
     device_entry.data = ptr_out;
@@ -668,7 +668,7 @@ bool MemoryManager::try_allocate_device_async(DeviceId device_id, Buffer& buffer
 
     device_at(device_id).add_to_lru(buffer);
     check_consistency();
-    return true;
+    return result;
 }
 
 void MemoryManager::deallocate_device_async(DeviceId device_id, Buffer& buffer) {
@@ -746,7 +746,9 @@ bool MemoryManager::try_lock_allocation_device(DeviceId device_id, Buffer& buffe
 
     while (true) {
         // Try to allocate
-        if (try_allocate_device_async(device_id, buffer)) {
+        auto result = try_allocate_device_async(device_id, buffer);
+
+        if (result == AllocationResult::Success) {
             break;
         }
 
@@ -755,15 +757,15 @@ bool MemoryManager::try_lock_allocation_device(DeviceId device_id, Buffer& buffe
             continue;
         }
 
-        if (is_out_of_memory(device_id, req)) {
-            throw std::runtime_error(fmt::format(
-                "cannot allocate {} bytes on GPU {}, out of memory",
-                buffer.layout.size_in_bytes,
-                device_id
-            ));
+        if (!is_out_of_memory(device_id, req)) {
+            return false;
         }
 
-        return false;
+        throw std::runtime_error(fmt::format(
+            "cannot allocate {} bytes on GPU {}, out of memory",
+            buffer.layout.size_in_bytes,
+            device_id
+        ));
     }
 
     spdlog::trace(

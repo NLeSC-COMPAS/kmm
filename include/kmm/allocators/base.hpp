@@ -14,6 +14,11 @@ struct DeferredDealloc {
     DeviceEventSet dependencies;
 };
 
+enum struct AllocationResult {
+    Success,
+    ErrorOutOfMemory,
+};
+
 /**
  * Abstract base class for all asynchronous memory allocators.
  */
@@ -25,9 +30,13 @@ class AsyncAllocator {
      *  Allocates `nbytes` of memory and returns the pointer in `addr_out`. The allocated
      *  region can only be used after the events in `deps_out` have completed.
      *
-     *  Returns `true` if the operation was successful, and `false` otherwise.
+     *  Returns `AllocationResult::Success` if the operation was successful.
      */
-    virtual bool allocate_async(size_t nbytes, void** addr_out, DeviceEventSet* deps_out) = 0;
+    virtual AllocationResult allocate_async(
+        size_t nbytes,
+        void** addr_out,
+        DeviceEventSet* deps_out
+    ) = 0;
 
     /**
      * Deallocates the give address. This address MUST be previously allocated using
@@ -61,9 +70,9 @@ class SyncAllocator: public AsyncAllocator {
     /**
      * Allocate `nbytes` bytes of memory and sets the pointer in `addr_out`.
      *
-     *  Returns `true` if the operation was successful, and `false` otherwise.
+     *  Returns `AllocationResult::Success` if the operation was successful.
      */
-    virtual bool allocate(size_t nbytes, void** addr_out) = 0;
+    virtual AllocationResult allocate(size_t nbytes, void** addr_out) = 0;
 
     /**
      * Deallocates the give address. This address MUST be previously allocated using
@@ -71,7 +80,7 @@ class SyncAllocator: public AsyncAllocator {
      */
     virtual void deallocate(void* addr, size_t nbytes) = 0;
 
-    bool allocate_async(size_t nbytes, void** addr_out, DeviceEventSet* deps_out) final;
+    AllocationResult allocate_async(size_t nbytes, void** addr_out, DeviceEventSet* deps_out) final;
     void deallocate_async(void* addr, size_t nbytes, DeviceEventSet deps) final;
     void make_progress() final;
     void trim(size_t nbytes_remaining = 0) final;

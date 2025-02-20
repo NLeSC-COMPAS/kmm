@@ -10,10 +10,14 @@ class MemorySystemBase {
   public:
     virtual ~MemorySystemBase() = default;
 
-    virtual bool allocate_host(size_t nbytes, void** ptr_out, DeviceEventSet* deps_out) = 0;
+    virtual AllocationResult allocate_host(
+        size_t nbytes,
+        void** ptr_out,
+        DeviceEventSet* deps_out
+    ) = 0;
     virtual void deallocate_host(void* ptr, size_t nbytes, DeviceEventSet deps) = 0;
 
-    virtual bool allocate_device(
+    virtual AllocationResult allocate_device(
         DeviceId device_id,
         size_t nbytes,
         GPUdeviceptr* ptr_out,
@@ -75,10 +79,10 @@ class MemorySystem: public MemorySystemBase {
     void trim_host(size_t bytes_remaining = 0);
     void trim_device(size_t bytes_remaining = 0);
 
-    bool allocate_host(size_t nbytes, void** ptr_out, DeviceEventSet* deps_out) final;
+    AllocationResult allocate_host(size_t nbytes, void** ptr_out, DeviceEventSet* deps_out) final;
     void deallocate_host(void* ptr, size_t nbytes, DeviceEventSet deps) final;
 
-    bool allocate_device(
+    AllocationResult allocate_device(
         DeviceId device_id,
         size_t nbytes,
         GPUdeviceptr* ptr_out,

@@ -9,20 +9,26 @@ SyncAllocator::SyncAllocator(std::shared_ptr<DeviceStreamManager> streams, size_
 
 SyncAllocator::~SyncAllocator() {}
 
-bool SyncAllocator::allocate_async(size_t nbytes, void** addr_out, DeviceEventSet* deps_out) {
+AllocationResult SyncAllocator::allocate_async(
+    size_t nbytes,
+    void** addr_out,
+    DeviceEventSet* deps_out
+) {
     KMM_ASSERT(nbytes > 0);
     make_progress();
 
     while (true) {
         if (m_bytes_limit - m_bytes_in_use >= nbytes) {
-            if (this->allocate(nbytes, addr_out)) {
+            auto result = this->allocate(nbytes, addr_out);
+
+            if (result == AllocationResult::Success) {
                 m_bytes_in_use += nbytes;
-                return true;
+                return AllocationResult::Success;
             }
         }
 
         if (m_pending_deallocs.empty()) {
-            return false;
+            return AllocationResult::ErrorOutOfMemory;
         }
 
         auto d = m_pending_deallocs.front();
