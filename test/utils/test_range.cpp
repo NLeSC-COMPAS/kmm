@@ -7,20 +7,23 @@ using namespace kmm;
 
 TEST_CASE("Range basics") {
     Range<> a {0, 0};
-    CHECK(a.begin == 0);
-    CHECK(a.end == 0);
-
     Range<> b {3};
-    CHECK(b.begin == 0);
-    CHECK(b.end == 3);
-
     Range<> c {1, 5};
-    CHECK(c.begin == 1);
-    CHECK(c.end == 5);
-
     Range<> d {Range<char> {3, 8}};
-    CHECK(d.begin == 3);
-    CHECK(d.end == 8);
+
+    SECTION("constructor") {
+        CHECK(a.begin == 0);
+        CHECK(a.end == 0);
+
+        CHECK(b.begin == 0);
+        CHECK(b.end == 3);
+
+        CHECK(c.begin == 1);
+        CHECK(c.end == 5);
+
+        CHECK(d.begin == 3);
+        CHECK(d.end == 8);
+    }
 
     SECTION("contains index") {
         CHECK_FALSE(a.contains(-1));
@@ -88,6 +91,28 @@ TEST_CASE("Range basics") {
         CHECK(d.overlaps(d));
     }
 
+    SECTION("intersection range") {
+        CHECK(a.intersection(a) == a);
+        CHECK(a.intersection(b).is_empty());
+        CHECK(a.intersection(c).is_empty());
+        CHECK(a.intersection(d).is_empty());
+
+        CHECK(b.intersection(a).is_empty());
+        CHECK(b.intersection(b) == b);
+        CHECK(b.intersection(c) == Range<>(1, 3));
+        CHECK(b.intersection(d).is_empty());
+
+        CHECK(c.intersection(a).is_empty());
+        CHECK(c.intersection(b) == Range<>(1, 3));
+        CHECK(c.intersection(c) == c);
+        CHECK(c.intersection(d) == Range<>(3, 5));
+
+        CHECK(d.intersection(a).is_empty());
+        CHECK(d.intersection(b).is_empty());
+        CHECK(d.intersection(c) == Range<>(3, 5));
+        CHECK(d.intersection(d) == d);
+    }
+
     SECTION("size") {
         CHECK(a.size() == 0);
         CHECK(b.size() == 3);
@@ -103,12 +128,45 @@ TEST_CASE("Range basics") {
     }
 
     SECTION("split_off") {
-        auto x = d.split_off(5);
-        CHECK(x.begin == 5);
-        CHECK(x.end == 8);
+        SECTION("before") {
+            auto x = d.split_off(1);
+            CHECK(d.begin == 3);
+            CHECK(d.end == 3);
+            CHECK(x.begin == 3);
+            CHECK(x.end == 8);
+        }
 
-        CHECK(d.begin == 3);
-        CHECK(d.end == 5);
+        SECTION("begin") {
+            auto x = d.split_off(3);
+            CHECK(d.begin == 3);
+            CHECK(d.end == 3);
+            CHECK(x.begin == 3);
+            CHECK(x.end == 8);
+        }
+
+        SECTION("middle") {
+            auto x = d.split_off(5);
+            CHECK(d.begin == 3);
+            CHECK(d.end == 5);
+            CHECK(x.begin == 5);
+            CHECK(x.end == 8);
+        }
+
+        SECTION("end") {
+            auto x = d.split_off(8);
+            CHECK(d.begin == 3);
+            CHECK(d.end == 8);
+            CHECK(x.begin == 8);
+            CHECK(x.end == 8);
+        }
+
+        SECTION("after") {
+            auto x = d.split_off(10);
+            CHECK(d.begin == 3);
+            CHECK(d.end == 8);
+            CHECK(x.begin == 8);
+            CHECK(x.end == 8);
+        }
     }
 }
 

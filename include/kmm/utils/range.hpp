@@ -148,7 +148,7 @@ KMM_HOST_DEVICE bool operator!=(const Range<T>& lhs, const Range<T>& rhs) {
 
 namespace kmm {
 
-template<size_t N, typename T>
+template<typename T>
 std::ostream& operator<<(std::ostream& stream, const Range<T>& p) {
     return stream << p.begin << "..." << p.end;
 }
