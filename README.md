@@ -3,20 +3,26 @@
 [![CPU Build Status](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-multi-compiler.yml/badge.svg)](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-multi-compiler.yml)
 [![CUDA Build Status](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-cuda-multi-compiler.yml/badge.svg)](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-cuda-multi-compiler.yml)
 
-The _Kernel Memory Manager_ (KMM) is a lightweight, high-performance framework designed for parallel dataflow execution and efficient memory management on multi-GPU platforms.
+The **Kernel Memory Manager** (KMM) is a lightweight, high-performance framework designed for parallel dataflow execution and efficient memory management on multi-GPU platforms.
 It automatically manages GPU memory, partitions workloads across multiple GPUs, and schedules tasks efficiently.
-Unlike frameworks that require a specific programming model, KMM seamlessly integrates existing GPU kernels or functions without the need to rewrite your code.
-KMM enables massive workloads in scientific computing, deep learning, and high-performance data processing to run with minimal overhead.
+Unlike frameworks that require a specific programming model, KMM integrates existing GPU kernels or functions without the need to fully rewrite your code.
+KMM can handle the massive workloads from scientific computing, deep learning, and high-performance data processing.
 
 
 ## Features
 
-* *Efficient Memory Management*: Automatically allocates memory and transfers data between GPU and host only when neccessary.
-* *Scalable Computing*: Seamlessly “spills” data from the GPU to host memory, enabling execution of large datasets that exceed GPU memory limits.
-* *Optimized Task Scheduling*: Uses a DAG scheduler to track dependencies and execute compute kernels in a sequentially consistent order while maximizing parallelism.
-* *Flexible Work Partitioning*: Flexible Work Partitioning: Splits workloads and data according to user-defined strategies, ensuring efficient utilization of available resources.
-* *Portable Execution*: Portable Execution: Supports CUDA, HIP, and CPU-based functions, allowing seamless integration of existing kernels with minimal code changes.
-* *Multi-Dimensional Arrays*: Handles ND-arrays of any shape, dimensionality, and data type.
+* **Efficient Memory Management**:
+  * Automatically allocates memory and transfers data between GPU and host only when neccessary.
+* **Scalable Computing**: 
+  * Seamlessly "spills" data from the GPU to host memory, enabling processing of huge datasets that exceed GPU memory.
+* **Optimized Task Scheduling**: 
+  * DAG scheduler to track dependencies and execute kernels in a sequentially consistent order while maximizing parallelism.
+* **Flexible Work Partitioning**: 
+  * Splits workloads and data according to user-defined strategies, ensuring efficient utilization of available resources.
+* **Portable Execution**: 
+  * Supports CUDA, HIP, and CPU-based functions, allowing seamless integration of existing kernels with minimal code changes.
+* **Multi-Dimensional Arrays**: 
+  * Handles ND-arrays of any shape, dimensionality, and data type.
 
 
 ## Resources
@@ -33,9 +39,9 @@ Example: A simple vector add kernel:
 
 __global__ void vector_add(
     kmm::Range<int64_t> range,
-    kmm::gpu_subview_mut<float> output,
-    kmm::gpu_subview<float> left,
-    kmm::gpu_subview<float> right
+    kmm::GPUSubviewMut<float> output,
+    kmm::GPUSubview<float> left,
+    kmm::GPUSubview<float> right
 ) {
     int64_t i = blockIdx.x * blockDim.x + threadIdx.x + range.begin;
     if (i >= range.end) return;
