@@ -1,3 +1,5 @@
+#pragma once
+
 #include "kmm/core/backends.hpp"
 #include "kmm/memops/types.hpp"
 

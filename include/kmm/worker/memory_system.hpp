@@ -1,5 +1,7 @@
+#pragma once
+
 #include "kmm/allocators/base.hpp"
-#include "kmm/core/macros.hpp"
+#include "kmm/utils/macros.hpp"
 #include "kmm/worker/stream_manager.hpp"
 
 namespace kmm {

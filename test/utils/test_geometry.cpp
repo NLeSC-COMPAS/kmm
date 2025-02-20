@@ -1,6 +1,7 @@
 #include "catch2/catch_all.hpp"
 
-#include "kmm/core/geometry.hpp"
+#include "kmm/utils/geometry.hpp"
+
 #define ASSERT_EQ(A, B) REQUIRE((A) == (B))
 
 using namespace kmm;

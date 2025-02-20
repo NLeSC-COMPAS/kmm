@@ -1,6 +1,6 @@
 #pragma once
 
-#include "kmm/core/macros.hpp"
+#include "kmm/utils/macros.hpp"
 
 namespace kmm {
 
@@ -17,12 +17,12 @@ KMM_HOST_DEVICE bool operator==(const KeyValue<T>& a, const KeyValue<T>& b) {
 
 template<typename T>
 KMM_HOST_DEVICE bool operator<(const KeyValue<T>& a, const KeyValue<T>& b) {
-    return a.value < b.value || (!(a.value > b.value) && a.key < b.key);
+    return a.value < b.value || (!(b.value < a.value) && a.key < b.key);
 }
 
 template<typename T>
 KMM_HOST_DEVICE bool operator<=(const KeyValue<T>& a, const KeyValue<T>& b) {
-    return a.value < b.value || (!(a.value > b.value) && a.key <= b.key);
+    return a.value < b.value || (!(b.value < a.value) && a.key <= b.key);
 }
 
 template<typename T>

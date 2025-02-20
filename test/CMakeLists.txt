@@ -3,6 +3,7 @@ file(GLOB_RECURSE sources
   "${PROJECT_SOURCE_DIR}/test/*.cu")
 
 add_executable(kmmTest ${sources})
+
 if(KMM_USE_HIP)
     set_source_files_properties(${sources} PROPERTIES LANGUAGE HIP)
 endif()

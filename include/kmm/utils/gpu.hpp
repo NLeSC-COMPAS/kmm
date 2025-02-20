@@ -6,7 +6,7 @@
 #include <vector>
 
 #include "kmm/core/backends.hpp"
-#include "kmm/core/macros.hpp"
+#include "kmm/utils/macros.hpp"
 
 #define KMM_GPU_CHECK(...)                                                        \
     do {                                                                          \

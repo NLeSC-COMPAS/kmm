@@ -2,7 +2,7 @@
 
 #include <cstddef>
 
-#include "kmm/core/macros.hpp"
+#include "kmm/utils/macros.hpp"
 
 #ifdef KMM_USE_CUDA
     #include <cublas_v2.h>

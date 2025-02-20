@@ -4,8 +4,8 @@
 #include "spdlog/spdlog.h"
 
 #include "kmm/api/argument.hpp"
-#include "kmm/core/geometry.hpp"
 #include "kmm/core/reduction.hpp"
+#include "kmm/utils/geometry.hpp"
 #include "kmm/utils/integer_fun.hpp"
 
 namespace kmm {

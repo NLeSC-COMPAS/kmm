@@ -22,7 +22,7 @@
 #define KMM_INLINE   __attribute__((always_inline)) inline
 #define KMM_NOINLINE __attribute__((noinline))
 
-#define KMM_ASSUME(expr)   __builtin_assume(expr)
+#define KMM_ASSUME(expr)   (__builtin_assume((expr)))
 #define KMM_UNLIKELY(expr) (__builtin_expect(!(expr), false))
 #define KMM_LIKELY(expr)   KMM_UNLIKELY(!(expr))
 

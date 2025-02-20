@@ -1,8 +1,7 @@
 #pragma once
 
-#include "macros.hpp"
-
 #include "kmm/utils/checked_math.hpp"
+#include "kmm/utils/macros.hpp"
 
 namespace kmm {
 

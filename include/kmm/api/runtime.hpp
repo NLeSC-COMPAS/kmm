@@ -6,10 +6,10 @@
 #include "array.hpp"
 #include "launcher.hpp"
 
-#include "kmm/core/range.hpp"
 #include "kmm/core/system_info.hpp"
 #include "kmm/utils/checked_math.hpp"
 #include "kmm/utils/panic.hpp"
+#include "kmm/utils/range.hpp"
 #include "kmm/utils/view.hpp"
 
 namespace kmm {

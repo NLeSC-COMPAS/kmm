@@ -1,7 +1,7 @@
 #pragma once
 
 #include "kmm/core/reduction.hpp"
-#include "kmm/core/macros.hpp"
+#include "kmm/utils/macros.hpp"
 
 namespace kmm {
 

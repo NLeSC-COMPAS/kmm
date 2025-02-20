@@ -5,8 +5,8 @@
 
 #include "fmt/ostream.h"
 
-#include "kmm/core/macros.hpp"
 #include "kmm/utils/checked_math.hpp"
+#include "kmm/utils/macros.hpp"
 #include "kmm/utils/panic.hpp"
 #include "kmm/utils/small_vector.hpp"
 
