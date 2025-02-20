@@ -7,10 +7,7 @@
 using real_type = float;
 const unsigned int max_iterations = 10;
 
-__global__ void initialize_range(
-    kmm::Range<int64_t> chunk,
-    kmm::gpu_subview_mut<real_type> output
-) {
+__global__ void initialize_range(kmm::Range<int64_t> chunk, kmm::GPUSubviewMut<real_type> output) {
     int64_t i = blockIdx.x * blockDim.x + threadIdx.x + chunk.begin;
     if (i >= chunk.end) {
         return;
@@ -22,7 +19,7 @@ __global__ void initialize_range(
 __global__ void fill_range(
     kmm::Range<int64_t> chunk,
     real_type value,
-    kmm::gpu_subview_mut<real_type> output
+    kmm::GPUSubviewMut<real_type> output
 ) {
     int64_t i = blockIdx.x * blockDim.x + threadIdx.x + chunk.begin;
     if (i >= chunk.end) {
@@ -34,9 +31,9 @@ __global__ void fill_range(
 
 __global__ void vector_add(
     kmm::Range<int64_t> range,
-    kmm::gpu_subview_mut<real_type> output,
-    kmm::gpu_subview<real_type> left,
-    kmm::gpu_subview<real_type> right
+    kmm::GPUSubviewMut<real_type> output,
+    kmm::GPUSubview<real_type> left,
+    kmm::GPUSubview<real_type> right
 ) {
     int64_t i = blockIdx.x * blockDim.x + threadIdx.x + range.begin;
 
@@ -71,6 +68,7 @@ bool inner_loop(
         _x,
         write(A[_x])
     );
+
     rt.parallel_submit(
         {n},
         {chunk_size},
@@ -79,6 +77,7 @@ bool inner_loop(
         static_cast<real_type>(1.0),
         write(B[_x])
     );
+
     rt.synchronize();
     auto timing_stop_init = std::chrono::steady_clock::now();
     init_time += timing_stop_init - timing_start_init;
@@ -94,6 +93,7 @@ bool inner_loop(
         A[_x],
         B[_x]
     );
+
     rt.synchronize();
     auto timing_stop = std::chrono::steady_clock::now();
     run_time += timing_stop - timing_start;
@@ -109,6 +109,7 @@ bool inner_loop(
             return false;
         }
     }
+
     return true;
 }
 

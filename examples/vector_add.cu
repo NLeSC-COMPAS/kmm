@@ -2,7 +2,7 @@
 
 #include "kmm/kmm.hpp"
 
-__global__ void initialize_range(kmm::Range<int64_t> range, kmm::gpu_subview_mut<float> output) {
+__global__ void initialize_range(kmm::Range<int64_t> range, kmm::GPUSubviewMut<float> output) {
     int64_t i = blockIdx.x * blockDim.x + threadIdx.x + range.begin;
     if (i >= range.end) {
         return;
@@ -14,7 +14,7 @@ __global__ void initialize_range(kmm::Range<int64_t> range, kmm::gpu_subview_mut
 __global__ void fill_range(
     kmm::Range<int64_t> range,
     float value,
-    kmm::gpu_subview_mut<float> output
+    kmm::GPUSubviewMut<float> output
 ) {
     int64_t i = blockIdx.x * blockDim.x + threadIdx.x + range.begin;
     if (i >= range.end) {
@@ -26,9 +26,9 @@ __global__ void fill_range(
 
 __global__ void vector_add(
     kmm::Range<int64_t> range,
-    kmm::gpu_subview_mut<float> output,
-    kmm::gpu_subview<float> left,
-    kmm::gpu_subview<float> right
+    kmm::GPUSubviewMut<float> output,
+    kmm::GPUSubview<float> left,
+    kmm::GPUSubview<float> right
 ) {
     int64_t i = blockIdx.x * blockDim.x + threadIdx.x + range.begin;
 

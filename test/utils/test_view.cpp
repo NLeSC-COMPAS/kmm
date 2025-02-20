@@ -7,7 +7,7 @@ using namespace kmm;
 
 TEST_CASE("view, bound_left_to_right_layout") {
     std::vector<int> vec = {1, 2, 3, 4, 5, 6, 7, 8};
-    basic_view<int, views::dynamic_domain<1>, views::left_to_right_layout<1>> v = {
+    AbstractView<int, views::dynamic_domain<1>, views::left_to_right_layout<1>> v = {
         vec.data(),
         {{8}}};
 
@@ -34,7 +34,7 @@ TEST_CASE("view, bound_left_to_right_layout") {
 
 TEST_CASE("view, bound2_left_to_right_layout") {
     std::vector<int> vec = {1, 2, 3, 4, 5, 6, 7, 8};
-    basic_view<int, views::dynamic_domain<2>, views::left_to_right_layout<2>> v = {
+    AbstractView<int, views::dynamic_domain<2>, views::left_to_right_layout<2>> v = {
         vec.data(),
         {{4, 2}}};
 
@@ -70,7 +70,7 @@ TEST_CASE("view, bound2_left_to_right_layout") {
 
 TEST_CASE("view, bound2_right_to_left_layout") {
     std::vector<int> vec = {1, 2, 3, 4, 5, 6, 7, 8};
-    basic_view<int, views::dynamic_domain<2>, views::right_to_left_layout<2>> v = {
+    AbstractView<int, views::dynamic_domain<2>, views::right_to_left_layout<2>> v = {
         vec.data(),
         {{4, 2}}};
 
@@ -106,7 +106,7 @@ TEST_CASE("view, bound2_right_to_left_layout") {
 
 TEST_CASE("view, subbound2_right_to_left_layout") {
     std::vector<int> vec = {1, 2, 3, 4, 5, 6, 7, 8};
-    basic_view<int, views::dynamic_subdomain<2>, views::right_to_left_layout<2>> v = {
+    AbstractView<int, views::dynamic_subdomain<2>, views::right_to_left_layout<2>> v = {
         vec.data(),
         {{100, 42}, {4, 2}}};
 
@@ -150,49 +150,49 @@ TEST_CASE("view, domain_conversions") {
     CHECK_EQ((p).stride(1), 1);  \
     CHECK((p).is_contiguous());
 
-    auto a = basic_view<  //
+    auto a = AbstractView<  //
         int,
         views::static_domain<views::default_index_type, 10, 20>,
         views::right_to_left_layout<2>> {nullptr};
     CHECK_CORRECT_VIEW(a);
 
-    auto b = basic_view<  //
+    auto b = AbstractView<  //
         int,
         views::dynamic_domain<2>,
         views::right_to_left_layout<2>>(a);
     CHECK_CORRECT_VIEW(b);
 
-    auto c = basic_view<  //
+    auto c = AbstractView<  //
         int,
         views::dynamic_subdomain<2>,
         views::right_to_left_layout<2>>(a);
     CHECK_CORRECT_VIEW(c);
 
-    auto d = basic_view<  //
+    auto d = AbstractView<  //
         int,
         views::dynamic_subdomain<2>,
         views::right_to_left_layout<2>>(b);
     CHECK_CORRECT_VIEW(d);
 
-    auto e = basic_view<  //
+    auto e = AbstractView<  //
         int,
         views::dynamic_subdomain<2>,
         views::dynamic_layout<2>>(a);
     CHECK_CORRECT_VIEW(e);
 
-    auto f = basic_view<  //
+    auto f = AbstractView<  //
         int,
         views::dynamic_subdomain<2>,
         views::dynamic_layout<2>>(b);
     CHECK_CORRECT_VIEW(f);
 
-    auto g = basic_view<  //
+    auto g = AbstractView<  //
         int,
         views::dynamic_subdomain<2>,
         views::dynamic_layout<2>>(c);
     CHECK_CORRECT_VIEW(g);
 
-    auto h = basic_view<  //
+    auto h = AbstractView<  //
         int,
         views::dynamic_subdomain<2>,
         views::dynamic_layout<2>>(d);
@@ -211,43 +211,43 @@ TEST_CASE("view, subdomain_conversions") {
     CHECK_EQ((p).stride(1), 1);  \
     CHECK((p).is_contiguous());
 
-    auto a = basic_view<  //
+    auto a = AbstractView<  //
         int,
         views::static_offset<views::static_domain<views::default_index_type, 10, 20>, 3, 7>,
         views::right_to_left_layout<2>> {nullptr};
     CHECK_CORRECT_VIEW(a);
 
-    auto b = basic_view<  //
+    auto b = AbstractView<  //
         int,
         views::static_offset<views::dynamic_domain<2>, 3, 7>,
         views::right_to_left_layout<2>>(a);
     CHECK_CORRECT_VIEW(b);
 
-    auto c = basic_view<  //
+    auto c = AbstractView<  //
         int,
         views::dynamic_subdomain<2>,
         views::right_to_left_layout<2>>(a);
     CHECK_CORRECT_VIEW(c);
 
-    auto d = basic_view<  //
+    auto d = AbstractView<  //
         int,
         views::dynamic_subdomain<2>,
         views::right_to_left_layout<2>>(b);
     CHECK_CORRECT_VIEW(d);
 
-    auto e = basic_view<  //
+    auto e = AbstractView<  //
         int,
         views::dynamic_subdomain<2>,
         views::dynamic_layout<2>>(a);
     CHECK_CORRECT_VIEW(e);
 
-    auto f = basic_view<int, views::dynamic_subdomain<2>, views::dynamic_layout<2>>(b);
+    auto f = AbstractView<int, views::dynamic_subdomain<2>, views::dynamic_layout<2>>(b);
     CHECK_CORRECT_VIEW(f);
 
-    auto g = basic_view<int, views::dynamic_subdomain<2>, views::dynamic_layout<2>>(c);
+    auto g = AbstractView<int, views::dynamic_subdomain<2>, views::dynamic_layout<2>>(c);
     CHECK_CORRECT_VIEW(g);
 
-    auto h = basic_view<int, views::dynamic_subdomain<2>, views::dynamic_layout<2>>(d);
+    auto h = AbstractView<int, views::dynamic_subdomain<2>, views::dynamic_layout<2>>(d);
     CHECK_CORRECT_VIEW(h);
 
 #undef CHECK_CORRECT_VIEW
@@ -255,13 +255,13 @@ TEST_CASE("view, subdomain_conversions") {
 
 TEST_CASE("view, drop_axis_dim2") {
     auto vec = std::vector<float>(200);
-    auto a = basic_view<  //
+    auto a = AbstractView<  //
         float,
         views::dynamic_subdomain<2>,
         views::right_to_left_layout<2>> {vec.data(), {{3, 7}, {10, 20}}};
 
     // Drop axis 0
-    basic_view<float, views::dynamic_subdomain<1>, views::right_to_left_layout<1>> b =
+    AbstractView<float, views::dynamic_subdomain<1>, views::right_to_left_layout<1>> b =
         a.drop_axis();
     CHECK_EQ(b.size(0), 20);
     CHECK_EQ(b.offset(0), 7);
@@ -275,7 +275,7 @@ TEST_CASE("view, drop_axis_dim2") {
     CHECK_EQ(b.data(), vec.data() + 2 * 20);
 
     // Drop axis 1
-    basic_view<float, views::dynamic_subdomain<1>, views::dynamic_layout<1>> c = a.drop_axis<1>();
+    AbstractView<float, views::dynamic_subdomain<1>, views::dynamic_layout<1>> c = a.drop_axis<1>();
     CHECK_EQ(c.size(0), 10);
     CHECK_EQ(c.offset(0), 3);
     CHECK_EQ(c.stride(0), 20);
@@ -290,13 +290,13 @@ TEST_CASE("view, drop_axis_dim2") {
 
 TEST_CASE("view, drop_axis_dim3") {
     auto vec = std::vector<float>(200);
-    auto a = basic_view<  //
+    auto a = AbstractView<  //
         float,
         views::dynamic_subdomain<3>,
         views::right_to_left_layout<3>> {vec.data(), {{3, 7, 1}, {2, 5, 20}}};
 
     // Drop axis 0
-    basic_view<float, views::dynamic_subdomain<2>, views::right_to_left_layout<2>> b =
+    AbstractView<float, views::dynamic_subdomain<2>, views::right_to_left_layout<2>> b =
         a.drop_axis();
     CHECK_EQ(b.size(0), 5);
     CHECK_EQ(b.offset(0), 7);
@@ -316,7 +316,7 @@ TEST_CASE("view, drop_axis_dim3") {
     CHECK_EQ(b.data() - vec.data(), 100);
 
     // Drop axis 1
-    basic_view<float, views::dynamic_subdomain<2>, views::dynamic_layout<2>> c = a.drop_axis<1>();
+    AbstractView<float, views::dynamic_subdomain<2>, views::dynamic_layout<2>> c = a.drop_axis<1>();
     CHECK_EQ(c.size(0), 2);
     CHECK_EQ(c.offset(0), 3);
     CHECK_EQ(c.stride(0), 100);
@@ -335,7 +335,7 @@ TEST_CASE("view, drop_axis_dim3") {
     CHECK_EQ(c.data() - vec.data(), +40);
 
     // Drop axis 3
-    basic_view<float, views::dynamic_subdomain<2>, views::dynamic_layout<2>> d = a.drop_axis<2>();
+    AbstractView<float, views::dynamic_subdomain<2>, views::dynamic_layout<2>> d = a.drop_axis<2>();
     CHECK_EQ(d.size(0), 2);
     CHECK_EQ(d.offset(0), 3);
     CHECK_EQ(d.stride(0), 100);
@@ -356,7 +356,7 @@ TEST_CASE("view, drop_axis_dim3") {
 
 TEST_CASE("view, scalar") {
     auto value = int(1);
-    auto v = basic_view<  //
+    auto v = AbstractView<  //
         int,
         views::dynamic_subdomain<0>,
         views::right_to_left_layout<0>> {&value};

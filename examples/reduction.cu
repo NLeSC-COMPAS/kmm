@@ -2,7 +2,7 @@
 
 __global__ void initialize_matrix_kernel(
     kmm::Bounds<2, int> chunk,
-    kmm::gpu_subview_mut<float, 2> matrix
+    kmm::GPUSubviewMut<float, 2> matrix
 ) {
     int i = blockIdx.y * blockDim.y + threadIdx.y + chunk.y.begin;
     int j = blockIdx.x * blockDim.x + threadIdx.x + chunk.x.begin;
@@ -14,8 +14,8 @@ __global__ void initialize_matrix_kernel(
 
 __global__ void sum_total_kernel(
     kmm::Bounds<2, int> chunk,
-    kmm::gpu_subview<float, 2> matrix,
-    kmm::gpu_subview_mut<float, 2> sum
+    kmm::GPUSubview<float, 2> matrix,
+    kmm::GPUSubviewMut<float, 2> sum
 ) {
     int i = blockIdx.y * blockDim.y + threadIdx.y + chunk.y.begin;
     int j = blockIdx.x * blockDim.x + threadIdx.x + chunk.x.begin;
@@ -27,8 +27,8 @@ __global__ void sum_total_kernel(
 
 __global__ void sum_rows_kernel(
     kmm::Bounds<2, int> chunk,
-    kmm::gpu_subview<float, 2> matrix,
-    kmm::gpu_subview_mut<float, 2> rows_sum
+    kmm::GPUSubview<float, 2> matrix,
+    kmm::GPUSubviewMut<float, 2> rows_sum
 ) {
     int i = blockIdx.y * blockDim.y + threadIdx.y + chunk.y.begin;
     int j = blockIdx.x * blockDim.x + threadIdx.x + chunk.x.begin;
@@ -40,8 +40,8 @@ __global__ void sum_rows_kernel(
 
 __global__ void sum_cols_kernel(
     kmm::Bounds<2, int> chunk,
-    kmm::gpu_subview<float, 2> matrix,
-    kmm::gpu_subview_mut<float, 2> cols_sum
+    kmm::GPUSubview<float, 2> matrix,
+    kmm::GPUSubviewMut<float, 2> cols_sum
 ) {
     int i = blockIdx.y * blockDim.y + threadIdx.y + chunk.y.begin;
     int j = blockIdx.x * blockDim.x + threadIdx.x + chunk.x.begin;

@@ -138,7 +138,7 @@ class Runtime {
      * Alias for `allocate(v.data(), v.sizes())`
      */
     template<typename T, size_t N = 1>
-    Array<T, N> allocate(view<T, N> v) const {
+    Array<T, N> allocate(View<T, N> v) const {
         return allocate(v.data(), v.sizes());
     }
 
@@ -166,12 +166,12 @@ class Runtime {
         return allocate(v.begin(), v.size());
     }
 
+    BufferId allocate_bytes(const void* data, DataLayout layout, MemoryId memory_id) const;
+
     /**
      * Returns the memory affinity for a given address.
      */
     MemoryId memory_affinity_for_address(const void* address) const;
-
-    BufferId allocate_bytes(const void* data, DataLayout layout, MemoryId memory_id) const;
 
     /**
      * Returns `true` if the event with the provided identifier has finished, or `false` otherwise.

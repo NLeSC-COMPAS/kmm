@@ -6,7 +6,7 @@ void initialize_image(
     unsigned long seed,
     int width,
     int height,
-    kmm::subview_mut<uint8_t, 2> image
+    kmm::SubviewMut<uint8_t, 2> image
 ) {
     std::mt19937 rand {seed};
     std::uniform_int_distribution<uint8_t> dist {};
@@ -22,7 +22,7 @@ void initialize_images(
     kmm::Range<int> subrange,
     int width,
     int height,
-    kmm::subview_mut<uint8_t, 3> images
+    kmm::SubviewMut<uint8_t, 3> images
 ) {
     for (auto i = subrange.begin; i < subrange.end; i++) {
         initialize_image(i, width, height, images.drop_axis<0>(i));
@@ -33,8 +33,8 @@ __global__ void calculate_histogram(
     kmm::Range<int> image_ids,
     int width,
     int height,
-    kmm::gpu_subview<uint8_t, 3> images,
-    kmm::gpu_subview_mut<int, 2> histogram
+    kmm::GPUSubview<uint8_t, 3> images,
+    kmm::GPUSubviewMut<int, 2> histogram
 ) {
     int image_id = blockIdx.z * blockDim.z + threadIdx.z + image_ids.begin;
     int i = blockIdx.y * blockDim.y + threadIdx.y;

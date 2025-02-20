@@ -9,10 +9,10 @@
 
 __global__ void cn_pnpoly(
     kmm::Range<int> chunk,
-    kmm::gpu_subview_mut<int> bitmap,
-    kmm::gpu_subview<float2> points,
+    kmm::GPUSubviewMut<int> bitmap,
+    kmm::GPUSubview<float2> points,
     int nvertices,
-    kmm::gpu_view<float2> vertices
+    kmm::GPUView<float2> vertices
 ) {
     int i = blockIdx.x * blockDim.x + threadIdx.x + chunk.begin;
 
@@ -39,7 +39,7 @@ __global__ void cn_pnpoly(
     }
 }
 
-__global__ void init_points(kmm::Range<int> chunk, kmm::gpu_subview_mut<float2> points) {
+__global__ void init_points(kmm::Range<int> chunk, kmm::GPUSubviewMut<float2> points) {
     int i = blockIdx.x * blockDim.x + threadIdx.x + chunk.begin;
 
     if (i < chunk.end) {
@@ -55,7 +55,7 @@ __global__ void init_points(kmm::Range<int> chunk, kmm::gpu_subview_mut<float2> 
     }
 }
 
-void init_polygon(kmm::Range<int> chunk, int nvertices, kmm::view_mut<float2> vertices) {
+void init_polygon(kmm::Range<int> chunk, int nvertices, kmm::ViewMut<float2> vertices) {
     for (int64_t i = chunk.begin; i < chunk.end; i++) {
         float angle = float(i) / float(nvertices) * float(2.0F * M_PI);
         vertices[i] = {cosf(angle), sinf(angle)};

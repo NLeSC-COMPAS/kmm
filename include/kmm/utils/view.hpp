@@ -600,9 +600,9 @@ struct convert_pointer<T, const T>: convert_pointer<const T, const T> {};
 
 }  // namespace views
 template<typename View, typename T, typename D, size_t K = 0, size_t N = D::rank>
-struct view_subscript {
-    using type = view_subscript;
-    using subscript_type = typename view_subscript<View, T, D, K + 1>::type;
+struct ViewSubscript {
+    using type = ViewSubscript;
+    using subscript_type = typename ViewSubscript<View, T, D, K + 1>::type;
     using index_type = typename D::index_type;
     using ndindex_type = fixed_array<index_type, D::rank>;
 
@@ -612,12 +612,12 @@ struct view_subscript {
     }
 
     KMM_HOST_DEVICE
-    view_subscript(const View* base, ndindex_type index) noexcept : base_(base), index_(index) {}
+    ViewSubscript(const View* base, ndindex_type index) noexcept : base_(base), index_(index) {}
 
     KMM_HOST_DEVICE
     subscript_type operator[](index_type index) {
         index_[K] = index;
-        return view_subscript<View, T, D, K + 1>::instantiate(base_, index_);
+        return ViewSubscript<View, T, D, K + 1>::instantiate(base_, index_);
     }
 
   private:
@@ -626,7 +626,7 @@ struct view_subscript {
 };
 
 template<typename View, typename T, typename D, size_t N>
-struct view_subscript<View, T, D, N, N> {
+struct ViewSubscript<View, T, D, N, N> {
     using type = T&;
     using index_type = typename D::index_type;
     using ndindex_type = fixed_array<index_type, N>;
@@ -638,18 +638,18 @@ struct view_subscript<View, T, D, N, N> {
 };
 
 template<typename Derived, typename T, typename D, size_t N = D::rank>
-struct basic_view_base {
+struct AbstractViewBase {
     using index_type = typename D::index_type;
-    using subscript_type = typename view_subscript<Derived, T, D>::subscript_type;
+    using subscript_type = typename ViewSubscript<Derived, T, D>::subscript_type;
 
     KMM_HOST_DEVICE
     subscript_type operator[](index_type index) const {
-        return view_subscript<Derived, T, D>::instantiate(static_cast<const Derived*>(this))[index];
+        return ViewSubscript<Derived, T, D>::instantiate(static_cast<const Derived*>(this))[index];
     }
 };
 
 template<typename Derived, typename T, typename D>
-struct basic_view_base<Derived, T, D, 0> {
+struct AbstractViewBase<Derived, T, D, 0> {
     using reference = T&;
 
     KMM_HOST_DEVICE
@@ -659,14 +659,14 @@ struct basic_view_base<Derived, T, D, 0> {
 };
 
 template<typename T, typename D, typename L, typename A = views::host_accessor>
-struct basic_view:
+struct AbstractView:
     public D,
     public L,
     public A,
-    public basic_view_base<basic_view<T, D, L, A>, T, D> {
+    public AbstractViewBase<AbstractView<T, D, L, A>, T, D> {
     static_assert(D::rank == L::rank, "domain type and layout type must have equal rank");
 
-    using self_type = basic_view;
+    using self_type = AbstractView;
     using value_type = T;
     using domain_type = D;
     using layout_type = L;
@@ -683,14 +683,14 @@ struct basic_view:
     using origin_domain_type = views::dynamic_domain<rank, index_type>;
     using shifted_domain_type = views::dynamic_subdomain<rank, index_type>;
 
-    basic_view(const basic_view&) = default;
-    basic_view(basic_view&&) noexcept = default;
+    AbstractView(const AbstractView&) = default;
+    AbstractView(AbstractView&&) noexcept = default;
 
-    basic_view& operator=(const basic_view&) = default;
-    basic_view& operator=(basic_view&&) noexcept = default;
+    AbstractView& operator=(const AbstractView&) = default;
+    AbstractView& operator=(AbstractView&&) noexcept = default;
 
     KMM_HOST_DEVICE
-    basic_view(
+    AbstractView(
         pointer data,
         domain_type domain,
         layout_type layout,
@@ -703,12 +703,12 @@ struct basic_view:
     }
 
     KMM_HOST_DEVICE
-    basic_view(pointer data = nullptr, domain_type domain = {}) noexcept :
-        basic_view(data, domain, layout_type::from_domain(domain)) {}
+    AbstractView(pointer data = nullptr, domain_type domain = {}) noexcept :
+        AbstractView(data, domain, layout_type::from_domain(domain)) {}
 
     template<typename T2, typename D2, typename L2>
-    KMM_HOST_DEVICE basic_view(const basic_view<T2, D2, L2, A>& that) noexcept :
-        basic_view(
+    KMM_HOST_DEVICE AbstractView(const AbstractView<T2, D2, L2, A>& that) noexcept :
+        AbstractView(
             views::convert_pointer<T2, T>::call(that.data()),
             D::from_domain(that.domain()),
             L::from_layout(that.layout()),
@@ -716,8 +716,8 @@ struct basic_view:
         ) {}
 
     template<typename T2, typename D2, typename L2>
-    KMM_HOST_DEVICE basic_view& operator=(const basic_view<T2, D2, L2, A>& that) noexcept {
-        return *this = basic_view(that);
+    KMM_HOST_DEVICE AbstractView& operator=(const AbstractView<T2, D2, L2, A>& that) noexcept {
+        return *this = BasicView(that);
     }
 
     KMM_HOST_DEVICE
@@ -882,7 +882,7 @@ struct basic_view:
     }
 
     template<size_t Axis = 0>
-    KMM_HOST_DEVICE basic_view<
+    KMM_HOST_DEVICE AbstractView<
         value_type,
         typename views::drop_domain_axis<Axis, domain_type>::type,
         typename views::drop_layout_axis<Axis, layout_type>::type,
@@ -897,7 +897,7 @@ struct basic_view:
     }
 
     template<size_t Axis = 0>
-    KMM_HOST_DEVICE basic_view<
+    KMM_HOST_DEVICE AbstractView<
         value_type,
         typename views::drop_domain_axis<Axis, domain_type>::type,
         typename views::drop_layout_axis<Axis, layout_type>::type,
@@ -907,19 +907,19 @@ struct basic_view:
         return this->template drop_axis<Axis>(offset(Axis));
     }
 
-    basic_view<value_type, origin_domain_type, layout_type, accessor_type>  //
+    AbstractView<value_type, origin_domain_type, layout_type, accessor_type>  //
     shift_to_origin() const noexcept {
         auto new_domain = views::dynamic_domain<rank, index_type>(sizes());
         return {data(), new_domain, layout(), accessor()};
     }
 
-    basic_view<value_type, shifted_domain_type, layout_type, accessor_type>  //
+    AbstractView<value_type, shifted_domain_type, layout_type, accessor_type>  //
     shift_to(ndindex_type new_offsets) const noexcept {
         auto new_domain = views::dynamic_subdomain<rank, index_type>(new_offsets, sizes());
         return {data(), new_domain, layout(), accessor()};
     }
 
-    basic_view<value_type, shifted_domain_type, layout_type, accessor_type>  //
+    AbstractView<value_type, shifted_domain_type, layout_type, accessor_type>  //
     shift_by(ndindex_type amount) const noexcept {
         auto new_offsets = offsets();
         for (size_t i = 0; i < rank; i++) {
@@ -929,7 +929,7 @@ struct basic_view:
     }
 
     template<size_t Axis>
-    basic_view<value_type, shifted_domain_type, layout_type, accessor_type>  //
+    AbstractView<value_type, shifted_domain_type, layout_type, accessor_type>  //
     shift_axis_to(index_type new_offset) const noexcept {
         static_assert(Axis < rank, "axis out of bounds");
         auto new_offsets = offsets();
@@ -938,7 +938,7 @@ struct basic_view:
     }
 
     template<size_t Axis>
-    basic_view<value_type, shifted_domain_type, layout_type, accessor_type>  //
+    AbstractView<value_type, shifted_domain_type, layout_type, accessor_type>  //
     shift_axis_by(index_type amount) const noexcept {
         return shift_axis_to<Axis>(offset(Axis) + amount);
     }
@@ -952,63 +952,63 @@ template<
     size_t N = 1,
     typename M = views::default_layout<N>,
     typename A = views::host_accessor>
-using view = basic_view<const T, views::dynamic_domain<N>, M, A>;
+using View = AbstractView<const T, views::dynamic_domain<N>, M, A>;
 
 template<
     typename T,
     size_t N = 1,
     typename M = views::default_layout<N>,
     typename A = views::host_accessor>
-using view_mut = basic_view<T, views::dynamic_domain<N>, M, A>;
-
-template<typename T, size_t N = 1, typename A = views::host_accessor>
-using strided_view = view<T, N, views::dynamic_layout<N>, A>;
-
-template<typename T, size_t N = 1, typename A = views::host_accessor>
-using strided_view_mut = view_mut<T, N, views::dynamic_layout<N>, A>;
-
-template<typename T, size_t N = 1, typename L = views::default_layout<N>>
-using gpu_view = view<T, N, L, views::device_accessor>;
-
-template<typename T, size_t N = 1, typename L = views::default_layout<N>>
-using gpu_view_mut = view_mut<T, N, L, views::device_accessor>;
-
-template<typename T, size_t N = 1>
-using gpu_strided_view = strided_view<T, N, views::device_accessor>;
-
-template<typename T, size_t N = 1>
-using gpu_strided_view_mut = strided_view_mut<T, N, views::device_accessor>;
+using ViewMut = AbstractView<T, views::dynamic_domain<N>, M, A>;
 
 template<
     typename T,
     size_t N = 1,
     typename M = views::default_layout<N>,
     typename A = views::host_accessor>
-using subview = basic_view<const T, views::dynamic_subdomain<N>, M, A>;
+using Subview = AbstractView<const T, views::dynamic_subdomain<N>, M, A>;
 
 template<
     typename T,
     size_t N = 1,
     typename M = views::default_layout<N>,
     typename A = views::host_accessor>
-using subview_mut = basic_view<T, views::dynamic_subdomain<N>, M, A>;
+using SubviewMut = AbstractView<T, views::dynamic_subdomain<N>, M, A>;
 
 template<typename T, size_t N = 1, typename A = views::host_accessor>
-using strided_subview = subview<T, N, views::dynamic_layout<N>, A>;
+using ViewStrided = View<T, N, views::dynamic_layout<N>, A>;
 
 template<typename T, size_t N = 1, typename A = views::host_accessor>
-using strided_subview_mut = subview_mut<T, N, views::dynamic_layout<N>, A>;
+using ViewStridedMut = ViewMut<T, N, views::dynamic_layout<N>, A>;
+
+template<typename T, size_t N = 1, typename A = views::host_accessor>
+using SubviewStrided = Subview<T, N, views::dynamic_layout<N>, A>;
+
+template<typename T, size_t N = 1, typename A = views::host_accessor>
+using SubviewStridedMut = SubviewMut<T, N, views::dynamic_layout<N>, A>;
 
 template<typename T, size_t N = 1, typename L = views::default_layout<N>>
-using gpu_subview = subview<T, N, L, views::device_accessor>;
+using GPUView = View<T, N, L, views::device_accessor>;
 
 template<typename T, size_t N = 1, typename L = views::default_layout<N>>
-using gpu_subview_mut = subview_mut<T, N, L, views::device_accessor>;
+using GPUViewMut = ViewMut<T, N, L, views::device_accessor>;
 
 template<typename T, size_t N = 1>
-using gpu_strided_subview = strided_subview<T, N, views::device_accessor>;
+using GPUViewStrided = ViewStrided<T, N, views::device_accessor>;
 
 template<typename T, size_t N = 1>
-using gpu_strided_subview_mut = strided_subview_mut<T, N, views::device_accessor>;
+using GPUViewStridedMut = ViewStridedMut<T, N, views::device_accessor>;
+
+template<typename T, size_t N = 1, typename L = views::default_layout<N>>
+using GPUSubview = Subview<T, N, L, views::device_accessor>;
+
+template<typename T, size_t N = 1, typename L = views::default_layout<N>>
+using GPUSubviewMut = SubviewMut<T, N, L, views::device_accessor>;
+
+template<typename T, size_t N = 1>
+using GPUSubviewStrided = SubviewStrided<T, N, views::device_accessor>;
+
+template<typename T, size_t N = 1>
+using GPUSubviewStridedMut = SubviewStridedMut<T, N, views::device_accessor>;
 
 }  // namespace kmm

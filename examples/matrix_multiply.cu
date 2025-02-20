@@ -1,6 +1,6 @@
 #include "kmm/kmm.hpp"
 
-void fill_array(kmm::Bounds<2> region, kmm::subview_mut<float, 2> array, float value) {
+void fill_array(kmm::Bounds<2> region, kmm::SubviewMut<float, 2> array, float value) {
     for (auto i = region.x.begin; i < region.x.end; i++) {
         for (auto j = region.y.begin; j < region.y.end; j++) {
             array[i][j] = value;
@@ -14,9 +14,9 @@ void matrix_multiply(
     int n,
     int m,
     int k,
-    kmm::gpu_subview_mut<float, 2> C,
-    kmm::gpu_subview<float, 2> A,
-    kmm::gpu_subview<float, 2> B
+    kmm::GPUSubviewMut<float, 2> C,
+    kmm::GPUSubview<float, 2> A,
+    kmm::GPUSubview<float, 2> B
 ) {
     using kmm::checked_cast;
 
