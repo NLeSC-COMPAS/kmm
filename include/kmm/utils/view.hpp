@@ -717,7 +717,7 @@ struct AbstractView:
 
     template<typename T2, typename D2, typename L2>
     KMM_HOST_DEVICE AbstractView& operator=(const AbstractView<T2, D2, L2, A>& that) noexcept {
-        return *this = BasicView(that);
+        return *this = AbstractView(that);
     }
 
     KMM_HOST_DEVICE

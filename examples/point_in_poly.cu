@@ -90,7 +90,7 @@ int main() {
         {npoints_per_chunk},
         kmm::GPUKernel(init_points, block_size),
         _x,
-        write(points(_x))
+        write(points[_x])
     );
 
     rt.parallel_submit(
@@ -98,8 +98,8 @@ int main() {
         {npoints_per_chunk},
         kmm::GPUKernel(cn_pnpoly, block_size),
         _x,
-        write(bitmap(_x)),
-        points(_x),
+        write(bitmap[_x]),
+        points[_x],
         nvertices,
         vertices
     );

@@ -95,6 +95,28 @@ Access<Arg, Reduce<M, P>> reduce(
     return {access.argument, {op, access.mode.access_mapper, private_mapper.access_mapper}};
 }
 
+template<typename Arg, template<typename> typename Mode, size_t N, size_t I = 0>
+struct MultiIndexAccess {
+    MultiIndexAccess(Arg& m_argument, MultiIndexMap<N> m_mapper = {}) :
+        m_argument(m_argument),
+        m_mapper(m_mapper) {}
+
+    template<typename M>
+    auto operator[](const M& index) {
+        m_mapper.axes[I] = into_index_map(index);
+
+        if constexpr (I + 1 == N) {
+            return Access<Arg, Mode<MultiIndexMap<N>>> {m_argument, {m_mapper}};
+        } else {
+            return MultiIndexAccess<Arg, Mode, N, I + 1>(m_argument, m_mapper);
+        }
+    }
+
+  private:
+    Arg& m_argument;
+    MultiIndexMap<N> m_mapper = {};
+};
+
 // Forward `Access<Arg, Read<M>>` to `Access<const Arg, Read<M>>` only if `Arg` is not const
 template<typename Arg, typename M>
 struct ArgumentHandler<Access<Arg, Read<M>>, std::enable_if_t<!std::is_const_v<Arg>>>:

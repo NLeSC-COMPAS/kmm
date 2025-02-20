@@ -105,13 +105,13 @@ class Array: public ArrayBase {
     }
 
     template<typename M>
-    Access<Array<T, N>, Read<M>> operator[](M mapper) {
-        return access(std::move(mapper));
+    auto operator[](M first_index) {
+        return MultiIndexAccess<Array<T, N>, Read, N>(*this)[first_index];
     }
 
     template<typename M>
-    Access<const Array<T, N>, Read<M>> operator[](M mapper) const {
-        return access(std::move(mapper));
+    auto operator[](M first_index) const {
+        return MultiIndexAccess<const Array<T, N>, Read, N>(*this)[first_index];
     }
 
     template<typename... Is>

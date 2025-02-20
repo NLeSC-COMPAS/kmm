@@ -71,7 +71,7 @@ int main() {
         _imageid,
         width,
         height,
-        write(images(_imageid, _, _))
+        write(images[_imageid][_][_])
     );
 
     rt.synchronize();
@@ -83,8 +83,8 @@ int main() {
         _imageid,
         width,
         height,
-        images(_i, _j, _imageid),
-        reduce(kmm::Reduction::Sum, privatize(_imageid), histogram(_))
+        images[_imageid][_i][_j],
+        reduce(kmm::Reduction::Sum, privatize(_imageid), histogram[_])
     );
 
     rt.synchronize();

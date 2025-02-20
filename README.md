@@ -13,15 +13,15 @@ KMM can handle the massive workloads from scientific computing, deep learning, a
 
 * **Efficient Memory Management**:
   * Automatically allocates memory and transfers data between GPU and host only when neccessary.
-* **Scalable Computing**: 
+* **Scalable Computing**:
   * Seamlessly "spills" data from the GPU to host memory, enabling processing of huge datasets that exceed GPU memory.
-* **Optimized Task Scheduling**: 
+* **Optimized Task Scheduling**:
   * DAG scheduler to track dependencies and execute kernels in a sequentially consistent order while maximizing parallelism.
-* **Flexible Work Partitioning**: 
+* **Flexible Work Partitioning**:
   * Splits workloads and data according to user-defined strategies, ensuring efficient utilization of available resources.
-* **Portable Execution**: 
+* **Portable Execution**:
   * Supports CUDA, HIP, and CPU-based functions, allowing seamless integration of existing kernels with minimal code changes.
-* **Multi-Dimensional Arrays**: 
+* **Multi-Dimensional Arrays**:
   * Handles ND-arrays of any shape, dimensionality, and data type.
 
 
