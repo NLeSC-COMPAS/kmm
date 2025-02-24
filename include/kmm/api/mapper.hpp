@@ -1,7 +1,7 @@
 #pragma once
 
-#include "partition.hpp"
 #include "spdlog/spdlog.h"
+#include "work_distribution.hpp"
 
 #include "kmm/api/argument.hpp"
 #include "kmm/core/reduction.hpp"
@@ -231,13 +231,13 @@ struct ArgumentHandler<IndexMap> {
 
     ArgumentHandler(IndexMap mapper) : m_mapper(mapper) {}
 
-    void initialize(const TaskGroupInfo& init) {}
+    void initialize(const TaskGroupInit& init) {}
 
     type process_chunk(TaskInstance& builder) {
         return m_mapper(builder.chunk).get_or_default(0);
     }
 
-    void finalize(const TaskGroupResult& result) {}
+    void finalize(const TaskGroupFinalize& result) {}
 
   private:
     IndexMap m_mapper;
@@ -254,13 +254,13 @@ struct ArgumentHandler<MultiIndexMap<N>> {
 
     ArgumentHandler(MultiIndexMap<N> mapper) : m_mapper(mapper) {}
 
-    void initialize(const TaskGroupInfo& init) {}
+    void initialize(const TaskGroupInit& init) {}
 
     type process_chunk(TaskInstance& builder) {
         return m_mapper(builder.chunk);
     }
 
-    void finalize(const TaskGroupResult& result) {}
+    void finalize(const TaskGroupFinalize& result) {}
 
   private:
     MultiIndexMap<N> m_mapper;

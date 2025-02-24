@@ -3,9 +3,10 @@
 #include <memory>
 #include <vector>
 
-#include "array.hpp"
-#include "launcher.hpp"
-
+#include "kmm/api/array.hpp"
+#include "kmm/api/launcher.hpp"
+#include "kmm/api/submit.hpp"
+#include "kmm/core/config.hpp"
 #include "kmm/core/system_info.hpp"
 #include "kmm/utils/checked_math.hpp"
 #include "kmm/utils/panic.hpp"
@@ -40,7 +41,7 @@ class Runtime {
         return kmm::parallel_submit(
             *m_worker,
             info(),
-            WorkPartition {{chunk}},
+            WorkDistribution {{chunk}},
             std::forward<L>(launcher),
             std::forward<Args>(args)...
         );
@@ -55,7 +56,7 @@ class Runtime {
      * @return The event identifier for the submitted task.
      */
     template<typename L, typename... Args>
-    EventId parallel_submit(WorkPartition partition, L&& launcher, Args&&... args) const {
+    EventId parallel_submit(WorkDistribution partition, L&& launcher, Args&&... args) const {
         return kmm::parallel_submit(
             *m_worker,
             info(),
@@ -80,7 +81,7 @@ class Runtime {
         return kmm::parallel_submit(
             *m_worker,
             info(),
-            IntoWorkPartition<P>::call(
+            IntoWorkDistribution<P>::call(
                 partitioner,
                 index_space,
                 info(),

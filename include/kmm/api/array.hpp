@@ -171,7 +171,7 @@ struct ArgumentHandler<Array<T, N>> {
         m_handle->distribution().region_to_chunk_index(array.sizes());  // Check if it is in-bounds
     }
 
-    void initialize(const TaskGroupInfo& init) {}
+    void initialize(const TaskGroupInit& init) {}
 
     type process_chunk(TaskInstance& task) {
         auto buffer_index = task.add_buffer_requirement(BufferRequirement {
@@ -183,7 +183,7 @@ struct ArgumentHandler<Array<T, N>> {
         return {buffer_index, domain};
     }
 
-    void finalize(const TaskGroupResult& result) {}
+    void finalize(const TaskGroupFinalize& result) {}
 
   private:
     std::shared_ptr<const ArrayHandle<N>> m_handle;
@@ -208,7 +208,7 @@ struct ArgumentHandler<Access<Array<T, N>, Write<All>>> {
         }
     }
 
-    void initialize(const TaskGroupInfo& init) {}
+    void initialize(const TaskGroupInit& init) {}
 
     type process_chunk(TaskInstance& task) {
         auto access_region = m_builder.sizes();
@@ -220,7 +220,7 @@ struct ArgumentHandler<Access<Array<T, N>, Write<All>>> {
         return {buffer_index, domain};
     }
 
-    void finalize(const TaskGroupResult& result) {
+    void finalize(const TaskGroupFinalize& result) {
         auto handle =
             std::make_shared<ArrayHandle<N>>(result.worker, m_builder.build(result.graph));
         m_array = Array<T, N>(handle);
@@ -245,7 +245,7 @@ struct ArgumentHandler<Access<const Array<T, N>, Read<M>>> {
         m_distribution(m_handle->distribution()),
         m_access_mapper(access.mode.access_mapper) {}
 
-    void initialize(const TaskGroupInfo& init) {}
+    void initialize(const TaskGroupInit& init) {}
 
     type process_chunk(TaskInstance& task) {
         auto array_size = m_handle->distribution().array_size();
@@ -262,7 +262,7 @@ struct ArgumentHandler<Access<const Array<T, N>, Read<M>>> {
         return {buffer_index, domain};
     }
 
-    void finalize(const TaskGroupResult& result) {}
+    void finalize(const TaskGroupFinalize& result) {}
 
   private:
     std::shared_ptr<const ArrayHandle<N>> m_handle;
@@ -288,7 +288,7 @@ struct ArgumentHandler<Access<Array<T, N>, Write<M>>> {
         }
     }
 
-    void initialize(const TaskGroupInfo& init) {}
+    void initialize(const TaskGroupInit& init) {}
 
     type process_chunk(TaskInstance& task) {
         auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_builder.sizes()));
@@ -300,7 +300,7 @@ struct ArgumentHandler<Access<Array<T, N>, Write<M>>> {
         return {buffer_index, domain};
     }
 
-    void finalize(const TaskGroupResult& result) {
+    void finalize(const TaskGroupFinalize& result) {
         auto handle = std::make_shared<ArrayHandle<N>>(  //
             result.worker,
             m_builder.build(result.graph)
@@ -327,7 +327,7 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<All>>> {
         }
     }
 
-    void initialize(const TaskGroupInfo& init) {}
+    void initialize(const TaskGroupInit& init) {}
 
     type process_chunk(TaskInstance& task) {
         auto access_region = m_builder.sizes();
@@ -339,7 +339,7 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<All>>> {
         return {buffer_index, domain};
     }
 
-    void finalize(const TaskGroupResult& result) {
+    void finalize(const TaskGroupFinalize& result) {
         auto handle = std::make_shared<ArrayHandle<N>>(  //
             result.worker,
             m_builder.build(result.graph)
@@ -378,7 +378,7 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<M, P>>> {
         }
     }
 
-    void initialize(const TaskGroupInfo& init) {}
+    void initialize(const TaskGroupInit& init) {}
 
     type process_chunk(TaskInstance& task) {
         auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_builder.sizes()));
@@ -395,7 +395,7 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<M, P>>> {
         return {buffer_index, domain};
     }
 
-    void finalize(const TaskGroupResult& result) {
+    void finalize(const TaskGroupFinalize& result) {
         auto handle = std::make_shared<ArrayHandle<N>>(  //
             result.worker,
             m_builder.build(result.graph)

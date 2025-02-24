@@ -1,8 +1,6 @@
 #pragma once
 
-#include "kmm/api/argument.hpp"
-#include "kmm/core/execution_context.hpp"
-#include "kmm/worker/worker.hpp"
+#include "kmm/core/resource.hpp"
 
 namespace kmm {
 
@@ -13,7 +11,7 @@ struct Host {
     Host(F fun) : m_fun(fun) {}
 
     template<typename... Args>
-    void operator()(ExecutionContext& exec, WorkChunk chunk, Args... args) {
+    void operator()(Resource& resource, WorkChunk chunk, Args... args) {
         m_fun(args...);
     }
 
@@ -28,8 +26,8 @@ struct GPU {
     GPU(F fun) : m_fun(fun) {}
 
     template<typename... Args>
-    void operator()(ExecutionContext& exec, WorkChunk chunk, Args... args) {
-        m_fun(exec.cast<DeviceContext>(), args...);
+    void operator()(Resource& resource, WorkChunk chunk, Args... args) {
+        m_fun(resource.cast<DeviceResource>(), args...);
     }
 
   private:
@@ -49,7 +47,7 @@ struct GPUKernel {
         shared_memory(shared_memory) {}
 
     template<typename... Args>
-    void operator()(ExecutionContext& exec, WorkChunk chunk, Args... args) {
+    void operator()(Resource& resource, WorkChunk chunk, Args... args) {
         int64_t g[3] = {
             chunk.size.get_or_default(0),
             chunk.size.get_or_default(1),
@@ -61,7 +59,7 @@ struct GPUKernel {
             checked_cast<unsigned int>((g[2] / b[2]) + int64_t(g[2] % b[2] != 0)),
         };
 
-        exec.cast<DeviceContext>().launch(  //
+        resource.cast<DeviceResource>().launch(  //
             grid_dim,
             block_size,
             shared_memory,
@@ -76,114 +74,5 @@ struct GPUKernel {
     dim3 elements_per_block;
     uint32_t shared_memory;
 };
-
-template<typename Launcher, typename... Args>
-class TaskImpl: public Task {
-  public:
-    TaskImpl(WorkChunk chunk, Launcher launcher, Args... args) :
-        m_chunk(chunk),
-        m_launcher(std::move(launcher)),
-        m_args(std::move(args)...) {}
-
-    void execute(ExecutionContext& exec, TaskContext context) override {
-        execute_impl(std::index_sequence_for<Args...>(), exec, context);
-    }
-
-    template<size_t... Is>
-    void execute_impl(std::index_sequence<Is...>, ExecutionContext& exec, TaskContext& context) {
-        static constexpr ExecutionSpace execution_space = Launcher::execution_space;
-
-        m_launcher(
-            exec,
-            m_chunk,
-            ArgumentUnpack<execution_space, Args>::call(context, std::get<Is>(m_args))...
-        );
-    }
-
-  private:
-    WorkChunk m_chunk;
-    Launcher m_launcher;
-    std::tuple<Args...> m_args;
-};
-
-namespace detail {
-template<size_t... Is, typename Launcher, typename... Args>
-EventId parallel_submit_impl(
-    std::index_sequence<Is...>,
-    Worker& worker,
-    const SystemInfo& system_info,
-    const WorkPartition& partition,
-    Launcher launcher,
-    Args&&... args
-) {
-    std::tuple<ArgumentHandler<Args>...> handlers = {
-        ArgumentHandler<Args>(std::forward<Args>(args))...};
-
-    return worker.with_task_graph([&](TaskGraph& graph) {
-        EventList events;
-
-        auto init = TaskGroupInfo {
-            .worker = worker,  //
-            .graph = graph,
-            .partition = partition};
-
-        (std::get<Is>(handlers).initialize(init), ...);
-
-        for (const WorkChunk& chunk : partition.chunks) {
-            ProcessorId processor_id = chunk.owner_id;
-
-            auto instance = TaskInstance {
-                .worker = worker,
-                .graph = graph,
-                .chunk = chunk,
-                .memory_id = system_info.affinity_memory(processor_id),
-                .buffers = {},
-                .dependencies = {}};
-
-            auto task = std::make_shared<TaskImpl<Launcher, packed_argument_t<Args>...>>(
-                chunk,
-                launcher,
-                std::get<Is>(handlers).process_chunk(instance)...
-            );
-
-            EventId event_id = graph.insert_task(
-                processor_id,
-                std::move(task),
-                std::move(instance.buffers),
-                std::move(instance.dependencies)
-            );
-
-            events.push_back(event_id);
-        }
-
-        auto result = TaskGroupResult {
-            .worker = worker,  //
-            .graph = graph,
-            .events = std::move(events)};
-
-        (std::get<Is>(handlers).finalize(result), ...);
-
-        return graph.join_events(result.events);
-    });
-}
-}  // namespace detail
-
-template<typename Launcher, typename... Args>
-EventId parallel_submit(
-    Worker& worker,
-    const SystemInfo& system_info,
-    const WorkPartition& partition,
-    Launcher launcher,
-    Args&&... args
-) {
-    return detail::parallel_submit_impl(
-        std::index_sequence_for<Args...> {},
-        worker,
-        system_info,
-        partition,
-        launcher,
-        std::forward<Args>(args)...
-    );
-}
 
 }  // namespace kmm

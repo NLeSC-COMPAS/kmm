@@ -36,13 +36,13 @@ struct WorkChunk {
     WorkDim size;
 };
 
-struct WorkPartition {
+struct WorkDistribution {
     std::vector<WorkChunk> chunks;
 };
 
 template<typename P>
-struct IntoWorkPartition {
-    static WorkPartition call(
+struct IntoWorkDistribution {
+    static WorkDistribution call(
         P partitioner,
         WorkBounds index_space,
         const SystemInfo& info,
@@ -61,8 +61,11 @@ struct ChunkPartitioner {
     ) :
         m_chunk_size(x, y, z) {}
 
-    WorkPartition operator()(WorkBounds index_space, const SystemInfo& info, ExecutionSpace space)
-        const;
+    WorkDistribution operator()(
+        WorkBounds index_space,
+        const SystemInfo& info,
+        ExecutionSpace space
+    ) const;
 
   private:
     WorkDim m_chunk_size;

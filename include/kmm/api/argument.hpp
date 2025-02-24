@@ -1,6 +1,6 @@
 #pragma once
 
-#include "kmm/api/task_builder.hpp"
+#include "kmm/api/task_group.hpp"
 #include "kmm/core/task.hpp"
 
 namespace kmm {
@@ -62,7 +62,7 @@ struct ArgumentHandler {
 
     ArgumentHandler(T value) : m_value(std::move(value)) {}
 
-    void initialize(const TaskGroupInfo& init) {
+    void initialize(const TaskGroupInit& init) {
         // Nothing to do
     }
 
@@ -70,7 +70,7 @@ struct ArgumentHandler {
         return Argument<T>::pack(builder, m_value);
     }
 
-    void finalize(const TaskGroupResult& result) {
+    void finalize(const TaskGroupFinalize& result) {
         // Nothing to do
     }
 

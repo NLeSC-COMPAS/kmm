@@ -9,7 +9,7 @@ void fill_array(kmm::Bounds<2> region, kmm::SubviewMut<float, 2> array, float va
 }
 
 void matrix_multiply(
-    kmm::DeviceContext& device,
+    kmm::DeviceResource& device,
     kmm::Bounds<3> region,
     int n,
     int m,

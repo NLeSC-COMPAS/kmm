@@ -197,7 +197,7 @@ class CopyOutTask: public Task {
         }
     }
 
-    void execute(ExecutionContext& proc, TaskContext context) override {
+    void execute(Resource& proc, TaskContext context) override {
         KMM_ASSERT(context.accessors.size() == 1);
         const void* src_addr = context.accessors[0].address;
         execute_copy(src_addr, m_dst_addr, m_copy);

@@ -137,12 +137,14 @@ bool DeviceStreamManager::is_idle() const {
         if (!stream.callbacks_heap.empty()) {
             return false;
         }
-
-        GPUContextGuard guard {stream.context};
-        KMM_GPU_CHECK(gpuStreamSynchronize(stream.gpu_stream));
-        KMM_GPU_CHECK(gpuStreamSynchronize(nullptr));
     }
 
+    for (const auto& stream : m_streams) {
+        GPUContextGuard guard {stream.context};
+        KMM_GPU_CHECK(gpuStreamSynchronize(stream.gpu_stream));
+    }
+
+    KMM_GPU_CHECK(gpuStreamSynchronize(nullptr));
     return true;
 }
 

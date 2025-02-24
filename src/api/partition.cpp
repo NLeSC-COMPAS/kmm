@@ -1,11 +1,11 @@
 #include "spdlog/spdlog.h"
 
-#include "kmm/api/partition.hpp"
+#include "kmm/api/work_distribution.hpp"
 #include "kmm/utils/integer_fun.hpp"
 
 namespace kmm {
 
-WorkPartition ChunkPartitioner::operator()(
+WorkDistribution ChunkPartitioner::operator()(
     WorkBounds index_space,
     const SystemInfo& info,
     ExecutionSpace space

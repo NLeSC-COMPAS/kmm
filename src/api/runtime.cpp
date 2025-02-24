@@ -1,5 +1,5 @@
 #include "kmm/api/runtime.hpp"
-#include "kmm/core/execution_context.hpp"
+#include "kmm/core/resource.hpp"
 #include "kmm/worker/worker.hpp"
 
 namespace kmm {
@@ -8,15 +8,15 @@ class CopyInTask: public Task {
   public:
     CopyInTask(const void* data, size_t nbytes) : m_src_addr(data), m_nbytes(nbytes) {}
 
-    void execute(ExecutionContext& proc, TaskContext context) override {
+    void execute(Resource& proc, TaskContext context) override {
         KMM_ASSERT(context.accessors.size() == 1);
         KMM_ASSERT(context.accessors[0].layout.size_in_bytes == m_nbytes);
 
         void* dst_addr = context.accessors[0].address;
 
-        if (auto* device = proc.cast_if<DeviceContext>()) {
+        if (auto* device = proc.cast_if<DeviceResource>()) {
             device->copy_bytes(m_src_addr, dst_addr, m_nbytes);
-        } else if (proc.is<HostContext>()) {
+        } else if (proc.is<HostResource>()) {
             ::memcpy(dst_addr, m_src_addr, m_nbytes);
         } else {
             throw std::runtime_error("invalid execution context");

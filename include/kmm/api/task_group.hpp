@@ -1,7 +1,6 @@
 #pragma once
 
-#include "kmm/api/partition.hpp"
-#include "kmm/core/buffer.hpp"
+#include "kmm/api/work_distribution.hpp"
 #include "kmm/core/identifiers.hpp"
 
 namespace kmm {
@@ -9,13 +8,13 @@ namespace kmm {
 class Worker;
 class TaskGraph;
 
-struct TaskGroupInfo {
-    KMM_NOT_COPYABLE_OR_MOVABLE(TaskGroupInfo)
+struct TaskGroupInit {
+    KMM_NOT_COPYABLE_OR_MOVABLE(TaskGroupInit)
 
   public:
     Worker& worker;
     TaskGraph& graph;
-    const WorkPartition& partition;
+    const WorkDistribution& partition;
 };
 
 struct TaskInstance {
@@ -36,8 +35,8 @@ struct TaskInstance {
     }
 };
 
-struct TaskGroupResult {
-    KMM_NOT_COPYABLE_OR_MOVABLE(TaskGroupResult)
+struct TaskGroupFinalize {
+    KMM_NOT_COPYABLE_OR_MOVABLE(TaskGroupFinalize)
 
   public:
     Worker& worker;

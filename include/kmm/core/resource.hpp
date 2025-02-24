@@ -8,19 +8,19 @@
 namespace kmm {
 
 /**
- * Exception throw if invalid execution context is provided to task.
+ * Exception throw if invalid resource is provided to task.
  */
-class InvalidExecutionContext: public std::exception {
+class InvalidResource: public std::exception {
   public:
-    InvalidExecutionContext(const std::type_info& expected, const std::type_info& gotten);
+    InvalidResource(const std::type_info& expected, const std::type_info& gotten);
     const char* what() const noexcept override;
 
   private:
     std::string m_message;
 };
 
-struct ExecutionContext {
-    virtual ~ExecutionContext() = default;
+struct Resource {
+    virtual ~Resource() = default;
 
     template<typename T>
     T* cast_if() noexcept {
@@ -38,7 +38,7 @@ struct ExecutionContext {
             return *ptr;
         }
 
-        throw InvalidExecutionContext(typeid(T), typeid(*this));
+        throw InvalidResource(typeid(T), typeid(*this));
     }
 
     template<typename T>
@@ -47,7 +47,7 @@ struct ExecutionContext {
             return *ptr;
         }
 
-        throw InvalidExecutionContext(typeid(T), typeid(*this));
+        throw InvalidResource(typeid(T), typeid(*this));
     }
 
     template<typename T>
@@ -56,14 +56,14 @@ struct ExecutionContext {
     }
 };
 
-struct HostContext: public ExecutionContext {};
+struct HostResource: public Resource {};
 
-class DeviceContext: public DeviceInfo, public ExecutionContext {
-    KMM_NOT_COPYABLE_OR_MOVABLE(DeviceContext);
+class DeviceResource: public DeviceInfo, public Resource {
+    KMM_NOT_COPYABLE_OR_MOVABLE(DeviceResource);
 
   public:
-    DeviceContext(DeviceInfo info, GPUContextHandle context, GPUstream_t stream);
-    ~DeviceContext();
+    DeviceResource(DeviceInfo info, GPUContextHandle context, GPUstream_t stream);
+    ~DeviceResource();
 
     /**
      * Returns a handle to the context associated with this device.

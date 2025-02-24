@@ -367,24 +367,24 @@ class Bounds: public fixed_array<Range<T>, N> {
 
     KMM_HOST_DEVICE
     T begin(size_t axis) const {
-        return (*this)[axis].begin;
+        return get_or_default(axis).begin;
     }
 
     KMM_HOST_DEVICE
     T end(size_t axis) const {
-        return (*this)[axis].end;
+        return get_or_default(axis).end;
     }
 
     KMM_HOST_DEVICE
     T size(size_t axis) const {
-        return (*this)[axis].size();
+        return get_or_default(axis).size();
     }
 
     KMM_HOST_DEVICE
     Index<N, T> begin() const {
         Index<N, T> result;
         for (size_t axis = 0; is_less(axis, N); axis++) {
-            result[axis] = this->begin(axis);
+            result[axis] = (*this)[axis].begin;
         }
         return result;
     }
@@ -393,7 +393,7 @@ class Bounds: public fixed_array<Range<T>, N> {
     Index<N, T> end() const {
         Index<N, T> result;
         for (size_t axis = 0; is_less(axis, N); axis++) {
-            result[axis] = this->end(axis);
+            result[axis] = (*this)[axis].end;
         }
         return result;
     }
@@ -402,7 +402,7 @@ class Bounds: public fixed_array<Range<T>, N> {
     Dim<N, T> sizes() const {
         Dim<N, T> result;
         for (size_t axis = 0; is_less(axis, N); axis++) {
-            result[axis] = this->size(axis);
+            result[axis] = (*this)[axis].size();
         }
         return result;
     }
@@ -412,7 +412,7 @@ class Bounds: public fixed_array<Range<T>, N> {
         bool result = false;
 
         for (size_t i = 0; is_less(i, N); i++) {
-            result |= begin(i) >= end(i);
+            result |= this->begin(i) >= this->end(i);
         }
 
         return result;

@@ -3,16 +3,13 @@
 #include "fmt/format.h"
 #include "spdlog/spdlog.h"
 
-#include "kmm/core/execution_context.hpp"
+#include "kmm/core/resource.hpp"
 #include "kmm/memops/gpu_fill.hpp"
 #include "kmm/utils/checked_math.hpp"
 
 namespace kmm {
 
-InvalidExecutionContext::InvalidExecutionContext(
-    const std::type_info& expected,
-    const std::type_info& gotten
-) {
+InvalidResource::InvalidResource(const std::type_info& expected, const std::type_info& gotten) {
     m_message = fmt::format(
         "task expected an execution context of type {}, but was executed with type {}",
         expected.name(),
@@ -20,11 +17,11 @@ InvalidExecutionContext::InvalidExecutionContext(
     );
 }
 
-const char* InvalidExecutionContext::what() const noexcept {
+const char* InvalidResource::what() const noexcept {
     return m_message.c_str();
 }
 
-DeviceContext::DeviceContext(DeviceInfo info, GPUContextHandle context, GPUstream_t stream) :
+DeviceResource::DeviceResource(DeviceInfo info, GPUContextHandle context, GPUstream_t stream) :
     DeviceInfo(info),
     m_context(context),
     m_stream(stream) {
@@ -34,18 +31,18 @@ DeviceContext::DeviceContext(DeviceInfo info, GPUContextHandle context, GPUstrea
     KMM_GPU_CHECK(blasSetStream(m_blas_handle, m_stream));
 }
 
-DeviceContext::~DeviceContext() {
+DeviceResource::~DeviceResource() {
     GPUContextGuard guard {m_context};
     KMM_GPU_CHECK(blasDestroy(m_blas_handle));
 }
 
-void DeviceContext::synchronize() const {
+void DeviceResource::synchronize() const {
     GPUContextGuard guard {m_context};
     KMM_GPU_CHECK(gpuStreamSynchronize(nullptr));
     KMM_GPU_CHECK(gpuStreamSynchronize(m_stream));
 }
 
-void DeviceContext::fill_bytes(
+void DeviceResource::fill_bytes(
     void* dest_buffer,
     size_t nbytes,
     const void* fill_pattern,
@@ -59,7 +56,7 @@ void DeviceContext::fill_bytes(
     );
 }
 
-void DeviceContext::copy_bytes(const void* source_buffer, void* dest_buffer, size_t nbytes) const {
+void DeviceResource::copy_bytes(const void* source_buffer, void* dest_buffer, size_t nbytes) const {
     GPUContextGuard guard {m_context};
     KMM_GPU_CHECK(gpuMemcpyAsync(
         reinterpret_cast<GPUdeviceptr>(dest_buffer),

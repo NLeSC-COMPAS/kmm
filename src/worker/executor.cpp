@@ -181,7 +181,7 @@ class DeviceJob: public Executor::Job {
     }
 
   protected:
-    virtual void submit(DeviceContext& device, std::vector<BufferAccessor> accessors) = 0;
+    virtual void submit(DeviceResource& device, std::vector<BufferAccessor> accessors) = 0;
 
   private:
     enum struct Status { Init, Pending, Running, Completing, Completed };
@@ -208,7 +208,7 @@ class ExecuteHostJob: public HostJob {
 
     std::future<void> submit(Executor& executor, std::vector<BufferAccessor> accessors) override {
         return std::async(std::launch::async, [=] {
-            auto host = HostContext {};
+            auto host = HostResource {};
             auto context = TaskContext {std::move(accessors)};
             m_task->execute(host, context);
         });
@@ -306,7 +306,7 @@ class ExecuteDeviceJob: public DeviceJob {
         DeviceJob(id, device_id, std::move(buffers), std::move(dependencies)),
         m_task(std::move(task)) {}
 
-    void submit(DeviceContext& device, std::vector<BufferAccessor> accessors) {
+    void submit(DeviceResource& device, std::vector<BufferAccessor> accessors) {
         auto context = TaskContext {std::move(accessors)};
         m_task->execute(device, context);
     }
@@ -334,7 +334,7 @@ class CopyDeviceJob: public DeviceJob {
         ),
         m_copy(definition) {}
 
-    void submit(DeviceContext& device, std::vector<BufferAccessor> accessors) {
+    void submit(DeviceResource& device, std::vector<BufferAccessor> accessors) {
         KMM_ASSERT(accessors[0].layout.size_in_bytes >= m_copy.minimum_source_bytes_needed());
         KMM_ASSERT(accessors[1].layout.size_in_bytes >= m_copy.minimum_destination_bytes_needed());
         KMM_ASSERT(accessors[1].is_writable);
@@ -370,7 +370,7 @@ class ReductionDeviceJob: public DeviceJob {
         ),
         m_reduction(std::move(definition)) {}
 
-    void submit(DeviceContext& device, std::vector<BufferAccessor> accessors) {
+    void submit(DeviceResource& device, std::vector<BufferAccessor> accessors) {
         execute_gpu_reduction_async(
             device,
             reinterpret_cast<GPUdeviceptr>(accessors[0].address),
@@ -400,7 +400,7 @@ class FillDeviceJob: public DeviceJob {
         ),
         m_fill(std::move(definition)) {}
 
-    void submit(DeviceContext& device, std::vector<BufferAccessor> accessors) {
+    void submit(DeviceResource& device, std::vector<BufferAccessor> accessors) {
         execute_gpu_fill_async(
             device,
             reinterpret_cast<GPUdeviceptr>(accessors[0].address),

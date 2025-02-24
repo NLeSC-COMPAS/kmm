@@ -13,7 +13,7 @@ struct Access {
     Access(Arg& argument, Mode mode = {}) : argument(argument), mode(mode) {}
 
     template<typename U>
-    Access(Access<U, Mode> that = {}) : argument(that.argument), mode(that.mode) {}
+    Access(Access<U, Mode> that) : argument(that.argument), mode(that.mode) {}
 };
 
 template<typename M = All>

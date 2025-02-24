@@ -4,7 +4,7 @@
 
 #include "worker_state.hpp"
 
-#include "kmm/core/execution_context.hpp"
+#include "kmm/core/resource.hpp"
 #include "kmm/utils/error_ptr.hpp"
 #include "kmm/utils/poll.hpp"
 #include "kmm/worker/buffer_registry.hpp"
@@ -21,7 +21,7 @@ struct DeviceState {
     GPUContextHandle context;
     DeviceStream stream;
     DeviceEvent last_event;
-    DeviceContext device;
+    DeviceResource device;
 
     DeviceState(DeviceId id, GPUContextHandle context, DeviceStreamManager& stream_manager) :
         context(context),

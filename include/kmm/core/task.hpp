@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "kmm/core/buffer.hpp"
-#include "kmm/core/execution_context.hpp"
+#include "kmm/core/resource.hpp"
 
 namespace kmm {
 
@@ -16,7 +16,7 @@ struct TaskContext {
 class Task {
   public:
     virtual ~Task() = default;
-    virtual void execute(ExecutionContext& device, TaskContext context) = 0;
+    virtual void execute(Resource& resource, TaskContext context) = 0;
 };
 
 }  // namespace kmm
