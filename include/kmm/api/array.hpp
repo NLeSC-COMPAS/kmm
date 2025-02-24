@@ -10,8 +10,8 @@
 #include "kmm/api/access.hpp"
 #include "kmm/api/argument.hpp"
 #include "kmm/api/array_argument.hpp"
-#include "kmm/api/array_builder.hpp"
 #include "kmm/api/array_handle.hpp"
+#include "kmm/dag/array_builder.hpp"
 
 namespace kmm {
 

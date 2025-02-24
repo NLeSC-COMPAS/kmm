@@ -2,9 +2,9 @@
 
 #include "kmm/api/argument.hpp"
 #include "kmm/api/task_group.hpp"
-#include "kmm/api/work_distribution.hpp"
 #include "kmm/core/buffer.hpp"
 #include "kmm/core/identifiers.hpp"
+#include "kmm/dag/work_distribution.hpp"
 #include "kmm/worker/worker.hpp"
 
 namespace kmm {

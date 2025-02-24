@@ -2,9 +2,8 @@
 
 #include <future>
 
-#include "worker_state.hpp"
-
 #include "kmm/core/resource.hpp"
+#include "kmm/dag/commands.hpp"
 #include "kmm/utils/error_ptr.hpp"
 #include "kmm/utils/poll.hpp"
 #include "kmm/worker/buffer_registry.hpp"
@@ -56,7 +55,7 @@ class Executor {
     ~Executor();
 
     bool is_idle() const;
-    void make_progress(WorkerState& worker);
+    void make_progress();
 
     DeviceState& device_state(DeviceId id, const DeviceEventSet& hint_deps = {});
 

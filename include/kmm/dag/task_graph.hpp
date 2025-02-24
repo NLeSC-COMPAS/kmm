@@ -6,8 +6,8 @@
 
 #include "kmm/core/buffer.hpp"
 #include "kmm/core/reduction.hpp"
+#include "kmm/dag/commands.hpp"
 #include "kmm/utils/macros.hpp"
-#include "kmm/worker/commands.hpp"
 
 namespace kmm {
 

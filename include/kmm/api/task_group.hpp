@@ -1,7 +1,7 @@
 #pragma once
 
-#include "kmm/api/work_distribution.hpp"
 #include "kmm/core/identifiers.hpp"
+#include "kmm/dag/work_distribution.hpp"
 
 namespace kmm {
 

@@ -4,16 +4,16 @@
 
 #include "executor.hpp"
 #include "scheduler.hpp"
-#include "task_graph.hpp"
 
 #include "kmm/core/config.hpp"
 #include "kmm/core/system_info.hpp"
+#include "kmm/dag/task_graph.hpp"
 
 namespace kmm {
 
 struct BufferGuard;
 
-class Worker: public WorkerState, public std::enable_shared_from_this<Worker> {
+class Worker: public std::enable_shared_from_this<Worker> {
     KMM_NOT_COPYABLE_OR_MOVABLE(Worker)
 
   public:
@@ -66,6 +66,11 @@ class Worker: public WorkerState, public std::enable_shared_from_this<Worker> {
     bool is_idle_impl();
 
     mutable std::mutex m_mutex;
+    std::shared_ptr<MemorySystem> m_memory_system;
+    std::shared_ptr<MemoryManager> m_memory_manager;
+    std::shared_ptr<BufferRegistry> m_buffer_registry;
+    std::shared_ptr<DeviceStreamManager> m_stream_manager;
+    std::shared_ptr<Scheduler> m_scheduler;
     mutable bool m_has_shutdown = false;
     SystemInfo m_info;
     Executor m_executor;

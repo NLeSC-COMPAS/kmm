@@ -93,7 +93,7 @@ void Worker::flush_events_impl() {
 void Worker::make_progress_impl() {
     m_stream_manager->make_progress();
     m_memory_system->make_progress();
-    m_executor.make_progress(*this);
+    m_executor.make_progress();
 
     DeviceEventSet deps;
     while (auto cmd = m_scheduler->pop_ready(&deps)) {
@@ -131,7 +131,10 @@ Worker::Worker(
     std::shared_ptr<MemorySystem> memory_system,
     const WorkerConfig& config
 ) :
-    WorkerState(stream_manager, memory_system, std::make_shared<Scheduler>(contexts.size())),
+    m_memory_system(memory_system),
+    m_memory_manager(std::make_shared<MemoryManager>(memory_system)),
+    m_buffer_registry(std::make_shared<BufferRegistry>(m_memory_manager)),
+    m_scheduler(std::make_shared<Scheduler>(contexts.size())),
     m_info(make_system_info(contexts)),
     m_executor(contexts, stream_manager, m_buffer_registry, m_scheduler, config.debug_mode) {}
 

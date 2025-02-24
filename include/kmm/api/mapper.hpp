@@ -1,10 +1,10 @@
 #pragma once
 
 #include "spdlog/spdlog.h"
-#include "work_distribution.hpp"
 
 #include "kmm/api/argument.hpp"
 #include "kmm/core/reduction.hpp"
+#include "kmm/dag/work_distribution.hpp"
 #include "kmm/utils/geometry.hpp"
 #include "kmm/utils/integer_fun.hpp"
 

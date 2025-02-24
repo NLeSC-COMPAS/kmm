@@ -1,6 +1,7 @@
 #pragma once
 
 #include "kmm/core/identifiers.hpp"
+#include "kmm/dag/data_distribution.hpp"
 #include "kmm/utils/geometry.hpp"
 
 namespace kmm {

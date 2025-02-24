@@ -477,7 +477,7 @@ bool Executor::is_idle() const {
     return m_jobs_head == nullptr;
 }
 
-void Executor::make_progress(WorkerState& worker) {
+void Executor::make_progress() {
     Job* prev = nullptr;
     std::unique_ptr<Job>* current_ptr = &m_jobs_head;
 

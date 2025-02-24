@@ -1,8 +1,8 @@
 #pragma once
 
-#include "kmm/api/data_distribution.hpp"
 #include "kmm/core/buffer.hpp"
 #include "kmm/core/reduction.hpp"
+#include "kmm/dag/data_distribution.hpp"
 #include "kmm/utils/geometry.hpp"
 #include "kmm/utils/view.hpp"
 

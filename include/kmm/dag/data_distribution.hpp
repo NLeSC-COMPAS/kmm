@@ -2,6 +2,7 @@
 
 #include "kmm/core/identifiers.hpp"
 #include "kmm/utils/geometry.hpp"
+
 namespace kmm {
 
 template<size_t N>

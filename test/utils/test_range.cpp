@@ -1,6 +1,6 @@
 #include "catch2/catch_all.hpp"
 
-#include "kmm/api/work_distribution.hpp"
+#include "kmm/dag/work_distribution.hpp"
 #include "kmm/utils/range.hpp"
 
 using namespace kmm;

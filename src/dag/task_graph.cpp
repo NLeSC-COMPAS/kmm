@@ -2,7 +2,7 @@
 
 #include "spdlog/spdlog.h"
 
-#include "kmm/worker/task_graph.hpp"
+#include "kmm/dag/task_graph.hpp"
 
 namespace kmm {
 
