@@ -163,6 +163,9 @@ std::unique_ptr<AsyncAllocator> create_device_allocator(
                 DevicePoolKind::Create,
                 config.device_memory_limit
             );
+
+        default:
+            KMM_PANIC("invalid memory kind");
     }
 }
 

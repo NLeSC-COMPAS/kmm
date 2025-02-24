@@ -445,7 +445,7 @@ Poll MemoryManager::poll_request(Request& req, DeviceEventSet* deps_out) {
         if (memory_id.is_host()) {
             lock_allocation_host(buffer, req);
         } else {
-            if (try_lock_allocation_device(memory_id.as_device(), buffer, req)) {
+            if (!try_lock_allocation_device(memory_id.as_device(), buffer, req)) {
                 return Poll::Pending;
             }
         }
