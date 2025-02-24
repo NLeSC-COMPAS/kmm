@@ -5,8 +5,29 @@
 
 namespace kmm {
 
-void BufferRegistry::add(BufferId id, std::shared_ptr<MemoryManager::Buffer> buffer) {
-    m_buffers.emplace(id, BufferMeta {.buffer = buffer});
+BufferRegistry::BufferRegistry(std::shared_ptr<MemoryManager> memory_manager) :
+    m_memory_manager(memory_manager) {
+    KMM_ASSERT(m_memory_manager);
+}
+
+void BufferRegistry::add(BufferId buffer_id, DataLayout layout) {
+    auto buffer = m_memory_manager->create_buffer(layout, std::to_string(buffer_id));
+    m_buffers.emplace(buffer_id, BufferMeta {.buffer = buffer});
+}
+
+void BufferRegistry::remove(BufferId buffer_id) {
+    auto it = m_buffers.find(buffer_id);
+
+    if (it == m_buffers.end()) {
+        throw std::runtime_error(
+            fmt::format("could not remove buffer {}: buffer not found", buffer_id)
+        );
+    }
+
+    auto buffer = std::move(it->second.buffer);
+    m_buffers.erase(it);
+
+    m_memory_manager->delete_buffer(buffer);
 }
 
 std::shared_ptr<MemoryManager::Buffer> BufferRegistry::get(BufferId id) {
@@ -27,7 +48,7 @@ std::shared_ptr<MemoryManager::Buffer> BufferRegistry::get(BufferId id) {
     return meta.buffer;
 }
 
-void BufferRegistry::poison(BufferId id, EventId event_id, const std::exception& error) {
+void BufferRegistry::poison(BufferId id, PoisonException reason) {
     auto it = m_buffers.find(id);
 
     // Buffer not found, ignore
@@ -42,30 +63,86 @@ void BufferRegistry::poison(BufferId id, EventId event_id, const std::exception&
         return;
     }
 
-    spdlog::debug("buffer {} was poisoned (task {}): {}", id, event_id, error.what());
+    spdlog::warn("buffer {} was poisoned: {}", id, reason.what());
+    meta.poison_reason = std::move(reason);
+}
 
-    if (const auto* p = dynamic_cast<const PoisonException*>(&error)) {
-        meta.poison_reason = *p;
+BufferRequestList BufferRegistry::create_requests(const std::vector<BufferRequirement>& buffers) {
+    auto parent = m_memory_manager->create_transaction();
+    auto requests = BufferRequestList {};
+
+    try {
+        for (const auto& r : buffers) {
+            auto buffer = this->get(r.buffer_id);
+            auto req = m_memory_manager->create_request(buffer, r.memory_id, r.access_mode, parent);
+            requests.push_back(BufferRequest {req});
+        }
+
+        return requests;
+    } catch (...) {
+        // Release the requests that have been created so far.
+        for (const auto& r : requests) {
+            m_memory_manager->release_request(r);
+        }
+
+        throw;
+    }
+}
+
+Poll BufferRegistry::poll_requests(
+    const BufferRequestList& requests,
+    DeviceEventSet* dependencies_out
+) {
+    Poll result = Poll::Ready;
+
+    for (const auto& req : requests) {
+        if (m_memory_manager->poll_request(*req, dependencies_out) != Poll::Ready) {
+            result = Poll::Pending;
+        }
+    }
+
+    return result;
+}
+
+std::vector<BufferAccessor> BufferRegistry::access_requests(const BufferRequestList& requests) {
+    auto accessors = std::vector<BufferAccessor> {};
+
+    for (const auto& req : requests) {
+        accessors.push_back(m_memory_manager->get_accessor(*req));
+    }
+
+    return accessors;
+}
+
+void BufferRegistry::release_requests(BufferRequestList& requests, DeviceEvent event) {
+    for (auto& req : requests) {
+        m_memory_manager->release_request(req, event);
+    }
+
+    requests.clear();
+}
+
+void BufferRegistry::poison_all(
+    const std::vector<BufferRequirement>& buffers,
+    PoisonException reason
+) {
+    for (const auto& r : buffers) {
+        if (r.access_mode != AccessMode::Read) {
+            this->poison(r.buffer_id, reason);
+        }
+    }
+}
+
+PoisonException::PoisonException(const std::string& error) {
+    m_message = error;
+}
+
+PoisonException::PoisonException(EventId event_id, const std::exception& error) {
+    if (const auto* reason = dynamic_cast<const PoisonException*>(&error)) {
+        m_message = reason->m_message;
     } else {
-        meta.poison_reason = PoisonException(event_id, error.what());
+        m_message = fmt::format("task {} failed due to error: {}", event_id, error.what());
     }
-}
-
-std::shared_ptr<MemoryManager::Buffer> BufferRegistry::remove(BufferId id) {
-    auto it = m_buffers.find(id);
-
-    if (it == m_buffers.end()) {
-        throw std::runtime_error(fmt::format("could not remove buffer {}: buffer not found", id));
-    }
-
-    auto buffer = std::move(it->second.buffer);
-    m_buffers.erase(it);
-
-    return buffer;
-}
-
-PoisonException::PoisonException(EventId event_id, const std::string& error) {
-    m_message = fmt::format("task {} failed due to error: {}", event_id, error);
 }
 
 const char* PoisonException::what() const noexcept {

@@ -518,6 +518,8 @@ void MemoryManager::release_request(std::shared_ptr<Request> req, DeviceEvent ev
 
 BufferAccessor MemoryManager::get_accessor(Request& req) {
     KMM_ASSERT(req.status == Request::Status::Ready);
+    KMM_ASSERT(m_buffers.count(req.buffer) > 0);
+
     const auto& buffer = *req.buffer;
     void* address;
 

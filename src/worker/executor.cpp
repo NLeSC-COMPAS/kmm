@@ -18,12 +18,12 @@ class MergeJob: public Executor::Job {
         m_id(id),
         m_dependencies(std::move(dependencies)) {}
 
-    Poll poll(Executor& executor, Scheduler& scheduler) final {
+    Poll poll(Executor& executor) final {
         if (!executor.stream_manager().is_ready(m_dependencies)) {
             return Poll::Pending;
         }
 
-        scheduler.mark_as_completed(m_id);
+        executor.scheduler().mark_as_completed(m_id);
         return Poll::Ready;
     }
 
@@ -39,20 +39,21 @@ class HostJob: public Executor::Job {
         m_buffers(std::move(buffers)),
         m_dependencies(std::move(dependencies)) {}
 
-    Poll poll(Executor& executor, Scheduler& scheduler) final {
+    Poll poll(Executor& executor) final {
         if (m_status == Status::Init) {
             try {
-                m_requests = executor.create_requests(m_buffers);
+                m_requests = executor.buffer_registry().create_requests(m_buffers);
                 m_status = Status::Waiting;
             } catch (const std::exception& e) {
-                executor.poison_buffers(m_buffers, m_id, e);
+                executor.buffer_registry().poison_all(m_buffers, PoisonException(m_id, e));
                 m_status = Status::Completing;
             }
         }
 
         if (m_status == Status::Waiting) {
             try {
-                if (executor.poll_requests(m_requests, &m_dependencies) == Poll::Pending) {
+                if (executor.buffer_registry().poll_requests(m_requests, &m_dependencies)
+                    == Poll::Pending) {
                     return Poll::Pending;
                 }
 
@@ -60,10 +61,10 @@ class HostJob: public Executor::Job {
                     return Poll::Pending;
                 }
 
-                m_future = submit(executor, executor.access_requests(m_requests));
+                m_future = submit(executor, executor.buffer_registry().access_requests(m_requests));
                 m_status = Status::Running;
             } catch (const std::exception& e) {
-                executor.poison_buffers(m_buffers, m_id, e);
+                executor.buffer_registry().poison_all(m_buffers, PoisonException(m_id, e));
                 m_status = Status::Completing;
             }
         }
@@ -76,14 +77,14 @@ class HostJob: public Executor::Job {
 
                 m_status = Status::Completing;
             } catch (const std::exception& e) {
-                executor.poison_buffers(m_buffers, m_id, e);
+                executor.buffer_registry().poison_all(m_buffers, PoisonException(m_id, e));
                 m_status = Status::Completing;
             }
         }
 
         if (m_status == Status::Completing) {
-            executor.release_requests(m_requests);
-            scheduler.mark_as_completed(m_id);
+            executor.buffer_registry().release_requests(m_requests);
+            executor.scheduler().mark_as_completed(m_id);
             m_status = Status::Completed;
         }
 
@@ -100,7 +101,7 @@ class HostJob: public Executor::Job {
     EventId m_id;
     std::future<void> m_future;
     std::vector<BufferRequirement> m_buffers;
-    MemoryRequestList m_requests;
+    BufferRequestList m_requests;
     DeviceEventSet m_dependencies;
 };
 
@@ -117,20 +118,21 @@ class DeviceJob: public Executor::Job {
         m_buffers(std::move(buffers)),
         m_dependencies(std::move(dependencies)) {}
 
-    Poll poll(Executor& executor, Scheduler& scheduler) final {
+    Poll poll(Executor& executor) final {
         if (m_status == Status::Init) {
             try {
-                m_requests = executor.create_requests(m_buffers);
+                m_requests = executor.buffer_registry().create_requests(m_buffers);
                 m_status = Status::Pending;
             } catch (const std::exception& e) {
-                executor.poison_buffers(m_buffers, m_id, e);
+                executor.buffer_registry().poison_all(m_buffers, PoisonException(m_id, e));
                 m_status = Status::Completing;
             }
         }
 
         if (m_status == Status::Pending) {
             try {
-                if (executor.poll_requests(m_requests, &m_dependencies) == Poll::Pending) {
+                if (executor.buffer_registry().poll_requests(m_requests, &m_dependencies)
+                    == Poll::Pending) {
                     return Poll::Pending;
                 }
 
@@ -139,7 +141,7 @@ class DeviceJob: public Executor::Job {
                 try {
                     GPUContextGuard guard {state.context};
                     executor.stream_manager().wait_for_events(state.stream, m_dependencies);
-                    submit(state.device, executor.access_requests(m_requests));
+                    submit(state.device, executor.buffer_registry().access_requests(m_requests));
                     m_event = executor.stream_manager().record_event(state.stream);
                 } catch (const std::exception& e) {
                     try {
@@ -152,12 +154,12 @@ class DeviceJob: public Executor::Job {
                 }
 
                 state.last_event = m_event;
-                scheduler.mark_as_scheduled(m_id, m_event);
-                executor.release_requests(m_requests, m_event);
+                executor.scheduler().mark_as_scheduled(m_id, m_event);
+                executor.buffer_registry().release_requests(m_requests, m_event);
                 m_status = Status::Running;
             } catch (const std::exception& e) {
-                executor.poison_buffers(m_buffers, m_id, e);
-                executor.release_requests(m_requests);
+                executor.buffer_registry().poison_all(m_buffers, PoisonException(m_id, e));
+                executor.buffer_registry().release_requests(m_requests);
                 m_status = Status::Completing;
             }
         }
@@ -171,7 +173,7 @@ class DeviceJob: public Executor::Job {
         }
 
         if (m_status == Status::Completing) {
-            scheduler.mark_as_completed(m_id);
+            executor.scheduler().mark_as_completed(m_id);
             m_status = Status::Completed;
         }
 
@@ -188,7 +190,7 @@ class DeviceJob: public Executor::Job {
     EventId m_id;
     DeviceId m_device_id;
     std::vector<BufferRequirement> m_buffers;
-    MemoryRequestList m_requests;
+    BufferRequestList m_requests;
     DeviceEvent m_event;
     DeviceEventSet m_dependencies;
 };
@@ -417,14 +419,15 @@ class PrefetchJob: public Executor::Job {
         m_buffers {{buffer_id, memory_id, AccessMode::Read}},
         m_dependencies(std::move(dependencies)) {}
 
-    Poll poll(Executor& executor, Scheduler& scheduler) final {
+    Poll poll(Executor& executor) final {
         if (m_status == Status::Init) {
-            m_requests = executor.create_requests(m_buffers);
+            m_requests = executor.buffer_registry().create_requests(m_buffers);
             m_status = Status::Waiting;
         }
 
         if (m_status == Status::Waiting) {
-            if (executor.poll_requests(m_requests, &m_dependencies) == Poll::Pending) {
+            if (executor.buffer_registry().poll_requests(m_requests, &m_dependencies)
+                == Poll::Pending) {
                 return Poll::Pending;
             }
 
@@ -432,8 +435,8 @@ class PrefetchJob: public Executor::Job {
                 return Poll::Pending;
             }
 
-            executor.release_requests(m_requests);
-            scheduler.mark_as_completed(m_id);
+            executor.buffer_registry().release_requests(m_requests);
+            executor.scheduler().mark_as_completed(m_id);
             m_status = Status::Completed;
         }
 
@@ -446,19 +449,20 @@ class PrefetchJob: public Executor::Job {
     Status m_status = Status::Init;
     EventId m_id;
     std::vector<BufferRequirement> m_buffers;
-    MemoryRequestList m_requests;
+    BufferRequestList m_requests;
     DeviceEventSet m_dependencies;
 };
 
 Executor::Executor(
     std::vector<GPUContextHandle> contexts,
     std::shared_ptr<DeviceStreamManager> stream_manager,
-    std::shared_ptr<MemorySystem> memory_system,
+    std::shared_ptr<BufferRegistry> buffer_registry,
+    std::shared_ptr<Scheduler> scheduler,
     bool debug_mode
 ) :
-    m_buffer_registry(std::make_unique<BufferRegistry>()),
-    m_memory_manager(std::make_unique<MemoryManager>(memory_system)),
     m_stream_manager(stream_manager),
+    m_buffer_registry(buffer_registry),
+    m_scheduler(scheduler),
     m_debug_mode(debug_mode) {
     for (size_t i = 0; i < contexts.size(); i++) {
         m_devices.emplace_back(
@@ -473,89 +477,23 @@ bool Executor::is_idle() const {
     return m_jobs_head == nullptr;
 }
 
-void Executor::make_progress(Scheduler& scheduler) {
-    bool should_poll = true;
+void Executor::make_progress(WorkerState& worker) {
     Job* prev = nullptr;
     std::unique_ptr<Job>* current_ptr = &m_jobs_head;
 
     while (auto* current = current_ptr->get()) {
-        if (should_poll && current->poll(*this, scheduler) == Poll::Ready) {
+        // In debug mode, only poll the head task (prev == nullptr)
+        bool should_poll = !m_debug_mode || prev == nullptr;
+
+        if (should_poll && current->poll(*this) == Poll::Ready) {
             *current_ptr = std::move(current->next);
         } else {
             prev = current;
             current_ptr = &current->next;
         }
-
-        if (m_debug_mode) {
-            should_poll = false;
-        }
     }
 
     m_jobs_tail = prev;
-}
-
-MemoryRequestList Executor::create_requests(const std::vector<BufferRequirement>& buffers) {
-    auto parent = m_memory_manager->create_transaction();
-    auto requests = MemoryRequestList {};
-
-    try {
-        for (const auto& r : buffers) {
-            auto buffer = m_buffer_registry->get(r.buffer_id);
-            auto req = m_memory_manager->create_request(buffer, r.memory_id, r.access_mode, parent);
-            requests.push_back(req);
-        }
-
-        return requests;
-    } catch (...) {
-        // Release the requests that have been created so far.
-        for (const auto& r : requests) {
-            m_memory_manager->release_request(r);
-        }
-
-        throw;
-    }
-}
-
-Poll Executor::poll_requests(const MemoryRequestList& requests, DeviceEventSet* dependencies) {
-    Poll result = Poll::Ready;
-
-    for (const auto& req : requests) {
-        if (m_memory_manager->poll_request(*req, dependencies) != Poll::Ready) {
-            result = Poll::Pending;
-        }
-    }
-
-    return result;
-}
-
-std::vector<BufferAccessor> Executor::access_requests(const MemoryRequestList& requests) {
-    auto accessors = std::vector<BufferAccessor> {};
-
-    for (const auto& req : requests) {
-        accessors.push_back(m_memory_manager->get_accessor(*req));
-    }
-
-    return accessors;
-}
-
-void Executor::release_requests(MemoryRequestList& requests, DeviceEvent event) {
-    for (auto& req : requests) {
-        m_memory_manager->release_request(req, event);
-    }
-
-    requests.clear();
-}
-
-void Executor::poison_buffers(
-    const std::vector<BufferRequirement>& buffers,
-    EventId event_id,
-    const std::exception& err
-) {
-    for (const auto& r : buffers) {
-        if (r.access_mode != AccessMode::Read) {
-            m_buffer_registry->poison(r.buffer_id, event_id, err);
-        }
-    }
 }
 
 DeviceState& Executor::device_state(DeviceId id, const DeviceEventSet& hint_deps) {
@@ -572,18 +510,16 @@ void Executor::insert_job(std::unique_ptr<Job> job) {
 }
 
 void Executor::execute_command(EventId id, const Command& command, DeviceEventSet dependencies) {
-    if (const auto* e = std::get_if<CommandBufferCreate>(&command)) {
-        auto buffer = m_memory_manager->create_buffer(e->layout, std::to_string(e->id));
-        m_buffer_registry->add(e->id, buffer);
+    if (std::get_if<CommandEmpty>(&command) != nullptr) {
+        insert_job(std::make_unique<MergeJob>(id, std::move(dependencies)));
+
+    } else if (const auto* e = std::get_if<CommandBufferCreate>(&command)) {
+        m_buffer_registry->add(e->id, e->layout);
         execute_command(id, CommandEmpty {}, std::move(dependencies));
 
     } else if (const auto* e = std::get_if<CommandBufferDelete>(&command)) {
-        auto buffer = m_buffer_registry->remove(e->id);
-        m_memory_manager->delete_buffer(buffer);
+        m_buffer_registry->remove(e->id);
         execute_command(id, CommandEmpty {}, std::move(dependencies));
-
-    } else if (std::get_if<CommandEmpty>(&command) != nullptr) {
-        insert_job(std::make_unique<MergeJob>(id, std::move(dependencies)));
 
     } else if (std::get_if<CommandPrefetch>(&command) != nullptr) {
         execute_command(id, CommandEmpty {}, std::move(dependencies));

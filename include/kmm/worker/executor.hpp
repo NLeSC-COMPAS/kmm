@@ -2,6 +2,8 @@
 
 #include <future>
 
+#include "worker_state.hpp"
+
 #include "kmm/core/execution_context.hpp"
 #include "kmm/utils/error_ptr.hpp"
 #include "kmm/utils/poll.hpp"
@@ -37,43 +39,40 @@ class Executor {
       public:
         Job() = default;
         virtual ~Job() = default;
-        virtual Poll poll(Executor& executor, Scheduler& scheduler) = 0;
+        virtual Poll poll(Executor& executor) = 0;
 
         //      private:
-        EventId m_id;
         std::unique_ptr<Job> next = nullptr;
     };
 
     Executor(
         std::vector<GPUContextHandle> contexts,
         std::shared_ptr<DeviceStreamManager> stream_manager,
-        std::shared_ptr<MemorySystem> memory_system,
+        std::shared_ptr<BufferRegistry> buffer_registry,
+        std::shared_ptr<Scheduler> scheduler,
         bool debug_mode
     );
 
     ~Executor();
 
     bool is_idle() const;
-    void make_progress(Scheduler& scheduler);
+    void make_progress(WorkerState& worker);
 
     DeviceState& device_state(DeviceId id, const DeviceEventSet& hint_deps = {});
 
-    DeviceStreamManager& stream_manager() noexcept {
-        return *m_stream_manager;
+    void execute_command(EventId id, const Command& command, DeviceEventSet dependencies);
+
+    Scheduler& scheduler() {
+        return *m_scheduler;
     }
 
-    MemoryRequestList create_requests(const std::vector<BufferRequirement>& buffers);
-    Poll poll_requests(const MemoryRequestList& requests, DeviceEventSet* dependencies);
-    std::vector<BufferAccessor> access_requests(const MemoryRequestList& requests);
-    void release_requests(MemoryRequestList& requests, DeviceEvent event = {});
+    BufferRegistry& buffer_registry() {
+        return *m_buffer_registry;
+    }
 
-    void poison_buffers(
-        const std::vector<BufferRequirement>& buffers,
-        EventId event_id,
-        const std::exception& err
-    );
-
-    void execute_command(EventId id, const Command& command, DeviceEventSet dependencies);
+    DeviceStreamManager& stream_manager() {
+        return *m_stream_manager;
+    }
 
   private:
     void insert_job(std::unique_ptr<Job> job);
@@ -82,12 +81,12 @@ class Executor {
     void execute_command(EventId id, const CommandReduction& command, DeviceEventSet dependencies);
     void execute_command(EventId id, const CommandFill& command, DeviceEventSet dependencies);
 
+    std::shared_ptr<DeviceStreamManager> m_stream_manager;
+    std::shared_ptr<BufferRegistry> m_buffer_registry;
+    std::shared_ptr<Scheduler> m_scheduler;
+
     std::unique_ptr<Job> m_jobs_head = nullptr;
     Job* m_jobs_tail = nullptr;
-
-    std::unique_ptr<BufferRegistry> m_buffer_registry;
-    std::unique_ptr<MemoryManager> m_memory_manager;
-    std::shared_ptr<DeviceStreamManager> m_stream_manager;
     std::vector<std::unique_ptr<DeviceState>> m_devices;
     bool m_debug_mode = false;
 };

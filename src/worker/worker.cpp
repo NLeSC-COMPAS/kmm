@@ -15,7 +15,7 @@ bool Worker::query_event(EventId event_id, std::chrono::system_clock::time_point
     std::unique_lock guard {m_mutex};
     flush_events_impl();
 
-    if (m_scheduler.is_completed(event_id)) {
+    if (m_scheduler->is_completed(event_id)) {
         return true;
     }
 
@@ -24,7 +24,7 @@ bool Worker::query_event(EventId event_id, std::chrono::system_clock::time_point
     while (true) {
         make_progress_impl();
 
-        if (m_scheduler.is_completed(event_id)) {
+        if (m_scheduler->is_completed(event_id)) {
             return true;
         }
 
@@ -87,22 +87,23 @@ void Worker::shutdown() {
 
 void Worker::flush_events_impl() {
     // Flush all events from the DAG builder to the scheduler
-    m_scheduler.submit(m_graph.flush());
+    m_scheduler->submit(m_graph.flush());
 }
 
 void Worker::make_progress_impl() {
     m_stream_manager->make_progress();
     m_memory_system->make_progress();
-    m_executor.make_progress(m_scheduler);
+    m_executor.make_progress(*this);
 
     DeviceEventSet deps;
-    while (auto cmd = m_scheduler.pop_ready(&deps)) {
+    while (auto cmd = m_scheduler->pop_ready(&deps)) {
         m_executor.execute_command((*cmd)->id(), (*cmd)->get_command(), std::move(deps));
     }
 }
 
 bool Worker::is_idle_impl() {
-    return m_stream_manager->is_idle() && m_executor.is_idle() && m_scheduler.is_idle();
+    return m_stream_manager->is_idle() && m_executor.is_idle() && m_scheduler->is_idle()
+        && m_memory_manager->is_idle(*m_stream_manager);
 }
 
 Worker::~Worker() {
@@ -130,11 +131,9 @@ Worker::Worker(
     std::shared_ptr<MemorySystem> memory_system,
     const WorkerConfig& config
 ) :
+    WorkerState(stream_manager, memory_system, std::make_shared<Scheduler>(contexts.size())),
     m_info(make_system_info(contexts)),
-    m_scheduler(contexts.size()),
-    m_executor(contexts, stream_manager, memory_system, config.debug_mode),
-    m_stream_manager(stream_manager),
-    m_memory_system(memory_system) {}
+    m_executor(contexts, stream_manager, m_buffer_registry, m_scheduler, config.debug_mode) {}
 
 std::unique_ptr<AsyncAllocator> create_device_allocator(
     const WorkerConfig& config,

@@ -13,7 +13,7 @@ namespace kmm {
 
 struct BufferGuard;
 
-class Worker: public std::enable_shared_from_this<Worker> {
+class Worker: public WorkerState, public std::enable_shared_from_this<Worker> {
     KMM_NOT_COPYABLE_OR_MOVABLE(Worker)
 
   public:
@@ -68,12 +68,8 @@ class Worker: public std::enable_shared_from_this<Worker> {
     mutable std::mutex m_mutex;
     mutable bool m_has_shutdown = false;
     SystemInfo m_info;
-    Scheduler m_scheduler;
     Executor m_executor;
     TaskGraph m_graph;
-
-    std::shared_ptr<DeviceStreamManager> m_stream_manager;
-    std::shared_ptr<MemorySystem> m_memory_system;
 };
 
 std::shared_ptr<Worker> make_worker(const WorkerConfig& config);

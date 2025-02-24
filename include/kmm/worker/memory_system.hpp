@@ -119,7 +119,6 @@ class MemorySystem: public MemorySystemBase {
 
   private:
     struct Device;
-
     std::shared_ptr<DeviceStreamManager> m_streams;
     std::unique_ptr<AsyncAllocator> m_host;
     std::unique_ptr<Device> m_devices[MAX_DEVICES];

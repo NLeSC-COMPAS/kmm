@@ -11,22 +11,38 @@ namespace kmm {
 
 class PoisonException final: public std::exception {
   public:
-    PoisonException(EventId, const std::string& error);
+    PoisonException(const std::string& error);
+    PoisonException(EventId, const std::exception& error);
     const char* what() const noexcept override;
 
   private:
     std::string m_message;
 };
 
+using BufferRequest = std::shared_ptr<MemoryManager::Request>;
+using BufferRequestList = std::vector<BufferRequest>;
+
 class BufferRegistry {
   public:
-    void add(BufferId id, std::shared_ptr<MemoryManager::Buffer> buffer);
+    BufferRegistry(std::shared_ptr<MemoryManager> memory_manager);
+
+    void add(BufferId buffer_id, DataLayout layout);
 
     std::shared_ptr<MemoryManager::Buffer> get(BufferId id);
 
-    void poison(BufferId id, EventId event_id, const std::exception& error);
+    void remove(BufferId buffer_id);
 
-    std::shared_ptr<MemoryManager::Buffer> remove(BufferId id);
+    BufferRequestList create_requests(const std::vector<BufferRequirement>& buffers);
+
+    Poll poll_requests(const BufferRequestList& requests, DeviceEventSet* dependencies_out);
+
+    std::vector<BufferAccessor> access_requests(const BufferRequestList& requests);
+
+    void release_requests(BufferRequestList& requests, DeviceEvent event = {});
+
+    void poison(BufferId id, PoisonException reason);
+
+    void poison_all(const std::vector<BufferRequirement>& buffers, PoisonException reason);
 
   private:
     struct BufferMeta {
@@ -34,6 +50,7 @@ class BufferRegistry {
         std::optional<PoisonException> poison_reason = std::nullopt;
     };
 
+    std::shared_ptr<MemoryManager> m_memory_manager;
     std::unordered_map<BufferId, BufferMeta> m_buffers;
 };
 

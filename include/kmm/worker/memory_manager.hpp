@@ -41,7 +41,7 @@ class MemoryManager {
     Poll poll_request(Request& req, DeviceEventSet* deps_out);
     void release_request(std::shared_ptr<Request> req, DeviceEvent event = {});
 
-    static BufferAccessor get_accessor(Request& req);
+    BufferAccessor get_accessor(Request& req);
 
   private:
     void allocate_host(Buffer& buffer);
@@ -90,8 +90,5 @@ class MemoryManager {
     uint64_t m_next_transaction_id = 1;
     uint64_t m_next_request_id = 1;
 };
-
-using MemoryRequest = std::shared_ptr<MemoryManager::Request>;
-using MemoryRequestList = std::vector<std::shared_ptr<MemoryManager::Request>>;
 
 }  // namespace kmm
