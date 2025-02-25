@@ -62,16 +62,14 @@ bool inner_loop(
 
     // Initialize input arrays
     rt.parallel_submit(
-        kmm::Dim {n},
-        kmm::ChunkPartitioner {chunk_size},
+        kmm::ChunkDistribution(n, chunk_size),
         kmm::GPUKernel(initialize_range, block_size),
         _x,
         write(A[_x])
     );
 
     rt.parallel_submit(
-        {n},
-        {chunk_size},
+        kmm::ChunkDistribution(n, chunk_size),
         kmm::GPUKernel(fill_range, block_size),
         _x,
         static_cast<real_type>(1.0),
@@ -85,8 +83,7 @@ bool inner_loop(
     // Benchmark
     auto timing_start = std::chrono::steady_clock::now();
     rt.parallel_submit(
-        {n},
-        {chunk_size},
+        kmm::ChunkDistribution(n, chunk_size),
         kmm::GPUKernel(vector_add, block_size),
         _x,
         write(C[_x]),

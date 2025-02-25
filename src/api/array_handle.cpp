@@ -128,15 +128,6 @@ ArrayHandle<N>::ArrayHandle(
     m_worker(worker.shared_from_this()),
     m_buffers(std::move(distribution.second)) {}
 
-#define INSTANTIATE_ARRAY_IMPL(NAME)     \
-    template class NAME<0>; /* NOLINT */ \
-    template class NAME<1>; /* NOLINT */ \
-    template class NAME<2>; /* NOLINT */ \
-    template class NAME<3>; /* NOLINT */ \
-    template class NAME<4>; /* NOLINT */ \
-    template class NAME<5>; /* NOLINT */ \
-    template class NAME<6>; /* NOLINT */
-
-INSTANTIATE_ARRAY_IMPL(ArrayHandle)
+KMM_INSTANTIATE_ARRAY_IMPL(ArrayHandle)
 
 }  // namespace kmm

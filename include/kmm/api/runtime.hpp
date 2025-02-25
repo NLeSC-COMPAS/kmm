@@ -32,11 +32,11 @@ class Runtime {
      * @return The event identifier for the submitted task.
      */
     template<typename L, typename... Args>
-    EventId submit(WorkBounds index_space, ProcessorId target, L&& launcher, Args&&... args) const {
+    EventId submit(ProcessorId target, L&& launcher, Args&&... args) const {
         WorkChunk chunk = {
             .owner_id = target,  //
-            .offset = index_space.begin(),
-            .size = index_space.sizes()};
+            .offset = WorkIndex::zero(),
+            .size = WorkDim::one()};
 
         return kmm::parallel_submit(
             *m_worker,
@@ -50,17 +50,21 @@ class Runtime {
     /**
      * Submit a set of tasks to the runtime systems.
      *
-     * @param partition The partition describing how the work is split.
+     * @param dist The distribution describing how the work is split.
      * @param launcher The task launcher.
      * @param args The arguments that are forwarded to the launcher.
      * @return The event identifier for the submitted task.
      */
-    template<typename L, typename... Args>
-    EventId parallel_submit(WorkDistribution partition, L&& launcher, Args&&... args) const {
+    template<typename D, typename L, typename... Args>
+    EventId parallel_submit(D&& dist, L&& launcher, Args&&... args) const {
         return kmm::parallel_submit(
             *m_worker,
             info(),
-            std::move(partition),
+            IntoWorkDistribution<std::decay_t<D>>::call(
+                std::forward<D>(dist),
+                info(),
+                std::decay_t<L>::execution_space
+            ),
             std::forward<L>(launcher),
             std::forward<Args>(args)...
         );
@@ -75,18 +79,10 @@ class Runtime {
      * @param args The arguments that are forwarded to the launcher.
      * @return The event identifier for the submitted task.
      */
-    template<typename P = ChunkPartitioner, typename L, typename... Args>
-    EventId parallel_submit(WorkBounds index_space, P&& partitioner, L&& launcher, Args&&... args)
-        const {
-        return kmm::parallel_submit(
-            *m_worker,
-            info(),
-            IntoWorkDistribution<P>::call(
-                partitioner,
-                index_space,
-                info(),
-                std::decay_t<L>::execution_space
-            ),
+    template<size_t N = WORK_DIMS, typename L, typename... Args>
+    EventId parallel_submit(Dim<N> index_space, Dim<N> chunk, L&& launcher, Args&&... args) const {
+        return this->parallel_submit(
+            ChunkDist(index_space, chunk),
             std::forward<L>(launcher),
             std::forward<Args>(args)...
         );

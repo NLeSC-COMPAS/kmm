@@ -59,13 +59,13 @@ int main() {
     int height = 32768;
     int chunk_width = width / 8;
     int chunk_height = height / 8;
+    auto dist = kmm::ChunkDist({width, height}, {chunk_width, chunk_height});
 
     auto rt = kmm::make_runtime();
     auto matrix = kmm::Array<float, 2> {{height, width}};
 
     rt.parallel_submit(
-        {width, height},
-        {chunk_width, chunk_height},
+        dist,
         kmm::GPUKernel(initialize_matrix_kernel, {16, 16}),
         bounds(_x, _y),
         write(matrix[_y][_x])
@@ -78,30 +78,27 @@ int main() {
     auto cols_sum = kmm::Array<float>(width);
 
     rt.parallel_submit(
-        {width, height},
-        {chunk_width, chunk_height},
+        dist,
         kmm::GPUKernel(sum_total_kernel, {16, 16}),
         bounds(_x, _y),
-        matrix(_y, _x),
+        matrix[_y][_x],
         reduce(kmm::Reduction::Sum, privatize(_y, _x), total_sum)
     );
 
     rt.synchronize();
 
     rt.parallel_submit(
-        {width, height},
-        {chunk_width, chunk_height},
+        dist,
         kmm::GPUKernel(sum_rows_kernel, {16, 16}),
         bounds(_x, _y),
-        matrix(_y, _x),
+        matrix[_y][_x],
         reduce(kmm::Reduction::Sum, privatize(_y), rows_sum[_x])
     );
 
     rt.synchronize();
 
     rt.parallel_submit(
-        {width, height},
-        {chunk_width, chunk_height},
+        dist,
         kmm::GPUKernel(sum_cols_kernel, {16, 16}),
         bounds(_x, _y),
         matrix(_y, _x),

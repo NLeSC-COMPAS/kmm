@@ -42,33 +42,35 @@ struct WorkDistribution {
 
 template<typename P>
 struct IntoWorkDistribution {
-    static WorkDistribution call(
-        P partitioner,
-        WorkBounds index_space,
-        const SystemInfo& info,
-        ExecutionSpace space
-    ) {
-        return (partitioner)(index_space, info, space);
+    static WorkDistribution call(P partition, const SystemInfo& info, ExecutionSpace space) {
+        return partition;
     }
 };
 
-struct ChunkPartitioner {
-    ChunkPartitioner(WorkDim chunk_size) : m_chunk_size(chunk_size) {}
-    ChunkPartitioner(
-        int64_t x,
-        int64_t y = std::numeric_limits<int64_t>::max(),
-        int64_t z = std::numeric_limits<int64_t>::max()
-    ) :
-        m_chunk_size(x, y, z) {}
+struct ChunkDistribution {
+    ChunkDistribution(WorkDim total_size, WorkDim chunk_size) :
+        m_total_size(total_size),
+        m_chunk_size(chunk_size) {}
 
-    WorkDistribution operator()(
-        WorkBounds index_space,
-        const SystemInfo& info,
-        ExecutionSpace space
-    ) const;
+    WorkDistribution operator()(const SystemInfo& info, ExecutionSpace space) const;
 
   private:
+    WorkBounds m_total_size;
     WorkDim m_chunk_size;
 };
+
+template<>
+struct IntoWorkDistribution<ChunkDistribution> {
+    static WorkDistribution call(
+        ChunkDistribution partition,
+        const SystemInfo& info,
+        ExecutionSpace space
+    ) {
+        return partition(info, space);
+    }
+};
+
+// Old name for `ChunkDistribution`
+using ChunkDist = ChunkDistribution;
 
 }  // namespace kmm

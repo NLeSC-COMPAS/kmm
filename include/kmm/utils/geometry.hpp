@@ -575,7 +575,7 @@ std::ostream& operator<<(std::ostream& stream, const Bounds<N, T>& p) {
             stream << ", ";
         }
 
-        stream << p;
+        stream << p[i];
     }
 
     return stream << "}";

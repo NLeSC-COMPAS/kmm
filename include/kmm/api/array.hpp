@@ -12,6 +12,7 @@
 #include "kmm/api/array_argument.hpp"
 #include "kmm/api/array_handle.hpp"
 #include "kmm/dag/array_builder.hpp"
+#include "kmm/dag/reduction_builder.hpp"
 
 namespace kmm {
 
@@ -200,15 +201,15 @@ template<typename T, size_t N>
 struct ArgumentHandler<Access<Array<T, N>, Write<All>>> {
     using type = ArrayArgument<T, views::dynamic_domain<N>>;
 
-    ArgumentHandler(Access<Array<T, N>, Write<All>> access) :
-        m_array(access.argument),
-        m_builder(access.argument.sizes(), DataLayout::for_type<T>()) {
+    ArgumentHandler(Access<Array<T, N>, Write<All>> access) : m_array(access.argument) {
         if (m_array.is_valid()) {
             throw std::runtime_error("array has already been written to, cannot overwrite array");
         }
     }
 
-    void initialize(const TaskGroupInit& init) {}
+    void initialize(const TaskGroupInit& init) {
+        m_builder = ArrayBuilder<N>(m_array.sizes(), DataLayout::for_type<T>());
+    }
 
     type process_chunk(TaskInstance& task) {
         auto access_region = m_builder.sizes();
@@ -242,7 +243,6 @@ struct ArgumentHandler<Access<const Array<T, N>, Read<M>>> {
 
     ArgumentHandler(Access<const Array<T, N>, Read<M>> access) :
         m_handle(access.argument.handle().shared_from_this()),
-        m_distribution(m_handle->distribution()),
         m_access_mapper(access.mode.access_mapper) {}
 
     void initialize(const TaskGroupInit& init) {}
@@ -266,7 +266,6 @@ struct ArgumentHandler<Access<const Array<T, N>, Read<M>>> {
 
   private:
     std::shared_ptr<const ArrayHandle<N>> m_handle;
-    const DataDistribution<N>& m_distribution;
     M m_access_mapper;
 };
 
@@ -281,14 +280,15 @@ struct ArgumentHandler<Access<Array<T, N>, Write<M>>> {
 
     ArgumentHandler(Access<Array<T, N>, Write<M>> access) :
         m_array(access.argument),
-        m_access_mapper(access.mode.access_mapper),
-        m_builder(access.argument.sizes(), DataLayout::for_type<T>()) {
+        m_access_mapper(access.mode.access_mapper) {
         if (m_array.is_valid()) {
             throw std::runtime_error("array has already been written to, cannot overwrite array");
         }
     }
 
-    void initialize(const TaskGroupInit& init) {}
+    void initialize(const TaskGroupInit& init) {
+        m_builder = ArrayBuilder<N>(m_array.sizes(), DataLayout::for_type<T>());
+    }
 
     type process_chunk(TaskInstance& task) {
         auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_builder.sizes()));
@@ -321,13 +321,15 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<All>>> {
 
     ArgumentHandler(Access<Array<T, N>, Reduce<All>> access) :
         m_array(access.argument),
-        m_builder(access.argument.sizes(), DataType::of<T>(), access.mode.op) {
+        m_operation(access.mode.op) {
         if (m_array.is_valid()) {
             throw std::runtime_error("array has already been written to, cannot overwrite array");
         }
     }
 
-    void initialize(const TaskGroupInit& init) {}
+    void initialize(const TaskGroupInit& init) {
+        m_builder = ReductionBuilder<N>(m_array.sizes(), DataType::of<T>(), m_operation);
+    }
 
     type process_chunk(TaskInstance& task) {
         auto access_region = m_builder.sizes();
@@ -350,7 +352,8 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<All>>> {
 
   private:
     Array<T, N>& m_array;
-    ArrayReductionBuilder<N> m_builder;
+    Reduction m_operation;
+    ReductionBuilder<N> m_builder;
 };
 
 template<typename T, size_t N, typename M, typename P>
@@ -370,7 +373,7 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<M, P>>> {
 
     ArgumentHandler(Access<Array<T, N>, Reduce<M, P>> access) :
         m_array(access.argument),
-        m_builder(access.argument.sizes(), DataType::of<T>(), access.mode.op),
+        m_operation(access.mode.op),
         m_access_mapper(access.mode.access_mapper),
         m_private_mapper(access.mode.private_mapper) {
         if (m_array.is_valid()) {
@@ -378,7 +381,9 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<M, P>>> {
         }
     }
 
-    void initialize(const TaskGroupInit& init) {}
+    void initialize(const TaskGroupInit& init) {
+        m_builder = ReductionBuilder<N>(m_array.sizes(), DataType::of<T>(), m_operation);
+    }
 
     type process_chunk(TaskInstance& task) {
         auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_builder.sizes()));
@@ -406,7 +411,8 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<M, P>>> {
 
   private:
     Array<T, N>& m_array;
-    ArrayReductionBuilder<N> m_builder;
+    Reduction m_operation;
+    ReductionBuilder<N> m_builder;
     M m_access_mapper;
     P m_private_mapper;
 };

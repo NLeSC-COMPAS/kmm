@@ -5,11 +5,7 @@
 
 namespace kmm {
 
-WorkDistribution ChunkPartitioner::operator()(
-    WorkBounds index_space,
-    const SystemInfo& info,
-    ExecutionSpace space
-) const {
+WorkDistribution ChunkDist::operator()(const SystemInfo& info, ExecutionSpace space) const {
     std::vector<ProcessorId> devices;
 
     if (space == ExecutionSpace::Host) {
@@ -26,7 +22,7 @@ WorkDistribution ChunkPartitioner::operator()(
 
     std::vector<WorkChunk> chunks;
 
-    if (index_space.is_empty()) {
+    if (m_total_size.is_empty()) {
         return {chunks};
     }
 
@@ -37,7 +33,7 @@ WorkDistribution ChunkPartitioner::operator()(
     std::array<int64_t, WORK_DIMS> num_chunks;
 
     for (size_t i = 0; i < WORK_DIMS; i++) {
-        num_chunks[i] = div_ceil(index_space[i].size(), m_chunk_size[i]);
+        num_chunks[i] = div_ceil(m_total_size[i].size(), m_chunk_size[i]);
     }
 
     size_t owner_id = 0;
@@ -50,8 +46,8 @@ WorkDistribution ChunkPartitioner::operator()(
                 auto current = Index<3> {x, y, z};
 
                 for (size_t i = 0; i < WORK_DIMS; i++) {
-                    offset[i] = index_space[i].begin + current[i] * m_chunk_size[i];
-                    size[i] = std::min(m_chunk_size[i], index_space[i].end - offset[i]);
+                    offset[i] = m_total_size[i].begin + current[i] * m_chunk_size[i];
+                    size[i] = std::min(m_chunk_size[i], m_total_size[i].end - offset[i]);
                 }
 
                 chunks.push_back({devices[owner_id], offset, size});

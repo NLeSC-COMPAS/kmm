@@ -5,7 +5,7 @@
 
 namespace kmm {
 
-enum struct Reduction : uint8_t { Sum, Product, Min, Max, BitAnd, BitOr };
+enum struct Reduction : uint8_t { Invalid = 0, Sum, Product, Min, Max, BitAnd, BitOr };
 
 std::vector<uint8_t> reduction_identity_value(DataType dtype, Reduction op);
 

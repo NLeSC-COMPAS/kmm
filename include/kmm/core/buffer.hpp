@@ -28,8 +28,8 @@ struct DataLayout {
         return DataLayout {dtype.size_in_bytes(), dtype.alignment()};
     }
 
-    size_t size_in_bytes;
-    size_t alignment;
+    size_t size_in_bytes = 0;
+    size_t alignment = 1;
 };
 
 /**
