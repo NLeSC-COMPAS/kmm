@@ -59,7 +59,7 @@ int main() {
     int height = 32768;
     int chunk_width = width / 8;
     int chunk_height = height / 8;
-    auto dist = kmm::ChunkDist({width, height}, {chunk_width, chunk_height});
+    auto dist = kmm::TileDomain({width, height}, {chunk_width, chunk_height});
 
     auto rt = kmm::make_runtime();
     auto matrix = kmm::Array<float, 2> {{height, width}};

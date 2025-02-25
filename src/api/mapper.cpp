@@ -7,7 +7,7 @@
 namespace kmm {
 
 IndexMap::IndexMap(Axis variable, int64_t scale, int64_t offset, int64_t length, int64_t divisor) :
-    m_variable(variable),
+    m_axis(variable),
     m_scale(scale),
     m_offset(offset),
     m_length(length),
@@ -43,7 +43,7 @@ IndexMap IndexMap::range(IndexMap begin, IndexMap end) {
         ));
     }
 
-    if (begin.m_variable.get() != end.m_variable.get() && begin.m_scale != 0) {
+    if (begin.m_axis.get() != end.m_axis.get() && begin.m_scale != 0) {
         throw std::runtime_error(fmt::format(
             "`range` requires two expression operating on the same axis, given: `{}` and `{}`",
             begin,
@@ -52,7 +52,7 @@ IndexMap IndexMap::range(IndexMap begin, IndexMap end) {
     }
 
     return {
-        begin.m_variable,
+        begin.m_axis,
         begin.m_scale,
         begin.m_offset,
         (end.m_offset - begin.m_offset) + end.m_length,
@@ -61,7 +61,7 @@ IndexMap IndexMap::range(IndexMap begin, IndexMap end) {
 
 IndexMap IndexMap::offset_by(int64_t offset) const {
     auto new_offset = checked_add(m_offset, checked_mul(m_divisor, offset));
-    return {m_variable, m_scale, new_offset, m_length, m_divisor};
+    return {m_axis, m_scale, new_offset, m_length, m_divisor};
 }
 
 IndexMap IndexMap::scale_by(int64_t factor) const {
@@ -70,7 +70,7 @@ IndexMap IndexMap::scale_by(int64_t factor) const {
     }
 
     return {
-        m_variable,
+        m_axis,
         checked_mul(m_scale, factor),
         checked_mul(m_offset, factor),
         checked_mul(m_length - 1, factor) + 1,
@@ -82,16 +82,16 @@ IndexMap IndexMap::divide_by(int64_t divisor) const {
         return negate().divide_by(-divisor);
     }
 
-    return {m_variable, m_scale, m_offset, m_length, checked_mul(m_divisor, divisor)};
+    return {m_axis, m_scale, m_offset, m_length, checked_mul(m_divisor, divisor)};
 }
 
 IndexMap IndexMap::negate() const {
-    return {m_variable, -m_scale, -checked_add(m_offset, m_length - 1), m_length, m_divisor};
+    return {m_axis, -m_scale, -checked_add(m_offset, m_length - 1), m_length, m_divisor};
 }
 
-Bounds<1> IndexMap::apply(WorkChunk chunk) const {
-    int64_t a0 = chunk.offset.get_or_default(m_variable.get());
-    int64_t an = chunk.size.get_or_default(m_variable.get());
+Bounds<1> IndexMap::apply(DomainChunk chunk) const {
+    int64_t a0 = chunk.offset.get_or_default(m_axis.get());
+    int64_t an = chunk.size.get_or_default(m_axis.get());
 
     int64_t b0;
     int64_t bn;
@@ -143,17 +143,11 @@ static void write_mapping(std::ostream& f, Axis v, int64_t scale, int64_t offset
 }
 
 std::ostream& operator<<(std::ostream& f, const IndexMap& that) {
-    write_mapping(f, that.m_variable, that.m_scale, that.m_offset, that.m_divisor);
+    write_mapping(f, that.m_axis, that.m_scale, that.m_offset, that.m_divisor);
 
     if (that.m_length != 1) {
         f << "...";
-        write_mapping(
-            f,
-            that.m_variable,
-            that.m_scale,
-            that.m_offset + that.m_length,
-            that.m_divisor
-        );
+        write_mapping(f, that.m_axis, that.m_scale, that.m_offset + that.m_length, that.m_divisor);
     }
 
     return f;

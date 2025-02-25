@@ -65,7 +65,7 @@ int main() {
     auto _j = kmm::Axis(0);
 
     rt.parallel_submit(
-        kmm::ChunkDist(num_images, images_per_chunk),
+        kmm::TileDomain(num_images, images_per_chunk),
         kmm::Host(initialize_images),
         _imageid,
         width,
@@ -76,7 +76,7 @@ int main() {
     rt.synchronize();
 
     rt.parallel_submit(
-        kmm::ChunkDist({width, height, num_images}, {width, height, images_per_chunk}),
+        kmm::TileDomain({width, height, num_images}, {width, height, images_per_chunk}),
         kmm::GPUKernel(calculate_histogram, block_size),
         _imageid,
         width,

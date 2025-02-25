@@ -4,7 +4,7 @@
 
 #include "kmm/api/argument.hpp"
 #include "kmm/core/reduction.hpp"
-#include "kmm/dag/work_distribution.hpp"
+#include "kmm/dag/domain_distribution.hpp"
 #include "kmm/utils/geometry.hpp"
 #include "kmm/utils/integer_fun.hpp"
 
@@ -12,7 +12,7 @@ namespace kmm {
 
 struct All {
     template<size_t N>
-    Bounds<N> operator()(WorkChunk chunk, Bounds<N> bounds) const {
+    Bounds<N> operator()(DomainChunk chunk, Bounds<N> bounds) const {
         return bounds;
     }
 };
@@ -21,14 +21,14 @@ struct Axis {
     constexpr Axis() : m_axis(0) {}
     explicit constexpr Axis(size_t axis) : m_axis(axis) {}
 
-    Bounds<1> operator()(WorkChunk chunk) const {
+    Bounds<1> operator()(DomainChunk chunk) const {
         return Bounds<1>::from_offset_size(
             chunk.offset.get_or_default(m_axis),
             chunk.size.get_or_default(m_axis)
         );
     }
 
-    Bounds<1> operator()(WorkChunk chunk, Bounds<1> bounds) const {
+    Bounds<1> operator()(DomainChunk chunk, Bounds<1> bounds) const {
         return (*this)(chunk).intersection(bounds);
     }
 
@@ -46,14 +46,14 @@ struct Axis {
 
 struct IdentityMap {
     template<size_t N>
-    Bounds<N> operator()(WorkChunk chunk, Bounds<N> bounds) const {
+    Bounds<N> operator()(DomainChunk chunk, Bounds<N> bounds) const {
         return Bounds<N>::from_offset_size(Index<N>::from(chunk.offset), Dim<N>::from(chunk.size));
     }
 };
 
 // (scale * variable + offset + [0...length]) / divisor
 struct IndexMap {
-    constexpr IndexMap(Axis variable = {}) : m_variable(variable) {}
+    constexpr IndexMap(Axis variable = {}) : m_axis(variable) {}
 
     IndexMap(
         Axis variable,
@@ -68,20 +68,20 @@ struct IndexMap {
     IndexMap scale_by(int64_t factor) const;
     IndexMap divide_by(int64_t divisor) const;
     IndexMap negate() const;
-    Bounds<1> apply(WorkChunk chunk) const;
+    Bounds<1> apply(DomainChunk chunk) const;
 
-    Bounds<1> operator()(WorkChunk chunk) const {
+    Bounds<1> operator()(DomainChunk chunk) const {
         return apply(chunk);
     }
 
-    Bounds<1> operator()(WorkChunk chunk, Bounds<1> bounds) const {
+    Bounds<1> operator()(DomainChunk chunk, Bounds<1> bounds) const {
         return apply(chunk).intersection(bounds);
     }
 
     friend std::ostream& operator<<(std::ostream& f, const IndexMap& that);
 
   private:
-    Axis m_variable = {};
+    Axis m_axis = {};
     int64_t m_scale = 1;
     int64_t m_offset = 0;
     int64_t m_length = 1;
@@ -138,7 +138,7 @@ inline IndexMap operator/(IndexMap a, int64_t b) {
 
 template<size_t N>
 struct MultiIndexMap {
-    Bounds<N> operator()(WorkChunk chunk) const {
+    Bounds<N> operator()(DomainChunk chunk) const {
         Bounds<N> result;
 
         for (size_t i = 0; i < N; i++) {
@@ -148,7 +148,7 @@ struct MultiIndexMap {
         return result;
     }
 
-    Bounds<N> operator()(WorkChunk chunk, Bounds<N> bounds) const {
+    Bounds<N> operator()(DomainChunk chunk, Bounds<N> bounds) const {
         Bounds<N> result;
 
         for (size_t i = 0; i < N; i++) {
@@ -163,7 +163,7 @@ struct MultiIndexMap {
 
 template<>
 struct MultiIndexMap<0> {
-    Bounds<0> operator()(WorkChunk chunk, Bounds<0> bounds = {}) const {
+    Bounds<0> operator()(DomainChunk chunk, Bounds<0> bounds = {}) const {
         return {};
     }
 };
@@ -276,11 +276,11 @@ struct RangeDim<Bounds<N>>: std::integral_constant<size_t, N> {};
 
 template<typename F>
 static constexpr size_t mapper_dimensionality =
-    detail::RangeDim<std::invoke_result_t<F, WorkChunk>>::value;
+    detail::RangeDim<std::invoke_result_t<F, DomainChunk>>::value;
 
 template<typename F, size_t N>
 static constexpr bool is_dimensionality_accepted_by_mapper =
-    detail::RangeDim<std::invoke_result_t<F, WorkChunk, Bounds<N>>>::value == N;
+    detail::RangeDim<std::invoke_result_t<F, DomainChunk, Bounds<N>>>::value == N;
 
 }  // namespace kmm
 

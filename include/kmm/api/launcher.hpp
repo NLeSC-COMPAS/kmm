@@ -11,7 +11,7 @@ struct Host {
     Host(F fun) : m_fun(fun) {}
 
     template<typename... Args>
-    void operator()(Resource& resource, WorkChunk chunk, Args... args) {
+    void operator()(Resource& resource, DomainChunk chunk, Args... args) {
         m_fun(args...);
     }
 
@@ -26,7 +26,7 @@ struct GPU {
     GPU(F fun) : m_fun(fun) {}
 
     template<typename... Args>
-    void operator()(Resource& resource, WorkChunk chunk, Args... args) {
+    void operator()(Resource& resource, DomainChunk chunk, Args... args) {
         m_fun(resource.cast<DeviceResource>(), args...);
     }
 
@@ -47,7 +47,7 @@ struct GPUKernel {
         shared_memory(shared_memory) {}
 
     template<typename... Args>
-    void operator()(Resource& resource, WorkChunk chunk, Args... args) {
+    void operator()(Resource& resource, DomainChunk chunk, Args... args) {
         int64_t g[3] = {
             chunk.size.get_or_default(0),
             chunk.size.get_or_default(1),

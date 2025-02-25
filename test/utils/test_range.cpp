@@ -1,6 +1,6 @@
 #include "catch2/catch_all.hpp"
 
-#include "kmm/dag/work_distribution.hpp"
+#include "kmm/dag/domain_distribution.hpp"
 #include "kmm/utils/range.hpp"
 
 using namespace kmm;
@@ -172,7 +172,7 @@ TEST_CASE("Range basics") {
 
 TEST_CASE("WorkBounds constructor") {
     SECTION("default") {
-        auto a = WorkBounds {};
+        auto a = DomainBounds {};
         CHECK(a.x.begin == 0);
         CHECK(a.y.begin == 0);
         CHECK(a.z.begin == 0);
@@ -182,7 +182,7 @@ TEST_CASE("WorkBounds constructor") {
     }
 
     SECTION("number") {
-        auto a = WorkBounds {3, 5};
+        auto a = DomainBounds {3, 5};
         CHECK(a.x.begin == 0);
         CHECK(a.y.begin == 0);
         CHECK(a.z.begin == 0);
@@ -192,7 +192,7 @@ TEST_CASE("WorkBounds constructor") {
     }
 
     SECTION("range") {
-        auto a = WorkBounds {Range {1, 5}, 3};
+        auto a = DomainBounds {Range {1, 5}, 3};
         CHECK(a.x.begin == 1);
         CHECK(a.y.begin == 0);
         CHECK(a.z.begin == 0);
@@ -202,7 +202,7 @@ TEST_CASE("WorkBounds constructor") {
     }
 
     SECTION("offset and size") {
-        auto a = WorkBounds::from_offset_size(Index {1, 2}, Dim {3, 8});
+        auto a = DomainBounds::from_offset_size(Index {1, 2}, Dim {3, 8});
         CHECK(a.x.begin == 1);
         CHECK(a.y.begin == 2);
         CHECK(a.z.begin == 0);

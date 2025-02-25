@@ -1,11 +1,11 @@
 #include "spdlog/spdlog.h"
 
-#include "kmm/dag/work_distribution.hpp"
+#include "kmm/dag/domain_distribution.hpp"
 #include "kmm/utils/integer_fun.hpp"
 
 namespace kmm {
 
-WorkDistribution ChunkDist::operator()(const SystemInfo& info, ExecutionSpace space) const {
+DomainDistribution TileDomain::operator()(const SystemInfo& info, ExecutionSpace space) const {
     std::vector<ProcessorId> devices;
 
     if (space == ExecutionSpace::Host) {
@@ -20,34 +20,34 @@ WorkDistribution ChunkDist::operator()(const SystemInfo& info, ExecutionSpace sp
         }
     }
 
-    std::vector<WorkChunk> chunks;
+    std::vector<DomainChunk> chunks;
 
-    if (m_total_size.is_empty()) {
+    if (m_domain_size.is_empty()) {
         return {chunks};
     }
 
-    if (m_chunk_size.is_empty()) {
-        throw std::runtime_error(fmt::format("invalid chunk size: {}", m_chunk_size));
+    if (m_tile_size.is_empty()) {
+        throw std::runtime_error(fmt::format("invalid chunk size: {}", m_tile_size));
     }
 
-    std::array<int64_t, WORK_DIMS> num_chunks;
+    std::array<int64_t, DOMAIN_DIMS> num_chunks;
 
-    for (size_t i = 0; i < WORK_DIMS; i++) {
-        num_chunks[i] = div_ceil(m_total_size[i].size(), m_chunk_size[i]);
+    for (size_t i = 0; i < DOMAIN_DIMS; i++) {
+        num_chunks[i] = div_ceil(m_domain_size[i].size(), m_tile_size[i]);
     }
 
     size_t owner_id = 0;
-    auto offset = WorkIndex {};
-    auto size = WorkDim {};
+    auto offset = DomainIndex {};
+    auto size = DomainDim {};
 
     for (int64_t z = 0; z < num_chunks[2]; z++) {
         for (int64_t y = 0; y < num_chunks[1]; y++) {
             for (int64_t x = 0; x < num_chunks[0]; x++) {
                 auto current = Index<3> {x, y, z};
 
-                for (size_t i = 0; i < WORK_DIMS; i++) {
-                    offset[i] = m_total_size[i].begin + current[i] * m_chunk_size[i];
-                    size[i] = std::min(m_chunk_size[i], m_total_size[i].end - offset[i]);
+                for (size_t i = 0; i < DOMAIN_DIMS; i++) {
+                    offset[i] = m_domain_size[i].begin + current[i] * m_tile_size[i];
+                    size[i] = std::min(m_tile_size[i], m_domain_size[i].end - offset[i]);
                 }
 
                 chunks.push_back({devices[owner_id], offset, size});

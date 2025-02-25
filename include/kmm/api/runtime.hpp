@@ -5,7 +5,7 @@
 
 #include "kmm/api/array.hpp"
 #include "kmm/api/launcher.hpp"
-#include "kmm/api/submit.hpp"
+#include "kmm/api/parallel_submit.hpp"
 #include "kmm/core/config.hpp"
 #include "kmm/core/system_info.hpp"
 #include "kmm/utils/checked_math.hpp"
@@ -33,15 +33,15 @@ class Runtime {
      */
     template<typename L, typename... Args>
     EventId submit(ProcessorId target, L&& launcher, Args&&... args) const {
-        WorkChunk chunk = {
+        DomainChunk chunk = {
             .owner_id = target,  //
-            .offset = WorkIndex::zero(),
-            .size = WorkDim::one()};
+            .offset = DomainIndex::zero(),
+            .size = DomainDim::one()};
 
         return kmm::parallel_submit(
             *m_worker,
             info(),
-            WorkDistribution {{chunk}},
+            DomainDistribution {{chunk}},
             std::forward<L>(launcher),
             std::forward<Args>(args)...
         );
@@ -60,7 +60,7 @@ class Runtime {
         return kmm::parallel_submit(
             *m_worker,
             info(),
-            IntoWorkDistribution<std::decay_t<D>>::call(
+            IntoDomainDistribution<std::decay_t<D>>::call(
                 std::forward<D>(dist),
                 info(),
                 std::decay_t<L>::execution_space
@@ -79,10 +79,10 @@ class Runtime {
      * @param args The arguments that are forwarded to the launcher.
      * @return The event identifier for the submitted task.
      */
-    template<size_t N = WORK_DIMS, typename L, typename... Args>
+    template<size_t N = DOMAIN_DIMS, typename L, typename... Args>
     EventId parallel_submit(Dim<N> index_space, Dim<N> chunk, L&& launcher, Args&&... args) const {
         return this->parallel_submit(
-            ChunkDist(index_space, chunk),
+            TileDomain(index_space, chunk),
             std::forward<L>(launcher),
             std::forward<Args>(args)...
         );

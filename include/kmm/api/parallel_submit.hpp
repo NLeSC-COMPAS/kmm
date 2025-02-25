@@ -4,7 +4,7 @@
 #include "kmm/api/task_group.hpp"
 #include "kmm/core/buffer.hpp"
 #include "kmm/core/identifiers.hpp"
-#include "kmm/dag/work_distribution.hpp"
+#include "kmm/dag/domain_distribution.hpp"
 #include "kmm/worker/worker.hpp"
 
 namespace kmm {
@@ -15,7 +15,7 @@ class TaskGraph;
 template<typename Launcher, typename... Args>
 class TaskImpl: public Task {
   public:
-    TaskImpl(WorkChunk chunk, Launcher launcher, Args... args) :
+    TaskImpl(DomainChunk chunk, Launcher launcher, Args... args) :
         m_chunk(chunk),
         m_launcher(std::move(launcher)),
         m_args(std::move(args)...) {}
@@ -36,7 +36,7 @@ class TaskImpl: public Task {
     }
 
   private:
-    WorkChunk m_chunk;
+    DomainChunk m_chunk;
     Launcher m_launcher;
     std::tuple<Args...> m_args;
 };
@@ -47,7 +47,7 @@ EventId parallel_submit_impl(
     std::index_sequence<Is...>,
     Worker& worker,
     const SystemInfo& system_info,
-    const WorkDistribution& partition,
+    const DomainDistribution& partition,
     Launcher launcher,
     Args&&... args
 ) {
@@ -64,7 +64,7 @@ EventId parallel_submit_impl(
 
         (std::get<Is>(handlers).initialize(init), ...);
 
-        for (const WorkChunk& chunk : partition.chunks) {
+        for (const DomainChunk& chunk : partition.chunks) {
             ProcessorId processor_id = chunk.owner_id;
 
             auto instance = TaskInstance {
@@ -107,7 +107,7 @@ template<typename Launcher, typename... Args>
 EventId parallel_submit(
     Worker& worker,
     const SystemInfo& system_info,
-    const WorkDistribution& partition,
+    const DomainDistribution& partition,
     Launcher launcher,
     Args&&... args
 ) {

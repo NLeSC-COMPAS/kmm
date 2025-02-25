@@ -1,7 +1,7 @@
 #pragma once
 
 #include "kmm/core/identifiers.hpp"
-#include "kmm/dag/work_distribution.hpp"
+#include "kmm/dag/domain_distribution.hpp"
 
 namespace kmm {
 
@@ -14,7 +14,7 @@ struct TaskGroupInit {
   public:
     Worker& worker;
     TaskGraph& graph;
-    const WorkDistribution& partition;
+    const DomainDistribution& partition;
 };
 
 struct TaskInstance {
@@ -23,7 +23,7 @@ struct TaskInstance {
   public:
     Worker& worker;
     TaskGraph& graph;
-    WorkChunk chunk;
+    DomainChunk chunk;
     MemoryId memory_id;
     std::vector<BufferRequirement> buffers;
     EventList dependencies;
