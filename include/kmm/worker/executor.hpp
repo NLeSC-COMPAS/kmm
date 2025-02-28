@@ -8,25 +8,11 @@
 #include "kmm/utils/poll.hpp"
 #include "kmm/worker/buffer_registry.hpp"
 #include "kmm/worker/memory_manager.hpp"
+#include "kmm/worker/resource_manager.hpp"
 #include "kmm/worker/scheduler.hpp"
 #include "kmm/worker/stream_manager.hpp"
 
 namespace kmm {
-
-struct DeviceState {
-    KMM_NOT_COPYABLE_OR_MOVABLE(DeviceState)
-
-  public:
-    GPUContextHandle context;
-    DeviceStream stream;
-    DeviceEvent last_event;
-    DeviceResource device;
-
-    DeviceState(DeviceId id, GPUContextHandle context, DeviceStreamManager& stream_manager) :
-        context(context),
-        stream(stream_manager.create_stream(context)),
-        device(DeviceInfo(id, context), context, stream_manager.get(stream)) {}
-};
 
 class Executor {
     KMM_NOT_COPYABLE_OR_MOVABLE(Executor)
@@ -45,7 +31,7 @@ class Executor {
     };
 
     Executor(
-        std::vector<GPUContextHandle> contexts,
+        std::shared_ptr<DeviceResourceManager> m_device_manager,
         std::shared_ptr<DeviceStreamManager> stream_manager,
         std::shared_ptr<BufferRegistry> buffer_registry,
         std::shared_ptr<Scheduler> scheduler,
@@ -54,23 +40,24 @@ class Executor {
 
     ~Executor();
 
+    void execute_command(EventId id, const Command& command, DeviceEventSet dependencies);
     bool is_idle() const;
     void make_progress();
 
-    DeviceState& device_state(DeviceId id, const DeviceEventSet& hint_deps = {});
-
-    void execute_command(EventId id, const Command& command, DeviceEventSet dependencies);
-
-    Scheduler& scheduler() {
-        return *m_scheduler;
+    DeviceResourceManager& devices() {
+        return *m_device_manager;
     }
 
-    BufferRegistry& buffer_registry() {
+    DeviceStreamManager& streams() {
+        return *m_stream_manager;
+    }
+
+    BufferRegistry& buffers() {
         return *m_buffer_registry;
     }
 
-    DeviceStreamManager& stream_manager() {
-        return *m_stream_manager;
+    Scheduler& scheduler() {
+        return *m_scheduler;
     }
 
   private:
@@ -80,13 +67,13 @@ class Executor {
     void execute_command(EventId id, const CommandReduction& command, DeviceEventSet dependencies);
     void execute_command(EventId id, const CommandFill& command, DeviceEventSet dependencies);
 
+    std::shared_ptr<DeviceResourceManager> m_device_manager;
     std::shared_ptr<DeviceStreamManager> m_stream_manager;
     std::shared_ptr<BufferRegistry> m_buffer_registry;
     std::shared_ptr<Scheduler> m_scheduler;
 
     std::unique_ptr<Job> m_jobs_head = nullptr;
     Job* m_jobs_tail = nullptr;
-    std::vector<std::unique_ptr<DeviceState>> m_devices;
     bool m_debug_mode = false;
 };
 

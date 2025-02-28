@@ -134,9 +134,11 @@ Worker::Worker(
     m_memory_system(memory_system),
     m_memory_manager(std::make_shared<MemoryManager>(memory_system)),
     m_buffer_registry(std::make_shared<BufferRegistry>(m_memory_manager)),
+    m_stream_manager(stream_manager),
+    m_devices(std::make_shared<DeviceResourceManager>(contexts, m_stream_manager)),
     m_scheduler(std::make_shared<Scheduler>(contexts.size())),
     m_info(make_system_info(contexts)),
-    m_executor(contexts, stream_manager, m_buffer_registry, m_scheduler, config.debug_mode) {}
+    m_executor(m_devices, stream_manager, m_buffer_registry, m_scheduler, config.debug_mode) {}
 
 std::unique_ptr<AsyncAllocator> create_device_allocator(
     const WorkerConfig& config,
