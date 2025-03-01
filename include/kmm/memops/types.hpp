@@ -10,6 +10,8 @@ struct CopyDef {
 
     CopyDef(size_t element_size = 0) : element_size(element_size) {}
 
+    void add_dimension(size_t count, size_t src_offset, size_t dst_offset);
+
     void add_dimension(
         size_t count,
         size_t src_offset,

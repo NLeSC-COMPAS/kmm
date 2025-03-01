@@ -188,7 +188,7 @@ class ExecuteHostJob: public HostJob {
   public:
     ExecuteHostJob(
         EventId id,
-        std::shared_ptr<Task> task,
+        std::shared_ptr<ComputeTask> task,
         std::vector<BufferRequirement> buffers,
         DeviceEventSet dependencies
     ) :
@@ -204,7 +204,7 @@ class ExecuteHostJob: public HostJob {
     }
 
   private:
-    std::shared_ptr<Task> m_task;
+    std::shared_ptr<ComputeTask> m_task;
 };
 
 class CopyHostJob: public HostJob {
@@ -288,7 +288,7 @@ class ExecuteDeviceJob: public DeviceJob {
     ExecuteDeviceJob(
         EventId id,
         DeviceId device_id,
-        std::shared_ptr<Task> task,
+        std::shared_ptr<ComputeTask> task,
         std::vector<BufferRequirement> buffers,
         DeviceEventSet dependencies
     ) :
@@ -301,7 +301,7 @@ class ExecuteDeviceJob: public DeviceJob {
     }
 
   private:
-    std::shared_ptr<Task> m_task;
+    std::shared_ptr<ComputeTask> m_task;
 };
 
 class CopyDeviceJob: public DeviceJob {

@@ -1,22 +1,25 @@
 #pragma once
 
-#define KMM_NOT_COPYABLE(TYPE)             \
-  public:                                  \
-    TYPE(const TYPE&) = delete;            \
-    TYPE& operator=(const TYPE&) = delete; \
-    TYPE(TYPE&) = delete;                  \
-    TYPE& operator=(TYPE&) = delete;       \
-                                           \
+#define KMM_NOT_COPYABLE(TYPE)                  \
+  public:                                       \
+    TYPE(const TYPE&) = delete;                 \
+    TYPE& operator=(const TYPE&) = delete;      \
+    TYPE(TYPE&) = delete;                       \
+    TYPE& operator=(TYPE&) = delete;            \
+    TYPE(TYPE&&) noexcept = default;            \
+    TYPE& operator=(TYPE&&) noexcept = default; \
+                                                \
   private:
 
-#define KMM_NOT_COPYABLE_OR_MOVABLE(TYPE)            \
-    KMM_NOT_COPYABLE(TYPE)                           \
-  public:                                            \
-    TYPE(TYPE&&) noexcept = delete;                  \
-    TYPE& operator=(TYPE&&) noexcept = delete;       \
-    TYPE(const TYPE&&) noexcept = delete;            \
-    TYPE& operator=(const TYPE&&) noexcept = delete; \
-                                                     \
+#define KMM_NOT_COPYABLE_OR_MOVABLE(TYPE)      \
+  public:                                      \
+    TYPE(const TYPE&) = delete;                \
+    TYPE& operator=(const TYPE&) = delete;     \
+    TYPE(TYPE&) = delete;                      \
+    TYPE& operator=(TYPE&) = delete;           \
+    TYPE(TYPE&&) noexcept = delete;            \
+    TYPE& operator=(TYPE&&) noexcept = delete; \
+                                               \
   private:
 
 #define KMM_INLINE   __attribute__((always_inline)) inline

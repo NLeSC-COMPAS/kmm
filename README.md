@@ -15,7 +15,7 @@ KMM can handle the massive workloads from scientific computing, deep learning, a
   * Automatically allocates memory and transfers data between GPU and host only when neccessary.
 * **Scalable Computing**:
   * Seamlessly "spills" data from the GPU to host memory, enabling processing of huge datasets that exceed GPU memory.
-* **Optimized Task Scheduling**:
+* **Optimized ComputeTask Scheduling**:
   * DAG scheduler to track dependencies and execute kernels in a sequentially consistent order while maximizing parallelism.
 * **Flexible Work Partitioning**:
   * Splits workloads and data according to user-defined strategies, ensuring efficient utilization of available resources.

@@ -11,6 +11,12 @@
 
 namespace kmm {
 
+struct TaskNode {
+    EventId id;
+    Command command;
+    EventList dependencies;
+};
+
 class TaskGraph {
     KMM_NOT_COPYABLE_OR_MOVABLE(TaskGraph)
 
@@ -36,21 +42,14 @@ class TaskGraph {
 
     EventId insert_prefetch(BufferId buffer_id, MemoryId memory_id, EventList deps = {});
 
-    EventId insert_task(
+    EventId insert_compute_task(
         ProcessorId processor_id,
-        std::shared_ptr<Task> task,
+        std::shared_ptr<ComputeTask> task,
         const std::vector<BufferRequirement>& buffers,
         EventList deps = {}
     );
 
-    EventId insert_multilevel_reduction(
-        BufferId final_buffer_id,
-        MemoryId final_memory_id,
-        ReductionOutput reduction,
-        std::vector<ReductionInput> inputs
-    );
-
-    EventId insert_local_reduction(
+    EventId insert_reduction(
         MemoryId memory_id,
         BufferId buffer_id,
         ReductionOutput reduction,
@@ -64,12 +63,13 @@ class TaskGraph {
     EventId shutdown();
 
     void rollback();
+
     EventId commit();
 
-    std::vector<CommandNode> flush();
+    std::vector<TaskNode> flush();
 
   private:
-    EventId insert_event(Command command, EventList deps = {});
+    EventId insert_task(Command command, EventList deps = {});
 
     std::pair<BufferId, EventId> insert_create_buffer_event(DataLayout layout);
 
@@ -118,7 +118,7 @@ class TaskGraph {
     std::unordered_map<BufferId, BufferMeta> m_persistent_buffers;
     std::unordered_map<BufferId, BufferMeta> m_tentative_buffers;
     std::vector<BufferId> m_tentative_deletions;
-    std::vector<CommandNode> m_events;
+    std::vector<TaskNode> m_events;
 };
 
 }  // namespace kmm

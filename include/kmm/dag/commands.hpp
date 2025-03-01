@@ -36,7 +36,7 @@ struct CommandCopy {
 
 struct CommandExecute {
     ProcessorId processor_id;
-    std::shared_ptr<Task> task;
+    std::shared_ptr<ComputeTask> task;
     std::vector<BufferRequirement> buffers;
 };
 
@@ -64,12 +64,6 @@ using Command = std::variant<
     CommandExecute,
     CommandReduction,
     CommandFill>;
-
-struct CommandNode {
-    EventId id;
-    Command command;
-    EventList dependencies;
-};
 
 inline const char* command_name(const Command& cmd) {
     static constexpr const char* names[] = {

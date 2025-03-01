@@ -87,7 +87,11 @@ void Worker::shutdown() {
 
 void Worker::flush_events_impl() {
     // Flush all events from the DAG builder to the scheduler
-    m_scheduler->submit(m_graph.flush());
+    for (auto&& e : m_graph.flush()) {
+        m_scheduler->submit(
+            std::make_shared<Task>(e.id, std::move(e.command), std::move(e.dependencies))
+        );
+    }
 }
 
 void Worker::make_progress_impl() {

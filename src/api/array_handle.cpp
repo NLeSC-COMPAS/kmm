@@ -44,7 +44,7 @@ void ArrayHandle<N>::synchronize() const {
 }
 
 template<size_t N>
-class CopyOutTask: public Task {
+class CopyOutTask: public ComputeTask {
   public:
     CopyOutTask(void* data, size_t element_size, Dim<N> array_size, Bounds<N> region) :
         m_dst_addr(data) {
@@ -109,7 +109,8 @@ void ArrayHandle<N>::copy_bytes(void* dest_addr, size_t element_size) const {
                 .access_mode = AccessMode::Read,
             };
 
-            auto event_id = graph.insert_task(ProcessorId::host(), std::move(task), {buffer});
+            auto event_id =
+                graph.insert_compute_task(ProcessorId::host(), std::move(task), {buffer});
             deps.push_back(event_id);
         }
 

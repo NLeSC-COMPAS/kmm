@@ -12,10 +12,12 @@ namespace kmm {
 class Worker;
 class TaskGraph;
 
+namespace detail {
+
 template<typename Launcher, typename... Args>
-class TaskImpl: public Task {
+class ComputeTaskImpl: public ComputeTask {
   public:
-    TaskImpl(DomainChunk chunk, Launcher launcher, Args... args) :
+    ComputeTaskImpl(DomainChunk chunk, Launcher launcher, Args... args) :
         m_chunk(chunk),
         m_launcher(std::move(launcher)),
         m_args(std::move(args)...) {}
@@ -41,7 +43,6 @@ class TaskImpl: public Task {
     std::tuple<Args...> m_args;
 };
 
-namespace detail {
 template<size_t... Is, typename Launcher, typename... Args>
 EventId parallel_submit_impl(
     std::index_sequence<Is...>,
@@ -75,13 +76,13 @@ EventId parallel_submit_impl(
                 .buffers = {},
                 .dependencies = {}};
 
-            auto task = std::make_shared<TaskImpl<Launcher, packed_argument_t<Args>...>>(
+            auto task = std::make_shared<ComputeTaskImpl<Launcher, packed_argument_t<Args>...>>(
                 chunk,
                 launcher,
                 std::get<Is>(handlers).process_chunk(instance)...
             );
 
-            EventId event_id = graph.insert_task(
+            EventId event_id = graph.insert_compute_task(
                 processor_id,
                 std::move(task),
                 std::move(instance.buffers),

@@ -37,6 +37,10 @@ size_t CopyDef::minimum_destination_bytes_needed() const {
     return result + element_size;
 }
 
+void CopyDef::add_dimension(size_t count, size_t src_offset, size_t dst_offset) {
+    add_dimension(count, src_offset, dst_offset, 1, 1);
+}
+
 void CopyDef::add_dimension(
     size_t count,
     size_t src_offset,

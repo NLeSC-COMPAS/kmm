@@ -11,9 +11,9 @@ static constexpr size_t QUEUE_HOST = 2;
 static constexpr size_t QUEUE_DEVICES = 3;
 
 struct QueueSlot {
-    QueueSlot(std::shared_ptr<Scheduler::TaskNode> node) : node(std::move(node)) {}
+    QueueSlot(std::shared_ptr<Task> node) : node(std::move(node)) {}
 
-    std::shared_ptr<Scheduler::TaskNode> node;
+    std::shared_ptr<Task> node;
     bool scheduled = false;
     bool completed = false;
     std::shared_ptr<QueueSlot> next = nullptr;
@@ -25,17 +25,17 @@ struct QueueHeadTail {
 };
 
 struct Scheduler::Queue {
-    std::vector<std::deque<std::shared_ptr<TaskNode>>> jobs;
+    std::vector<std::deque<std::shared_ptr<Task>>> jobs;
     size_t max_concurrent_jobs = std::numeric_limits<size_t>::max();
     size_t num_jobs_active = 0;
     std::unordered_map<EventId, QueueHeadTail> node_to_slot;
     std::shared_ptr<QueueSlot> head = nullptr;
     std::shared_ptr<QueueSlot> tail = nullptr;
 
-    void push_job(const TaskNode* predecessor, std::shared_ptr<TaskNode> node);
-    bool pop_job(std::shared_ptr<TaskNode>& node);
-    void scheduled_job(std::shared_ptr<TaskNode> node);
-    void completed_job(std::shared_ptr<TaskNode> node);
+    void push_job(const Task* predecessor, std::shared_ptr<Task> node);
+    bool pop_job(std::shared_ptr<Task>& node);
+    void scheduled_job(std::shared_ptr<Task> node);
+    void completed_job(std::shared_ptr<Task> node);
 };
 
 Scheduler::Scheduler(size_t num_devices) {
@@ -48,20 +48,19 @@ Scheduler::Scheduler(size_t num_devices) {
 
 Scheduler::~Scheduler() = default;
 
-void Scheduler::submit(std::vector<CommandNode> commands) {
-    for (auto&& event : commands) {
-        submit(event.id, std::move(event.command), std::move(event.dependencies));
-    }
-}
+void Scheduler::submit(std::shared_ptr<Task> node) {
+    KMM_ASSERT(node->status == Task::Status::Init);
+    spdlog::debug(
+        "submit task {} (command={}, dependencies={})",
+        node->event_id,
+        node->command,
+        node->dependencies
+    );
 
-void Scheduler::submit(EventId event_id, Command command, const EventList& deps) {
-    spdlog::debug("submit event {} (command={}, dependencies={})", event_id, command, deps);
-
-    auto node = std::make_shared<TaskNode>(event_id, std::move(command));
-    size_t num_pending = deps.size();
+    size_t num_pending = node->dependencies.size();
     DeviceEventSet dependency_events;
 
-    for (EventId dep_id : deps) {
+    for (EventId dep_id : node->dependencies) {
         auto it = m_events.find(dep_id);
 
         if (it == m_events.end()) {
@@ -72,26 +71,27 @@ void Scheduler::submit(EventId event_id, Command command, const EventList& deps)
         auto& dep = it->second;
         dep->successors.push_back(node);
 
-        if (dep->status == TaskNode::Status::Executing) {
+        if (dep->status == Task::Status::Executing) {
             num_pending--;
             dependency_events.insert(dep->execution_event);
         }
 
-        if (dep->status == TaskNode::Status::Completed) {
+        if (dep->status == Task::Status::Completed) {
             num_pending--;
         }
     }
 
+    node->status = Task::Status::AwaitingDependencies;
     node->queue_id = determine_queue_id(node->command);
     node->dependencies_pending = num_pending;
     node->dependency_events = std::move(dependency_events);
     enqueue_if_ready(nullptr, node);
 
-    m_events.emplace(event_id, std::move(node));
+    m_events.emplace(node->id(), std::move(node));
 }
 
-std::optional<std::shared_ptr<Scheduler::TaskNode>> Scheduler::pop_ready(DeviceEventSet* deps_out) {
-    std::shared_ptr<TaskNode> result;
+std::optional<std::shared_ptr<Task>> Scheduler::pop_ready(DeviceEventSet* deps_out) {
+    std::shared_ptr<Task> result;
 
     for (auto& q : m_queues) {
         if (q.pop_job(result)) {
@@ -102,8 +102,8 @@ std::optional<std::shared_ptr<Scheduler::TaskNode>> Scheduler::pop_ready(DeviceE
                 result->dependency_events
             );
 
-            KMM_ASSERT(result->status == TaskNode::Status::ReadyToSubmit);
-            result->status = TaskNode::Status::Submitted;
+            KMM_ASSERT(result->status == Task::Status::ReadyToSubmit);
+            result->status = Task::Status::Submitted;
             *deps_out = std::move(result->dependency_events);
             return result;
         }
@@ -127,8 +127,8 @@ void Scheduler::mark_as_scheduled(EventId id, DeviceEvent event) {
         event
     );
 
-    KMM_ASSERT(node->status == TaskNode::Status::Submitted);
-    node->status = TaskNode::Status::Executing;
+    KMM_ASSERT(node->status == Task::Status::Submitted);
+    node->status = Task::Status::Executing;
     node->execution_event = event;
 
     for (const auto& succ : node->successors) {
@@ -149,18 +149,18 @@ void Scheduler::mark_as_completed(EventId id) {
     auto node = it->second;
     spdlog::debug("completed event {} (command={})", node->id(), node->command);
 
-    if (node->status == TaskNode::Status::Submitted) {
+    if (node->status == Task::Status::Submitted) {
         for (const auto& succ : node->successors) {
             succ->dependencies_pending -= 1;
             enqueue_if_ready(node.get(), succ);
         }
 
-        node->status = TaskNode::Status::Executing;
+        node->status = Task::Status::Executing;
         m_queues.at(node->queue_id).scheduled_job(node);
     }
 
-    KMM_ASSERT(node->status == TaskNode::Status::Executing);
-    node->status = TaskNode::Status::Completed;
+    KMM_ASSERT(node->status == Task::Status::Executing);
+    node->status = Task::Status::Completed;
     m_events.erase(node->event_id);
     m_queues.at(node->queue_id).completed_job(node);
 }
@@ -186,11 +186,8 @@ size_t Scheduler::determine_queue_id(const Command& cmd) {
     }
 }
 
-void Scheduler::enqueue_if_ready(
-    const TaskNode* predecessor,
-    const std::shared_ptr<TaskNode>& node
-) {
-    if (node->status != TaskNode::Status::AwaitingDependencies) {
+void Scheduler::enqueue_if_ready(const Task* predecessor, const std::shared_ptr<Task>& node) {
+    if (node->status != Task::Status::AwaitingDependencies) {
         return;
     }
 
@@ -198,11 +195,11 @@ void Scheduler::enqueue_if_ready(
         return;
     }
 
-    node->status = TaskNode::Status::ReadyToSubmit;
+    node->status = Task::Status::ReadyToSubmit;
     m_queues.at(node->queue_id).push_job(predecessor, node);
 }
 
-void Scheduler::Queue::push_job(const TaskNode* predecessor, std::shared_ptr<TaskNode> node) {
+void Scheduler::Queue::push_job(const Task* predecessor, std::shared_ptr<Task> node) {
     auto event_id = node->id();
     auto new_slot = std::make_shared<QueueSlot>(std::move(node));
     node_to_slot.emplace(event_id, QueueHeadTail {new_slot, new_slot});
@@ -235,7 +232,7 @@ void Scheduler::Queue::push_job(const TaskNode* predecessor, std::shared_ptr<Tas
     }
 }
 
-bool Scheduler::Queue::pop_job(std::shared_ptr<TaskNode>& node) {
+bool Scheduler::Queue::pop_job(std::shared_ptr<Task>& node) {
     if (num_jobs_active >= max_concurrent_jobs) {
         return false;
     }
@@ -260,11 +257,11 @@ bool Scheduler::Queue::pop_job(std::shared_ptr<TaskNode>& node) {
     return true;
 }
 
-void Scheduler::Queue::scheduled_job(std::shared_ptr<TaskNode> node) {
+void Scheduler::Queue::scheduled_job(std::shared_ptr<Task> node) {
     // Nothing to do after scheduling
 }
 
-void Scheduler::Queue::completed_job(std::shared_ptr<TaskNode> node) {
+void Scheduler::Queue::completed_job(std::shared_ptr<Task> node) {
     auto it = node_to_slot.find(node->id());
     if (it == node_to_slot.end()) {
         // ???

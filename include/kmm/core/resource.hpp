@@ -1,11 +1,29 @@
 #pragma once
 
+#include "kmm/core/buffer.hpp"
 #include "kmm/core/system_info.hpp"
 #include "kmm/utils/checked_math.hpp"
 #include "kmm/utils/gpu.hpp"
 #include "kmm/utils/view.hpp"
 
 namespace kmm {
+
+class Resource;
+class InvalidResource;
+class ComputeTask;
+struct TaskContext;
+
+enum struct ExecutionSpace { Host, Device };
+
+struct TaskContext {
+    std::vector<BufferAccessor> accessors;
+};
+
+class ComputeTask {
+  public:
+    virtual ~ComputeTask() = default;
+    virtual void execute(Resource& resource, TaskContext context) = 0;
+};
 
 /**
  * Exception throw if invalid resource is provided to task.
@@ -19,7 +37,8 @@ class InvalidResource: public std::exception {
     std::string m_message;
 };
 
-struct Resource {
+class Resource {
+  public:
     virtual ~Resource() = default;
 
     template<typename T>
@@ -56,7 +75,7 @@ struct Resource {
     }
 };
 
-struct HostResource: public Resource {};
+class HostResource: public Resource {};
 
 class DeviceResource: public DeviceInfo, public Resource {
     KMM_NOT_COPYABLE_OR_MOVABLE(DeviceResource);

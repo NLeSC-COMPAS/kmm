@@ -11,8 +11,8 @@
 #include "kmm/api/argument.hpp"
 #include "kmm/api/array_argument.hpp"
 #include "kmm/api/array_handle.hpp"
-#include "kmm/dag/array_builder.hpp"
-#include "kmm/dag/reduction_builder.hpp"
+#include "kmm/dag/dist_data_planner.hpp"
+#include "kmm/dag/dist_reduction_planner.hpp"
 
 namespace kmm {
 
@@ -44,7 +44,7 @@ class Array: public ArrayBase {
         return N;
     }
 
-    Dim<N> sizes() const {
+    Dim<N> shape() const {
         return m_shape;
     }
 
@@ -169,7 +169,7 @@ struct ArgumentHandler<Array<T, N>> {
     ArgumentHandler(const Array<T, N>& array) :
         m_handle(array.handle().shared_from_this()),
         m_chunk(m_handle->distribution().chunk(0)) {
-        m_handle->distribution().region_to_chunk_index(array.sizes());  // Check if it is in-bounds
+        m_handle->distribution().region_to_chunk_index(array.shape());  // Check if it is in-bounds
     }
 
     void initialize(const TaskGroupInit& init) {}
@@ -208,13 +208,13 @@ struct ArgumentHandler<Access<Array<T, N>, Write<All>>> {
     }
 
     void initialize(const TaskGroupInit& init) {
-        m_builder = ArrayBuilder<N>(m_array.sizes(), DataLayout::for_type<T>());
+        m_planner = DistDataPlanner<N>(m_array.shape(), DataLayout::for_type<T>());
     }
 
     type process_chunk(TaskInstance& task) {
-        auto access_region = m_builder.sizes();
+        auto access_region = m_planner.shape();
         auto buffer_index = task.add_buffer_requirement(
-            m_builder.add_chunk(task.graph, task.memory_id, access_region)
+            m_planner.add_chunk(task.graph, task.memory_id, access_region)
         );
 
         views::dynamic_domain<N> domain = {access_region};
@@ -223,13 +223,13 @@ struct ArgumentHandler<Access<Array<T, N>, Write<All>>> {
 
     void finalize(const TaskGroupFinalize& result) {
         auto handle =
-            std::make_shared<ArrayHandle<N>>(result.worker, m_builder.build(result.graph));
+            std::make_shared<ArrayHandle<N>>(result.worker, m_planner.finalize(result.graph));
         m_array = Array<T, N>(handle);
     }
 
   private:
     Array<T, N>& m_array;
-    ArrayBuilder<N> m_builder;
+    DistDataPlanner<N> m_planner;
 };
 
 template<typename T, size_t N, typename M>
@@ -287,13 +287,13 @@ struct ArgumentHandler<Access<Array<T, N>, Write<M>>> {
     }
 
     void initialize(const TaskGroupInit& init) {
-        m_builder = ArrayBuilder<N>(m_array.sizes(), DataLayout::for_type<T>());
+        m_planner = DistDataPlanner<N>(m_array.shape(), DataLayout::for_type<T>());
     }
 
     type process_chunk(TaskInstance& task) {
-        auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_builder.sizes()));
+        auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_planner.shape()));
         auto buffer_index = task.add_buffer_requirement(
-            m_builder.add_chunk(task.graph, task.memory_id, access_region)
+            m_planner.add_chunk(task.graph, task.memory_id, access_region)
         );
 
         auto domain = views::dynamic_subdomain<N> {access_region.begin(), access_region.sizes()};
@@ -303,7 +303,7 @@ struct ArgumentHandler<Access<Array<T, N>, Write<M>>> {
     void finalize(const TaskGroupFinalize& result) {
         auto handle = std::make_shared<ArrayHandle<N>>(  //
             result.worker,
-            m_builder.build(result.graph)
+            m_planner.finalize(result.graph)
         );
 
         m_array = Array<T, N>(handle);
@@ -312,7 +312,7 @@ struct ArgumentHandler<Access<Array<T, N>, Write<M>>> {
   private:
     Array<T, N>& m_array;
     M m_access_mapper;
-    ArrayBuilder<N> m_builder;
+    DistDataPlanner<N> m_planner;
 };
 
 template<typename T, size_t N>
@@ -328,13 +328,13 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<All>>> {
     }
 
     void initialize(const TaskGroupInit& init) {
-        m_builder = ReductionBuilder<N>(m_array.sizes(), DataType::of<T>(), m_operation);
+        m_planner = DistReductionPlanner<N>(m_array.shape(), DataType::of<T>(), m_operation);
     }
 
     type process_chunk(TaskInstance& task) {
-        auto access_region = m_builder.sizes();
+        auto access_region = m_planner.shape();
         auto buffer_index = task.add_buffer_requirement(
-            m_builder.add_chunk(task.graph, task.memory_id, access_region)
+            m_planner.add_chunk(task.graph, task.memory_id, access_region)
         );
 
         auto domain = views::dynamic_domain<N> {access_region};
@@ -344,7 +344,7 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<All>>> {
     void finalize(const TaskGroupFinalize& result) {
         auto handle = std::make_shared<ArrayHandle<N>>(  //
             result.worker,
-            m_builder.build(result.graph)
+            m_planner.finalize(result.graph)
         );
 
         m_array = Array<T, N>(handle);
@@ -353,7 +353,7 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<All>>> {
   private:
     Array<T, N>& m_array;
     Reduction m_operation;
-    ReductionBuilder<N> m_builder;
+    DistReductionPlanner<N> m_planner;
 };
 
 template<typename T, size_t N, typename M, typename P>
@@ -382,15 +382,15 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<M, P>>> {
     }
 
     void initialize(const TaskGroupInit& init) {
-        m_builder = ReductionBuilder<N>(m_array.sizes(), DataType::of<T>(), m_operation);
+        m_planner = DistReductionPlanner<N>(m_array.shape(), DataType::of<T>(), m_operation);
     }
 
     type process_chunk(TaskInstance& task) {
-        auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_builder.sizes()));
+        auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_planner.shape()));
         auto private_region = m_private_mapper(task.chunk);
         auto rep = checked_cast<size_t>(private_region.size());
         size_t buffer_index = task.add_buffer_requirement(
-            m_builder.add_chunk(task.graph, task.memory_id, access_region, rep)
+            m_planner.add_chunk(task.graph, task.memory_id, access_region, rep)
         );
 
         views::dynamic_subdomain<K + N> domain = {
@@ -403,7 +403,7 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<M, P>>> {
     void finalize(const TaskGroupFinalize& result) {
         auto handle = std::make_shared<ArrayHandle<N>>(  //
             result.worker,
-            m_builder.build(result.graph)
+            m_planner.finalize(result.graph)
         );
 
         m_array = Array<T, N>(handle);
@@ -412,7 +412,7 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<M, P>>> {
   private:
     Array<T, N>& m_array;
     Reduction m_operation;
-    ReductionBuilder<N> m_builder;
+    DistReductionPlanner<N> m_planner;
     M m_access_mapper;
     P m_private_mapper;
 };

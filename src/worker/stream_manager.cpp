@@ -24,7 +24,6 @@ struct DeviceStreamManager::StreamState {
         pool_index(pool_index),
         context(c),
         gpu_stream(s) {}
-    StreamState(StreamState&&) = default;
 
     size_t pool_index;
     GPUContextHandle context;
@@ -35,9 +34,10 @@ struct DeviceStreamManager::StreamState {
 };
 
 struct DeviceStreamManager::EventPool {
+    KMM_NOT_COPYABLE(EventPool)
+
+  public:
     EventPool(GPUContextHandle context) : m_context(context) {}
-    EventPool(EventPool&&) noexcept = default;
-    EventPool(const EventPool&) = delete;
     ~EventPool();
     GPUevent_t pop();
     void push(GPUevent_t event);

@@ -4,7 +4,7 @@
 
 namespace kmm {
 
-class CopyInTask: public Task {
+class CopyInTask: public ComputeTask {
   public:
     CopyInTask(const void* data, size_t nbytes) : m_src_addr(data), m_nbytes(nbytes) {}
 
@@ -56,7 +56,7 @@ BufferId Runtime::allocate_bytes(const void* data, DataLayout layout, MemoryId m
         auto task = std::make_shared<CopyInTask>(data, layout.size_in_bytes);
         ProcessorId proc = memory_id.is_device() ? memory_id.as_device() : ProcessorId::host();
 
-        return graph.insert_task(proc, task, {req});
+        return graph.insert_compute_task(proc, task, {req});
     });
 
     wait(event_id);
