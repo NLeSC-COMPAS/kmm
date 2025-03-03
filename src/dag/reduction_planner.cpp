@@ -93,6 +93,8 @@ EventId insert_multi_reduction(
                 .output_offset_elements = i * num_elements},
             std::move(input.dependencies)
         );
+
+        scratch_deps.push_back(event_id);
     }
 
     auto event_id = graph.insert_reduction(

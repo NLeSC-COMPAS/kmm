@@ -12,10 +12,10 @@ namespace kmm {
 
 class MergeJob: public Executor::Job {
   public:
-    MergeJob(EventId id) : m_id(id) {}
+    MergeJob(std::shared_ptr<Task> task) : m_task(std::move(task)) {}
 
-    MergeJob(EventId id, DeviceEventSet dependencies) :
-        m_id(id),
+    MergeJob(std::shared_ptr<Task> task, DeviceEventSet dependencies) :
+        m_task(task),
         m_dependencies(std::move(dependencies)) {}
 
     Poll poll(Executor& executor) final {
@@ -23,19 +23,23 @@ class MergeJob: public Executor::Job {
             return Poll::Pending;
         }
 
-        executor.scheduler().mark_as_completed(m_id);
+        executor.scheduler().mark_as_completed(m_task);
         return Poll::Ready;
     }
 
   private:
-    EventId m_id;
+    std::shared_ptr<Task> m_task;
     DeviceEventSet m_dependencies;
 };
 
 class HostJob: public Executor::Job {
   public:
-    HostJob(EventId id, std::vector<BufferRequirement> buffers, DeviceEventSet dependencies) :
-        m_id(id),
+    HostJob(
+        std::shared_ptr<Task> task,
+        std::vector<BufferRequirement> buffers,
+        DeviceEventSet dependencies
+    ) :
+        m_task(task),
         m_buffers(std::move(buffers)),
         m_dependencies(std::move(dependencies)) {}
 
@@ -45,7 +49,7 @@ class HostJob: public Executor::Job {
                 m_requests = executor.buffers().create_requests(m_buffers);
                 m_status = Status::Waiting;
             } catch (const std::exception& e) {
-                executor.buffers().poison_all(m_buffers, PoisonException(m_id, e));
+                executor.buffers().poison_all(m_buffers, PoisonException(m_task->id(), e));
                 m_status = Status::Completing;
             }
         }
@@ -64,7 +68,7 @@ class HostJob: public Executor::Job {
                 m_future = submit(executor, executor.buffers().access_requests(m_requests));
                 m_status = Status::Running;
             } catch (const std::exception& e) {
-                executor.buffers().poison_all(m_buffers, PoisonException(m_id, e));
+                executor.buffers().poison_all(m_buffers, PoisonException(m_task->id(), e));
                 m_status = Status::Completing;
             }
         }
@@ -77,14 +81,14 @@ class HostJob: public Executor::Job {
 
                 m_status = Status::Completing;
             } catch (const std::exception& e) {
-                executor.buffers().poison_all(m_buffers, PoisonException(m_id, e));
+                executor.buffers().poison_all(m_buffers, PoisonException(m_task->id(), e));
                 m_status = Status::Completing;
             }
         }
 
         if (m_status == Status::Completing) {
             executor.buffers().release_requests(m_requests);
-            executor.scheduler().mark_as_completed(m_id);
+            executor.scheduler().mark_as_completed(m_task);
             m_status = Status::Completed;
         }
 
@@ -98,7 +102,7 @@ class HostJob: public Executor::Job {
     enum struct Status { Init, Waiting, Running, Completing, Completed };
 
     Status m_status = Status::Init;
-    EventId m_id;
+    std::shared_ptr<Task> m_task;
     std::future<void> m_future;
     std::vector<BufferRequirement> m_buffers;
     BufferRequestList m_requests;
@@ -108,12 +112,12 @@ class HostJob: public Executor::Job {
 class DeviceJob: public Executor::Job, public DeviceResourceOperation {
   public:
     DeviceJob(
-        EventId id,
+        std::shared_ptr<Task> id,
         DeviceId device_id,
         std::vector<BufferRequirement> buffers,
         DeviceEventSet dependencies
     ) :
-        m_id(id),
+        m_task(id),
         m_device_id(device_id),
         m_buffers(std::move(buffers)),
         m_dependencies(std::move(dependencies)) {}
@@ -124,7 +128,7 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
                 m_requests = executor.buffers().create_requests(m_buffers);
                 m_status = Status::Pending;
             } catch (const std::exception& e) {
-                executor.buffers().poison_all(m_buffers, PoisonException(m_id, e));
+                executor.buffers().poison_all(m_buffers, PoisonException(m_task->id(), e));
                 m_status = Status::Completing;
             }
         }
@@ -143,11 +147,11 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
                     executor.buffers().access_requests(m_requests)
                 );
 
-                executor.scheduler().mark_as_scheduled(m_id, m_event);
+                executor.scheduler().mark_as_scheduled(m_task, m_event);
                 executor.buffers().release_requests(m_requests, m_event);
                 m_status = Status::Running;
             } catch (const std::exception& e) {
-                executor.buffers().poison_all(m_buffers, PoisonException(m_id, e));
+                executor.buffers().poison_all(m_buffers, PoisonException(m_task->id(), e));
                 executor.buffers().release_requests(m_requests);
                 m_status = Status::Completing;
             }
@@ -162,7 +166,7 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
         }
 
         if (m_status == Status::Completing) {
-            executor.scheduler().mark_as_completed(m_id);
+            executor.scheduler().mark_as_completed(m_task);
             m_status = Status::Completed;
         }
 
@@ -176,7 +180,7 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
     enum struct Status { Init, Pending, Running, Completing, Completed };
 
     Status m_status = Status::Init;
-    EventId m_id;
+    std::shared_ptr<Task> m_task;
     DeviceId m_device_id;
     std::vector<BufferRequirement> m_buffers;
     BufferRequestList m_requests;
@@ -187,7 +191,7 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
 class ExecuteHostJob: public HostJob {
   public:
     ExecuteHostJob(
-        EventId id,
+        std::shared_ptr<Task> id,
         std::shared_ptr<ComputeTask> task,
         std::vector<BufferRequirement> buffers,
         DeviceEventSet dependencies
@@ -210,7 +214,7 @@ class ExecuteHostJob: public HostJob {
 class CopyHostJob: public HostJob {
   public:
     CopyHostJob(
-        EventId id,
+        std::shared_ptr<Task> id,
         BufferId src_buffer,
         BufferId dst_buffer,
         CopyDef definition,
@@ -241,7 +245,7 @@ class CopyHostJob: public HostJob {
 class ReductionHostJob: public HostJob {
   public:
     ReductionHostJob(
-        EventId id,
+        std::shared_ptr<Task> id,
         BufferId src_buffer,
         BufferId dst_buffer,
         ReductionDef definition,
@@ -267,7 +271,12 @@ class ReductionHostJob: public HostJob {
 
 class FillHostJob: public HostJob {
   public:
-    FillHostJob(EventId id, BufferId dst_buffer, FillDef definition, DeviceEventSet dependencies) :
+    FillHostJob(
+        std::shared_ptr<Task> id,
+        BufferId dst_buffer,
+        FillDef definition,
+        DeviceEventSet dependencies
+    ) :
         HostJob(
             id,
             {BufferRequirement {dst_buffer, MemoryId::host(), AccessMode::ReadWrite}},
@@ -286,7 +295,7 @@ class FillHostJob: public HostJob {
 class ExecuteDeviceJob: public DeviceJob {
   public:
     ExecuteDeviceJob(
-        EventId id,
+        std::shared_ptr<Task> id,
         DeviceId device_id,
         std::shared_ptr<ComputeTask> task,
         std::vector<BufferRequirement> buffers,
@@ -307,7 +316,7 @@ class ExecuteDeviceJob: public DeviceJob {
 class CopyDeviceJob: public DeviceJob {
   public:
     CopyDeviceJob(
-        EventId id,
+        std::shared_ptr<Task> id,
         DeviceId device_id,
         BufferId src_buffer,
         BufferId dst_buffer,
@@ -343,7 +352,7 @@ class CopyDeviceJob: public DeviceJob {
 class ReductionDeviceJob: public DeviceJob {
   public:
     ReductionDeviceJob(
-        EventId id,
+        std::shared_ptr<Task> id,
         DeviceId device_id,
         BufferId src_buffer,
         BufferId dst_buffer,
@@ -375,7 +384,7 @@ class ReductionDeviceJob: public DeviceJob {
 class FillDeviceJob: public DeviceJob {
   public:
     FillDeviceJob(
-        EventId id,
+        std::shared_ptr<Task> id,
         DeviceId device_id,
         BufferId dst_buffer,
         FillDef definition,
@@ -403,7 +412,12 @@ class FillDeviceJob: public DeviceJob {
 
 class PrefetchJob: public Executor::Job {
   public:
-    PrefetchJob(EventId id, BufferId buffer_id, MemoryId memory_id, DeviceEventSet dependencies) :
+    PrefetchJob(
+        std::shared_ptr<Task> id,
+        BufferId buffer_id,
+        MemoryId memory_id,
+        DeviceEventSet dependencies
+    ) :
         m_id(id),
         m_buffers {{buffer_id, memory_id, AccessMode::Read}},
         m_dependencies(std::move(dependencies)) {}
@@ -435,7 +449,7 @@ class PrefetchJob: public Executor::Job {
     enum struct Status { Init, Waiting, Completed };
 
     Status m_status = Status::Init;
-    EventId m_id;
+    std::shared_ptr<Task> m_id;
     std::vector<BufferRequirement> m_buffers;
     BufferRequestList m_requests;
     DeviceEventSet m_dependencies;
@@ -487,40 +501,54 @@ void Executor::insert_job(std::unique_ptr<Job> job) {
     }
 }
 
-void Executor::execute_command(EventId id, const Command& command, DeviceEventSet dependencies) {
+void Executor::execute_task(std::shared_ptr<Task> task, DeviceEventSet dependencies) {
+    const Command& command = task->get_command();
+
     if (std::get_if<CommandEmpty>(&command) != nullptr) {
-        insert_job(std::make_unique<MergeJob>(id, std::move(dependencies)));
+        execute_task(task, CommandEmpty {}, std::move(dependencies));
 
     } else if (const auto* e = std::get_if<CommandBufferCreate>(&command)) {
         m_buffer_registry->add(e->id, e->layout);
-        execute_command(id, CommandEmpty {}, std::move(dependencies));
+        execute_task(task, CommandEmpty {}, std::move(dependencies));
 
     } else if (const auto* e = std::get_if<CommandBufferDelete>(&command)) {
         m_buffer_registry->remove(e->id);
-        execute_command(id, CommandEmpty {}, std::move(dependencies));
+        execute_task(task, CommandEmpty {}, std::move(dependencies));
 
     } else if (std::get_if<CommandPrefetch>(&command) != nullptr) {
-        execute_command(id, CommandEmpty {}, std::move(dependencies));
+        execute_task(task, CommandEmpty {}, std::move(dependencies));
 
     } else if (const auto* e = std::get_if<CommandExecute>(&command)) {
-        execute_command(id, *e, std::move(dependencies));
+        execute_task(task, *e, std::move(dependencies));
 
     } else if (const auto* e = std::get_if<CommandCopy>(&command)) {
-        execute_command(id, *e, std::move(dependencies));
+        execute_task(task, *e, std::move(dependencies));
 
     } else if (const auto* e = std::get_if<CommandReduction>(&command)) {
-        execute_command(id, *e, std::move(dependencies));
+        execute_task(task, *e, std::move(dependencies));
 
     } else if (const auto* e = std::get_if<CommandFill>(&command)) {
-        execute_command(id, *e, std::move(dependencies));
+        execute_task(task, *e, std::move(dependencies));
 
     } else {
         KMM_PANIC("could not handle unknown command: ", command);
     }
 }
 
-void Executor::execute_command(
-    EventId id,
+void Executor::execute_task(
+    std::shared_ptr<Task> task,
+    const CommandEmpty& command,
+    DeviceEventSet dependencies
+) {
+    if (m_stream_manager->is_ready(dependencies)) {
+        m_scheduler->mark_as_completed(task);
+    } else {
+        insert_job(std::make_unique<MergeJob>(task, std::move(dependencies)));
+    }
+}
+
+void Executor::execute_task(
+    std::shared_ptr<Task> task,
     const CommandExecute& command,
     DeviceEventSet dependencies
 ) {
@@ -528,7 +556,7 @@ void Executor::execute_command(
 
     if (proc.is_device()) {
         insert_job(std::make_unique<ExecuteDeviceJob>(
-            id,
+            task,
             proc.as_device(),
             command.task,
             command.buffers,
@@ -536,7 +564,7 @@ void Executor::execute_command(
         ));
     } else {
         insert_job(std::make_unique<ExecuteHostJob>(
-            id,
+            task,
             command.task,
             command.buffers,
             std::move(dependencies)
@@ -544,8 +572,8 @@ void Executor::execute_command(
     }
 }
 
-void Executor::execute_command(
-    EventId id,
+void Executor::execute_task(
+    std::shared_ptr<Task> id,
     const CommandCopy& command,
     DeviceEventSet dependencies
 ) {
@@ -574,8 +602,8 @@ void Executor::execute_command(
     }
 }
 
-void Executor::execute_command(
-    EventId id,
+void Executor::execute_task(
+    std::shared_ptr<Task> id,
     const CommandReduction& command,
     DeviceEventSet dependencies
 ) {
@@ -601,8 +629,8 @@ void Executor::execute_command(
     }
 }
 
-void Executor::execute_command(
-    EventId id,
+void Executor::execute_task(
+    std::shared_ptr<Task> id,
     const CommandFill& command,
     DeviceEventSet dependencies
 ) {

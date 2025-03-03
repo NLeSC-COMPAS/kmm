@@ -10,6 +10,11 @@ static constexpr size_t QUEUE_BUFFERS = 1;
 static constexpr size_t QUEUE_HOST = 2;
 static constexpr size_t QUEUE_DEVICES = 3;
 
+Task::Task(EventId event_id, Command&& command, EventList&& dependencies) :
+    event_id(event_id),
+    command(std::move(command)),
+    dependencies(std::move(dependencies)) {}
+
 struct QueueSlot {
     QueueSlot(std::shared_ptr<Task> node) : node(std::move(node)) {}
 
@@ -48,8 +53,9 @@ Scheduler::Scheduler(size_t num_devices) {
 
 Scheduler::~Scheduler() = default;
 
-void Scheduler::submit(std::shared_ptr<Task> node) {
-    KMM_ASSERT(node->status == Task::Status::Init);
+void Scheduler::submit(EventId event_id, Command command, EventList dependencies) {
+    auto node = std::make_shared<Task>(event_id, std::move(command), std::move(dependencies));
+
     spdlog::debug(
         "submit task {} (command={}, dependencies={})",
         node->event_id,
@@ -61,9 +67,9 @@ void Scheduler::submit(std::shared_ptr<Task> node) {
     DeviceEventSet dependency_events;
 
     for (EventId dep_id : node->dependencies) {
-        auto it = m_events.find(dep_id);
+        auto it = m_tasks.find(dep_id);
 
-        if (it == m_events.end()) {
+        if (it == m_tasks.end()) {
             num_pending--;
             continue;
         }
@@ -81,13 +87,14 @@ void Scheduler::submit(std::shared_ptr<Task> node) {
         }
     }
 
+    KMM_ASSERT(node->status == Task::Status::Init);
     node->status = Task::Status::AwaitingDependencies;
     node->queue_id = determine_queue_id(node->command);
     node->dependencies_pending = num_pending;
     node->dependency_events = std::move(dependency_events);
     enqueue_if_ready(nullptr, node);
 
-    m_events.emplace(node->id(), std::move(node));
+    m_tasks.emplace(event_id, std::move(node));
 }
 
 std::optional<std::shared_ptr<Task>> Scheduler::pop_ready(DeviceEventSet* deps_out) {
@@ -112,64 +119,51 @@ std::optional<std::shared_ptr<Task>> Scheduler::pop_ready(DeviceEventSet* deps_o
     return std::nullopt;
 }
 
-void Scheduler::mark_as_scheduled(EventId id, DeviceEvent event) {
-    auto it = m_events.find(id);
-    if (it == m_events.end()) {
-        return;
-    }
-
-    auto node = it->second;
-
+void Scheduler::mark_as_scheduled(std::shared_ptr<Task> task, DeviceEvent event) {
     spdlog::debug(
         "scheduled event {} (command={}, GPU event={})",
-        node->id(),
-        node->command,
+        task->id(),
+        task->command,
         event
     );
 
-    KMM_ASSERT(node->status == Task::Status::Submitted);
-    node->status = Task::Status::Executing;
-    node->execution_event = event;
+    KMM_ASSERT(task->status == Task::Status::Submitted);
+    task->status = Task::Status::Executing;
+    task->execution_event = event;
 
-    for (const auto& succ : node->successors) {
+    for (const auto& succ : task->successors) {
         succ->dependency_events.insert(event);
         succ->dependencies_pending -= 1;
-        enqueue_if_ready(node.get(), succ);
+        enqueue_if_ready(task.get(), succ);
     }
 
-    m_queues.at(node->queue_id).scheduled_job(node);
+    m_queues.at(task->queue_id).scheduled_job(task);
 }
 
-void Scheduler::mark_as_completed(EventId id) {
-    auto it = m_events.find(id);
-    if (it == m_events.end()) {
-        return;
-    }
+void Scheduler::mark_as_completed(std::shared_ptr<Task> task) {
+    spdlog::debug("completed event {} (command={})", task->id(), task->command);
 
-    auto node = it->second;
-    spdlog::debug("completed event {} (command={})", node->id(), node->command);
-
-    if (node->status == Task::Status::Submitted) {
-        for (const auto& succ : node->successors) {
+    if (task->status == Task::Status::Submitted) {
+        for (const auto& succ : task->successors) {
             succ->dependencies_pending -= 1;
-            enqueue_if_ready(node.get(), succ);
+            enqueue_if_ready(task.get(), succ);
         }
 
-        node->status = Task::Status::Executing;
-        m_queues.at(node->queue_id).scheduled_job(node);
+        task->status = Task::Status::Executing;
+        m_queues.at(task->queue_id).scheduled_job(task);
     }
 
-    KMM_ASSERT(node->status == Task::Status::Executing);
-    node->status = Task::Status::Completed;
-    m_events.erase(node->event_id);
-    m_queues.at(node->queue_id).completed_job(node);
+    KMM_ASSERT(task->status == Task::Status::Executing);
+    task->status = Task::Status::Completed;
+    m_tasks.erase(task->event_id);
+    m_queues.at(task->queue_id).completed_job(task);
 }
 bool Scheduler::is_completed(EventId id) const {
-    return m_events.find(id) == m_events.end();
+    return m_tasks.find(id) == m_tasks.end();
 }
 
 bool Scheduler::is_idle() const {
-    return m_events.empty();
+    return m_tasks.empty();
 }
 
 size_t Scheduler::determine_queue_id(const Command& cmd) {

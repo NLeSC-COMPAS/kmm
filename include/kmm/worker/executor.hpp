@@ -40,7 +40,7 @@ class Executor {
 
     ~Executor();
 
-    void execute_command(EventId id, const Command& command, DeviceEventSet dependencies);
+    void execute_task(std::shared_ptr<Task> task, DeviceEventSet dependencies);
     bool is_idle() const;
     void make_progress();
 
@@ -62,10 +62,31 @@ class Executor {
 
   private:
     void insert_job(std::unique_ptr<Job> job);
-    void execute_command(EventId id, const CommandExecute& command, DeviceEventSet dependencies);
-    void execute_command(EventId id, const CommandCopy& command, DeviceEventSet dependencies);
-    void execute_command(EventId id, const CommandReduction& command, DeviceEventSet dependencies);
-    void execute_command(EventId id, const CommandFill& command, DeviceEventSet dependencies);
+    void execute_task(
+        std::shared_ptr<Task> task,
+        const CommandEmpty& command,
+        DeviceEventSet dependencies
+    );
+    void execute_task(
+        std::shared_ptr<Task> task,
+        const CommandExecute& command,
+        DeviceEventSet dependencies
+    );
+    void execute_task(
+        std::shared_ptr<Task> task,
+        const CommandCopy& command,
+        DeviceEventSet dependencies
+    );
+    void execute_task(
+        std::shared_ptr<Task> task,
+        const CommandReduction& command,
+        DeviceEventSet dependencies
+    );
+    void execute_task(
+        std::shared_ptr<Task> task,
+        const CommandFill& command,
+        DeviceEventSet dependencies
+    );
 
     std::shared_ptr<DeviceResourceManager> m_device_manager;
     std::shared_ptr<DeviceStreamManager> m_stream_manager;

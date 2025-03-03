@@ -88,9 +88,7 @@ void Worker::shutdown() {
 void Worker::flush_events_impl() {
     // Flush all events from the DAG builder to the scheduler
     for (auto&& e : m_graph.flush()) {
-        m_scheduler->submit(
-            std::make_shared<Task>(e.id, std::move(e.command), std::move(e.dependencies))
-        );
+        m_scheduler->submit(e.id, std::move(e.command), std::move(e.dependencies));
     }
 }
 
@@ -100,8 +98,8 @@ void Worker::make_progress_impl() {
     m_executor.make_progress();
 
     DeviceEventSet deps;
-    while (auto cmd = m_scheduler->pop_ready(&deps)) {
-        m_executor.execute_command((*cmd)->id(), (*cmd)->get_command(), std::move(deps));
+    while (auto task = m_scheduler->pop_ready(&deps)) {
+        m_executor.execute_task(std::move(*task), std::move(deps));
     }
 }
 
