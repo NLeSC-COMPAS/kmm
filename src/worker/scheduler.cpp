@@ -1,3 +1,5 @@
+#include <queue>
+
 #include "spdlog/spdlog.h"
 
 #include "kmm/worker/scheduler.hpp"
@@ -16,31 +18,22 @@ Task::Task(EventId event_id, Command&& command, EventList&& dependencies) :
     dependencies(std::move(dependencies)) {}
 
 struct QueueSlot {
-    QueueSlot(std::shared_ptr<Task> node) : node(std::move(node)) {}
-
-    std::shared_ptr<Task> node;
-    bool scheduled = false;
-    bool completed = false;
-    std::shared_ptr<QueueSlot> next = nullptr;
+    std::shared_ptr<Task> inner;
 };
 
-struct QueueHeadTail {
-    std::shared_ptr<QueueSlot> head;
-    std::shared_ptr<QueueSlot> tail;
-};
+bool operator<(const QueueSlot& lhs, const QueueSlot& rhs) {
+    return lhs.inner->id() > rhs.inner->id();
+}
 
 struct Scheduler::Queue {
-    std::vector<std::deque<std::shared_ptr<Task>>> jobs;
     size_t max_concurrent_jobs = std::numeric_limits<size_t>::max();
     size_t num_jobs_active = 0;
-    std::unordered_map<EventId, QueueHeadTail> node_to_slot;
-    std::shared_ptr<QueueSlot> head = nullptr;
-    std::shared_ptr<QueueSlot> tail = nullptr;
+    std::priority_queue<QueueSlot> tasks;
 
-    void push_job(const Task* predecessor, std::shared_ptr<Task> node);
-    bool pop_job(std::shared_ptr<Task>& node);
-    void scheduled_job(std::shared_ptr<Task> node);
-    void completed_job(std::shared_ptr<Task> node);
+    void push_job(const Task* predecessor, std::shared_ptr<Task> task);
+    bool pop_job(std::shared_ptr<Task>& task_out);
+    void scheduled_job(std::shared_ptr<Task> task);
+    void completed_job(std::shared_ptr<Task> task);
 };
 
 Scheduler::Scheduler(size_t num_devices) {
@@ -158,6 +151,7 @@ void Scheduler::mark_as_completed(std::shared_ptr<Task> task) {
     m_tasks.erase(task->event_id);
     m_queues.at(task->queue_id).completed_job(task);
 }
+
 bool Scheduler::is_completed(EventId id) const {
     return m_tasks.find(id) == m_tasks.end();
 }
@@ -180,104 +174,45 @@ size_t Scheduler::determine_queue_id(const Command& cmd) {
     }
 }
 
-void Scheduler::enqueue_if_ready(const Task* predecessor, const std::shared_ptr<Task>& node) {
-    if (node->status != Task::Status::AwaitingDependencies) {
+void Scheduler::enqueue_if_ready(const Task* predecessor, const std::shared_ptr<Task>& task) {
+    if (task->status != Task::Status::AwaitingDependencies) {
         return;
     }
 
-    if (node->dependencies_pending > 0) {
+    if (task->dependencies_pending > 0) {
         return;
     }
 
-    node->status = Task::Status::ReadyToSubmit;
-    m_queues.at(node->queue_id).push_job(predecessor, node);
+    task->status = Task::Status::ReadyToSubmit;
+    m_queues.at(task->queue_id).push_job(predecessor, task);
 }
 
-void Scheduler::Queue::push_job(const Task* predecessor, std::shared_ptr<Task> node) {
-    auto event_id = node->id();
-    auto new_slot = std::make_shared<QueueSlot>(std::move(node));
-    node_to_slot.emplace(event_id, QueueHeadTail {new_slot, new_slot});
-
-    if (predecessor != nullptr) {
-        auto it = node_to_slot.find(predecessor->id());
-
-        if (it != node_to_slot.end()) {
-            KMM_ASSERT(it->second.head->node.get() == predecessor);
-            auto current = std::exchange(it->second.tail, new_slot);
-            auto next = std::exchange(current->next, new_slot);
-
-            if (next != nullptr) {
-                new_slot->next = std::move(next);
-            } else {
-                tail = new_slot;
-            }
-
-            return;
-        }
-    }
-
-    // Predecessor is not in `node_to_slot`
-    auto old_tail = std::exchange(tail, new_slot);
-
-    if (old_tail != nullptr) {
-        old_tail->next = new_slot;
-    } else {
-        head = new_slot;
-    }
+void Scheduler::Queue::push_job(const Task* predecessor, std::shared_ptr<Task> task) {
+    this->tasks.push(QueueSlot {task});
 }
 
-bool Scheduler::Queue::pop_job(std::shared_ptr<Task>& node) {
+bool Scheduler::Queue::pop_job(std::shared_ptr<Task>& task_out) {
     if (num_jobs_active >= max_concurrent_jobs) {
         return false;
     }
 
-    auto* p = head.get();
-
-    while (true) {
-        if (p == nullptr) {
-            return false;
-        }
-
-        if (!p->scheduled) {
-            break;
-        }
-
-        p = p->next.get();
+    if (tasks.empty()) {
+        return false;
     }
 
     num_jobs_active++;
-    p->scheduled = true;
-    node = p->node;
+    task_out = std::move(tasks.top()).inner;
+    tasks.pop();
+
     return true;
 }
 
-void Scheduler::Queue::scheduled_job(std::shared_ptr<Task> node) {
+void Scheduler::Queue::scheduled_job(std::shared_ptr<Task> task) {
     // Nothing to do after scheduling
 }
 
-void Scheduler::Queue::completed_job(std::shared_ptr<Task> node) {
-    auto it = node_to_slot.find(node->id());
-    if (it == node_to_slot.end()) {
-        // ???
-        return;
-    }
-
-    auto slot = it->second.head;
-    node_to_slot.erase(it);
-
-    // Set slot to completed
-    KMM_ASSERT(slot->node == node);
+void Scheduler::Queue::completed_job(std::shared_ptr<Task> task) {
     num_jobs_active--;
-    slot->completed = true;
-
-    // Remove all slots that have been marked as completed
-    while (head != nullptr && head->completed) {
-        head = head->next;
-    }
-
-    if (head == nullptr) {
-        tail = nullptr;
-    }
 }
 
 }  // namespace kmm
