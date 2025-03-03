@@ -551,6 +551,28 @@ KMM_HOST_DEVICE Bounds<N + M, T> concat(const Bounds<N, T>& lhs, const Bounds<M,
         concat((const fixed_array<Range<T>, N>&)(lhs), (const fixed_array<Range<T>, M>&)(rhs))};
 }
 
+template<size_t N, typename T>
+KMM_HOST_DEVICE Index<N, T> operator+(const Index<N, T>& lhs, const Index<N, T>& rhs) {
+    Index<N, T> result;
+
+    for (size_t i = 0; is_less(i, N); i++) {
+        result[i] = lhs[i] + rhs[i];
+    }
+
+    return result;
+}
+
+template<size_t N, typename T>
+KMM_HOST_DEVICE Index<N, T> operator-(const Index<N, T>& lhs, const Index<N, T>& rhs) {
+    Index<N, T> result;
+
+    for (size_t i = 0; is_less(i, N); i++) {
+        result[i] = lhs[i] - rhs[i];
+    }
+
+    return result;
+}
+
 }  // namespace kmm
 
 #include <iosfwd>

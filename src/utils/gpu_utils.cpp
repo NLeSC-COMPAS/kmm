@@ -1,7 +1,7 @@
 #include "fmt/format.h"
 #include "spdlog/spdlog.h"
 
-#include "kmm/utils/gpu.hpp"
+#include "kmm/utils/gpu_utils.hpp"
 #include "kmm/utils/panic.hpp"
 
 namespace kmm {

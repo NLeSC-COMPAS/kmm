@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "kmm/core/identifiers.hpp"
-#include "kmm/utils/gpu.hpp"
+#include "kmm/utils/gpu_utils.hpp"
 
 namespace kmm {
 

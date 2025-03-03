@@ -6,18 +6,18 @@
 namespace kmm {
 
 template<typename T, typename D, typename L = views::default_layout<D::rank>>
-struct ArrayArgument {
+struct ViewArgument {
     using value_type = T;
     using domain_type = D;
     using layout_type = L;
 
-    ArrayArgument(size_t buffer_index, D domain, L layout) :
+    ViewArgument(size_t buffer_index, D domain, L layout) :
         buffer_index(buffer_index),
         domain(domain),
         layout(layout) {}
 
-    ArrayArgument(size_t buffer_index, D domain) :
-        ArrayArgument(buffer_index, domain, L::from_domain(domain)) {}
+    ViewArgument(size_t buffer_index, D domain) :
+        ViewArgument(buffer_index, domain, L::from_domain(domain)) {}
 
     size_t buffer_index;
     D domain;
@@ -25,40 +25,40 @@ struct ArrayArgument {
 };
 
 template<typename T, typename D, typename L>
-struct ArgumentUnpack<ExecutionSpace::Host, ArrayArgument<T, D, L>> {
+struct ArgumentUnpack<ExecutionSpace::Host, ViewArgument<T, D, L>> {
     using type = AbstractView<T, D, L, views::host_accessor>;
 
-    static type call(const TaskContext& context, ArrayArgument<T, D, L> arg) {
+    static type call(const TaskContext& context, ViewArgument<T, D, L> arg) {
         T* data = static_cast<T*>(context.accessors.at(arg.buffer_index).address);
         return {data, arg.domain, arg.layout};
     }
 };
 
 template<typename T, typename D, typename L>
-struct ArgumentUnpack<ExecutionSpace::Host, ArrayArgument<const T, D, L>> {
+struct ArgumentUnpack<ExecutionSpace::Host, ViewArgument<const T, D, L>> {
     using type = AbstractView<const T, D, L, views::host_accessor>;
 
-    static type call(const TaskContext& context, ArrayArgument<const T, D, L> arg) {
+    static type call(const TaskContext& context, ViewArgument<const T, D, L> arg) {
         const T* data = static_cast<const T*>(context.accessors.at(arg.buffer_index).address);
         return {data, arg.domain, arg.layout};
     }
 };
 
 template<typename T, typename D, typename L>
-struct ArgumentUnpack<ExecutionSpace::Device, ArrayArgument<T, D, L>> {
+struct ArgumentUnpack<ExecutionSpace::Device, ViewArgument<T, D, L>> {
     using type = AbstractView<T, D, L, views::device_accessor>;
 
-    static type call(const TaskContext& context, ArrayArgument<T, D, L> arg) {
+    static type call(const TaskContext& context, ViewArgument<T, D, L> arg) {
         T* data = static_cast<T*>(context.accessors.at(arg.buffer_index).address);
         return {data, arg.domain, arg.layout};
     }
 };
 
 template<typename T, typename D, typename L>
-struct ArgumentUnpack<ExecutionSpace::Device, ArrayArgument<const T, D, L>> {
+struct ArgumentUnpack<ExecutionSpace::Device, ViewArgument<const T, D, L>> {
     using type = AbstractView<const T, D, L, views::device_accessor>;
 
-    static type call(const TaskContext& context, ArrayArgument<const T, D, L> arg) {
+    static type call(const TaskContext& context, ViewArgument<const T, D, L> arg) {
         const T* data = static_cast<const T*>(context.accessors.at(arg.buffer_index).address);
         return {data, arg.domain, arg.layout};
     }

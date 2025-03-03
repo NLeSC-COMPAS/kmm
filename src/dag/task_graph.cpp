@@ -18,9 +18,9 @@ BufferId TaskGraph::create_buffer(DataLayout layout) {
         .layout = layout,
     });
 
-    auto& it = m_staged_new_buffers.emplace_back(buffer_id, std::make_unique<BufferMeta>(event_id));
-
-    m_staged_delta_buffers.emplace(buffer_id, BufferMetaUpdate {.meta = it.second.get()});
+    auto meta = std::make_unique<BufferMeta>(event_id);
+    m_staged_delta_buffers.emplace(buffer_id, meta.get());
+    m_staged_new_buffers.emplace_back(buffer_id, std::move(meta));
 
     return buffer_id;
 }

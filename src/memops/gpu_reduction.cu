@@ -5,7 +5,7 @@
 #include "kmm/memops/gpu_fill.hpp"
 #include "kmm/memops/gpu_reduction.hpp"
 #include "kmm/utils/checked_math.hpp"
-#include "kmm/utils/gpu.hpp"
+#include "kmm/utils/gpu_utils.hpp"
 #include "kmm/utils/integer_fun.hpp"
 
 namespace kmm {

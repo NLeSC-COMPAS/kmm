@@ -115,10 +115,10 @@ class Range {
     }
 
     /**
-     * Shift the range by the given amount.
+     * Returns a new range that has been shifted by the given amount.
      */
     KMM_HOST_DEVICE
-    constexpr Range shift_by(T shift) {
+    constexpr Range shift_by(T shift) const {
         return {this->begin + shift, this->end + shift};
     }
 

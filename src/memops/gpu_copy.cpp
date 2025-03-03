@@ -5,7 +5,7 @@
 
 #include "kmm/memops/gpu_copy.hpp"
 #include "kmm/utils/checked_math.hpp"
-#include "kmm/utils/gpu.hpp"
+#include "kmm/utils/gpu_utils.hpp"
 
 namespace kmm {
 

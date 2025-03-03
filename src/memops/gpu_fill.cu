@@ -2,7 +2,7 @@
 #include "spdlog/spdlog.h"
 
 #include "kmm/memops/gpu_fill.hpp"
-#include "kmm/utils/gpu.hpp"
+#include "kmm/utils/gpu_utils.hpp"
 #include "kmm/utils/integer_fun.hpp"
 #include "kmm/utils/panic.hpp"
 

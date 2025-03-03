@@ -9,8 +9,8 @@
 
 #include "kmm/api/access.hpp"
 #include "kmm/api/argument.hpp"
-#include "kmm/api/array_argument.hpp"
 #include "kmm/api/array_handle.hpp"
+#include "kmm/api/view_argument.hpp"
 #include "kmm/dag/dist_data_planner.hpp"
 #include "kmm/dag/dist_reduction_planner.hpp"
 
@@ -164,23 +164,25 @@ using Scalar = Array<T, 0>;
 
 template<typename T, size_t N>
 struct ArgumentHandler<Array<T, N>> {
-    using type = ArrayArgument<const T, views::dynamic_domain<N>>;
+    using type = ViewArgument<const T, views::dynamic_domain<N>>;
 
     ArgumentHandler(const Array<T, N>& array) :
         m_handle(array.handle().shared_from_this()),
-        m_chunk(m_handle->distribution().chunk(0)) {
-        m_handle->distribution().region_to_chunk_index(array.shape());  // Check if it is in-bounds
-    }
+        m_array_shape(array.shape()) {}
 
     void initialize(const TaskGroupInit& init) {}
 
     type process_chunk(TaskInstance& task) {
+        auto access_region = Bounds<N>::from_offset_size(m_array_offset, m_array_shape);
+        auto chunk_index = m_handle->distribution().region_to_chunk_index(access_region);
+
         auto buffer_index = task.add_buffer_requirement(BufferRequirement {
-            .buffer_id = m_handle->buffer(0),
-            .memory_id = m_chunk.owner_id,
+            .buffer_id = m_handle->buffer(chunk_index),
+            .memory_id = task.memory_id,
             .access_mode = AccessMode::Read});
 
-        auto domain = views::dynamic_domain<N> {m_chunk.size};
+        auto chunk = m_handle->distribution().chunk(chunk_index);
+        auto domain = views::dynamic_domain<N> {chunk.size};
         return {buffer_index, domain};
     }
 
@@ -188,7 +190,8 @@ struct ArgumentHandler<Array<T, N>> {
 
   private:
     std::shared_ptr<const ArrayHandle<N>> m_handle;
-    DataChunk<N> m_chunk;
+    Index<N> m_array_offset;
+    Dim<N> m_array_shape;
 };
 
 template<typename T, size_t N>
@@ -197,9 +200,50 @@ struct ArgumentHandler<Access<const Array<T, N>, Read<All>>>: ArgumentHandler<Ar
         ArgumentHandler<Array<T, N>>(arg.argument) {}
 };
 
+template<typename T, size_t N, typename M>
+struct ArgumentHandler<Access<const Array<T, N>, Read<M>>> {
+    using type = ViewArgument<const T, views::dynamic_subdomain<N>>;
+
+    static_assert(
+        is_dimensionality_accepted_by_mapper<M, N>,
+        "mapper of 'read' must return N-dimensional region"
+    );
+
+    ArgumentHandler(Access<const Array<T, N>, Read<M>> access) :
+        m_handle(access.argument.handle().shared_from_this()),
+        m_array_shape(access.argument.shape()),
+        m_access_mapper(access.mode.access_mapper) {}
+
+    void initialize(const TaskGroupInit& init) {}
+
+    type process_chunk(TaskInstance& task) {
+        Bounds<N> access_region = m_access_mapper(task.chunk, Bounds<N>(m_array_shape));
+        access_region = access_region.shift_by(m_array_offset);
+
+        auto chunk_index = m_handle->distribution().region_to_chunk_index(access_region);
+
+        auto buffer_index = task.add_buffer_requirement(BufferRequirement {
+            .buffer_id = m_handle->buffer(chunk_index),
+            .memory_id = task.memory_id,
+            .access_mode = AccessMode::Read});
+
+        auto chunk = m_handle->distribution().chunk(chunk_index);
+        auto domain = views::dynamic_subdomain<N> {chunk.offset - m_array_offset, chunk.size};
+        return {buffer_index, domain};
+    }
+
+    void finalize(const TaskGroupFinalize& result) {}
+
+  private:
+    std::shared_ptr<const ArrayHandle<N>> m_handle;
+    Index<N> m_array_offset;
+    Dim<N> m_array_shape;
+    M m_access_mapper;
+};
+
 template<typename T, size_t N>
 struct ArgumentHandler<Access<Array<T, N>, Write<All>>> {
-    using type = ArrayArgument<T, views::dynamic_domain<N>>;
+    using type = ViewArgument<T, views::dynamic_domain<N>>;
 
     ArgumentHandler(Access<Array<T, N>, Write<All>> access) : m_array(access.argument) {
         if (m_array.is_valid()) {
@@ -233,45 +277,8 @@ struct ArgumentHandler<Access<Array<T, N>, Write<All>>> {
 };
 
 template<typename T, size_t N, typename M>
-struct ArgumentHandler<Access<const Array<T, N>, Read<M>>> {
-    using type = ArrayArgument<const T, views::dynamic_subdomain<N>>;
-
-    static_assert(
-        is_dimensionality_accepted_by_mapper<M, N>,
-        "mapper of 'read' must return N-dimensional region"
-    );
-
-    ArgumentHandler(Access<const Array<T, N>, Read<M>> access) :
-        m_handle(access.argument.handle().shared_from_this()),
-        m_access_mapper(access.mode.access_mapper) {}
-
-    void initialize(const TaskGroupInit& init) {}
-
-    type process_chunk(TaskInstance& task) {
-        auto array_size = m_handle->distribution().array_size();
-        auto access_region = m_access_mapper(task.chunk, Bounds<N>(array_size));
-        auto chunk_index = m_handle->distribution().region_to_chunk_index(access_region);
-
-        auto buffer_index = task.add_buffer_requirement(BufferRequirement {
-            .buffer_id = m_handle->buffer(chunk_index),
-            .memory_id = task.memory_id,
-            .access_mode = AccessMode::Read});
-
-        auto chunk = m_handle->distribution().chunk(chunk_index);
-        auto domain = views::dynamic_subdomain<N> {chunk.offset, chunk.size};
-        return {buffer_index, domain};
-    }
-
-    void finalize(const TaskGroupFinalize& result) {}
-
-  private:
-    std::shared_ptr<const ArrayHandle<N>> m_handle;
-    M m_access_mapper;
-};
-
-template<typename T, size_t N, typename M>
 struct ArgumentHandler<Access<Array<T, N>, Write<M>>> {
-    using type = ArrayArgument<T, views::dynamic_subdomain<N>>;
+    using type = ViewArgument<T, views::dynamic_subdomain<N>>;
 
     static_assert(
         is_dimensionality_accepted_by_mapper<M, N>,
@@ -317,7 +324,7 @@ struct ArgumentHandler<Access<Array<T, N>, Write<M>>> {
 
 template<typename T, size_t N>
 struct ArgumentHandler<Access<Array<T, N>, Reduce<All>>> {
-    using type = ArrayArgument<T, views::dynamic_domain<N>>;
+    using type = ViewArgument<T, views::dynamic_domain<N>>;
 
     ArgumentHandler(Access<Array<T, N>, Reduce<All>> access) :
         m_array(access.argument),
@@ -359,7 +366,7 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<All>>> {
 template<typename T, size_t N, typename M, typename P>
 struct ArgumentHandler<Access<Array<T, N>, Reduce<M, P>>> {
     static constexpr size_t K = mapper_dimensionality<P>;
-    using type = ArrayArgument<T, views::dynamic_subdomain<K + N>>;
+    using type = ViewArgument<T, views::dynamic_subdomain<K + N>>;
 
     static_assert(
         is_dimensionality_accepted_by_mapper<M, N>,

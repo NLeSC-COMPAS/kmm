@@ -4,7 +4,7 @@
 #include <map>
 
 #include "kmm/core/identifiers.hpp"
-#include "kmm/utils/gpu.hpp"
+#include "kmm/utils/gpu_utils.hpp"
 #include "kmm/utils/notify.hpp"
 #include "kmm/utils/small_vector.hpp"
 

@@ -3,7 +3,7 @@
 #include "kmm/core/buffer.hpp"
 #include "kmm/core/resource.hpp"
 #include "kmm/core/system_info.hpp"
-#include "kmm/utils/gpu.hpp"
+#include "kmm/utils/gpu_utils.hpp"
 #include "kmm/worker/stream_manager.hpp"
 
 namespace kmm {

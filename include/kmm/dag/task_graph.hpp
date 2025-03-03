@@ -83,6 +83,8 @@ class TaskGraph {
     };
 
     struct BufferMetaUpdate {
+        BufferMetaUpdate(BufferMeta* parent) : meta(parent) {}
+
         BufferMeta* meta;
         EventList new_writes;
         EventList new_accesses;

@@ -3,7 +3,7 @@
 #include "kmm/core/buffer.hpp"
 #include "kmm/core/system_info.hpp"
 #include "kmm/utils/checked_math.hpp"
-#include "kmm/utils/gpu.hpp"
+#include "kmm/utils/gpu_utils.hpp"
 #include "kmm/utils/view.hpp"
 
 namespace kmm {
