@@ -21,7 +21,8 @@ class TaskGraph {
     KMM_NOT_COPYABLE_OR_MOVABLE(TaskGraph)
 
   public:
-    TaskGraph() = default;
+    TaskGraph();
+    ~TaskGraph();
 
     BufferId create_buffer(DataLayout layout);
 
@@ -50,10 +51,12 @@ class TaskGraph {
     );
 
     EventId insert_reduction(
-        MemoryId memory_id,
-        BufferId buffer_id,
-        ReductionOutput reduction,
-        std::vector<ReductionInput> inputs
+        BufferId src_buffer,
+        MemoryId src_memory,
+        BufferId dst_buffer,
+        MemoryId dst_memory,
+        ReductionDef reduction,
+        EventList deps
     );
 
     EventId insert_fill(MemoryId memory_id, BufferId buffer_id, FillDef fill, EventList deps = {});
@@ -69,34 +72,23 @@ class TaskGraph {
     std::vector<TaskNode> flush();
 
   private:
-    EventId insert_task(Command command, EventList deps = {});
-
-    std::pair<BufferId, EventId> insert_create_buffer_event(DataLayout layout);
-
-    EventId insert_delete_buffer_event(BufferId id, EventList deps);
-
-    EventId insert_reduction_event(
-        BufferId src_buffer,
-        MemoryId src_memory,
-        BufferId dst_buffer,
-        MemoryId dst_memory,
-        ReductionDef reduction,
-        EventList deps
-    );
+    EventId insert_node(Command command, EventList deps = {});
 
     struct BufferMeta {
-        BufferMeta(EventId epoch_event) :
-            creation(epoch_event),
-            last_write(epoch_event),
-            accesses {epoch_event} {}
+        BufferMeta(EventId epoch_event) : last_write(epoch_event), accesses {epoch_event} {}
 
         MemoryId owner_id = MemoryId::host();
-        EventId creation;
         EventId last_write;
         EventList accesses;
     };
 
-    BufferMeta& find_buffer(BufferId id);
+    struct BufferMetaUpdate {
+        BufferMeta* meta;
+        EventList new_writes;
+        EventList new_accesses;
+    };
+
+    BufferMetaUpdate& find_buffer_update(BufferId id);
 
     void pre_access_buffer(
         BufferId buffer_id,
@@ -115,10 +107,12 @@ class TaskGraph {
     uint64_t m_next_buffer_id = 1;
     uint64_t m_next_event_id = 1;
     EventList m_events_since_last_barrier;
-    std::unordered_map<BufferId, BufferMeta> m_persistent_buffers;
-    std::unordered_map<BufferId, BufferMeta> m_tentative_buffers;
-    std::vector<BufferId> m_tentative_deletions;
+    std::unordered_map<BufferId, std::unique_ptr<BufferMeta>> m_buffers;
     std::vector<TaskNode> m_events;
+
+    std::vector<std::pair<BufferId, std::unique_ptr<BufferMeta>>> m_staged_new_buffers;
+    std::unordered_map<BufferId, BufferMetaUpdate> m_staged_delta_buffers;
+    std::vector<BufferId> m_staged_buffer_deletions;
 };
 
 }  // namespace kmm

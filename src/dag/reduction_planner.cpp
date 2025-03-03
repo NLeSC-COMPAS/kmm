@@ -44,6 +44,76 @@ BufferRequirement ReductionPlanner::add_chunk(
         .access_mode = AccessMode::Exclusive};
 }
 
+EventId insert_multi_reduction(
+    TaskGraph& graph,
+    MemoryId memory_id,
+    BufferId buffer_id,
+    ReductionOutput reduction,
+    std::vector<ReductionInput> inputs
+) {
+    auto dtype = reduction.data_type;
+    auto op = reduction.operation;
+    auto num_elements = reduction.num_outputs;
+
+    if (inputs.size() == 1) {
+        auto& input = inputs[0];
+
+        return graph.insert_reduction(
+            input.buffer_id,
+            input.memory_id,
+            buffer_id,
+            memory_id,
+            ReductionDef {
+                .operation = op,
+                .data_type = dtype,
+                .num_outputs = num_elements,
+                .num_inputs_per_output = input.num_inputs_per_output},
+            std::move(input.dependencies)
+        );
+    }
+
+    auto scratch_layout = DataLayout::for_type(dtype).repeat(num_elements).repeat(inputs.size());
+    auto scratch_id = graph.create_buffer(scratch_layout);
+    auto scratch_deps = EventList {};
+
+    for (size_t i = 0; i < inputs.size(); i++) {
+        auto& input = inputs[i];
+
+        EventId event_id = graph.insert_reduction(
+            input.buffer_id,
+            input.memory_id,
+            scratch_id,
+            memory_id,
+            ReductionDef {
+                .operation = op,
+                .data_type = dtype,
+                .num_outputs = num_elements,
+                .num_inputs_per_output = input.num_inputs_per_output,
+                .input_offset_elements = 0,
+                .output_offset_elements = i * num_elements},
+            std::move(input.dependencies)
+        );
+    }
+
+    auto event_id = graph.insert_reduction(
+        scratch_id,
+        memory_id,
+        buffer_id,
+        memory_id,
+        ReductionDef {
+            .operation = op,
+            .data_type = dtype,
+            .num_outputs = num_elements,
+            .num_inputs_per_output = inputs.size(),
+        },
+        std::move(scratch_deps)
+    );
+
+    graph.delete_buffer(scratch_id, {event_id});
+
+    return event_id;
+}
+
 EventId insert_hierarchical_reduction(
     TaskGraph& graph,
     BufferId final_buffer_id,
@@ -57,7 +127,7 @@ EventId insert_hierarchical_reduction(
     if (std::all_of(inputs.begin(), inputs.end(), [&](const auto& a) {
             return a.memory_id == final_memory_id;
         })) {
-        return graph.insert_reduction(final_memory_id, final_buffer_id, reduction, inputs);
+        return insert_multi_reduction(graph, final_memory_id, final_buffer_id, reduction, inputs);
     }
 
     std::stable_sort(inputs.begin(), inputs.end(), [&](const auto& a, const auto& b) {
@@ -89,7 +159,13 @@ EventId insert_hierarchical_reduction(
         auto local_inputs = std::vector<ReductionInput> {&inputs[begin], &inputs[cursor]};
 
         auto local_buffer_id = graph.create_buffer(temporary_layout);
-        auto event_id = graph.insert_reduction(memory_id, local_buffer_id, reduction, local_inputs);
+        auto event_id = insert_multi_reduction(  //
+            graph,
+            memory_id,
+            local_buffer_id,
+            reduction,
+            local_inputs
+        );
 
         temporary_buffers.push_back(local_buffer_id);
         result_per_device.push_back(ReductionInput {
@@ -98,8 +174,13 @@ EventId insert_hierarchical_reduction(
             .dependencies = {event_id}});
     }
 
-    auto event_id =
-        graph.insert_reduction(final_memory_id, final_buffer_id, reduction, result_per_device);
+    auto event_id = insert_multi_reduction(
+        graph,
+        final_memory_id,
+        final_buffer_id,
+        reduction,
+        result_per_device
+    );
 
     for (auto& buffer_id : temporary_buffers) {
         graph.delete_buffer(buffer_id);
