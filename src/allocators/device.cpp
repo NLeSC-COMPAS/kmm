@@ -116,7 +116,7 @@ DevicePoolAllocator::~DevicePoolAllocator() {
 AllocationResult DevicePoolAllocator::allocate_async(
     size_t nbytes,
     void** addr_out,
-    DeviceEventSet* deps_out
+    DeviceEventSet& deps_out
 ) {
     make_progress();
 
@@ -141,7 +141,7 @@ AllocationResult DevicePoolAllocator::allocate_async(
 
     if (result == GPU_SUCCESS) {
         m_bytes_in_use += nbytes;
-        deps_out->insert(event);
+        deps_out.insert(event);
         *addr_out = (void*)device_ptr;
         return AllocationResult::Success;
     } else if (result == GPU_ERROR_OUT_OF_MEMORY) {

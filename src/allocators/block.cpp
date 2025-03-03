@@ -72,7 +72,7 @@ BlockAllocator::~BlockAllocator() {
 AllocationResult BlockAllocator::allocate_async(
     size_t nbytes,
     void** addr_out,
-    DeviceEventSet* deps_out
+    DeviceEventSet& deps_out
 ) {
     size_t alignment = std::min(round_up_to_power_of_two(nbytes), MAX_ALIGNMENT);
     nbytes = round_up_to_multiple(nbytes, alignment);
@@ -100,7 +100,7 @@ AllocationResult BlockAllocator::allocate_async(
     }
 
     *addr_out = static_cast<char*>(block->base_addr) + region->offset_in_block + offset_in_region;
-    deps_out->insert(region->dependencies);
+    deps_out.insert(region->dependencies);
 
     m_active_regions.emplace(addr_out, region);
     return AllocationResult::Success;
@@ -112,7 +112,7 @@ BlockAllocator::BlockRegion* BlockAllocator::allocate_block(size_t min_nbytes) {
     size_t block_size = std::max(min_nbytes, m_min_block_size);
 
     while (true) {
-        auto result = m_allocator->allocate_async(block_size, &base_addr, &deps);
+        auto result = m_allocator->allocate_async(block_size, &base_addr, deps);
 
         if (result == AllocationResult::Success) {
             break;

@@ -91,7 +91,7 @@ BufferRequestList BufferRegistry::create_requests(const std::vector<BufferRequir
 
 Poll BufferRegistry::poll_requests(
     const BufferRequestList& requests,
-    DeviceEventSet* dependencies_out
+    DeviceEventSet& dependencies_out
 ) {
     Poll result = Poll::Ready;
 

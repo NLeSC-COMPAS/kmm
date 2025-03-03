@@ -12,7 +12,7 @@ SyncAllocator::~SyncAllocator() {}
 AllocationResult SyncAllocator::allocate_async(
     size_t nbytes,
     void** addr_out,
-    DeviceEventSet* deps_out
+    DeviceEventSet& deps_out
 ) {
     KMM_ASSERT(nbytes > 0);
     make_progress();

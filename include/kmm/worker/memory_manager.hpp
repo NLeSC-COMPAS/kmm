@@ -22,7 +22,7 @@ class MemoryManager {
     struct Device;
     struct Transaction;
 
-    MemoryManager(std::shared_ptr<MemorySystemBase> memory);
+    MemoryManager(std::shared_ptr<MemorySystem> memory);
     ~MemoryManager();
 
     bool is_idle(DeviceStreamManager& streams) const;
@@ -38,7 +38,7 @@ class MemoryManager {
         AccessMode mode,
         std::shared_ptr<Transaction> parent
     );
-    Poll poll_request(Request& req, DeviceEventSet* deps_out);
+    Poll poll_request(Request& req, DeviceEventSet& deps_out);
     void release_request(std::shared_ptr<Request> req, DeviceEvent event = {});
 
     BufferAccessor get_accessor(Request& req);
@@ -61,7 +61,7 @@ class MemoryManager {
         MemoryId memory_id,
         Buffer& buffer,
         AccessMode mode,
-        DeviceEventSet* deps_out
+        DeviceEventSet& deps_out
     );
     static void finalize_access_to_buffer(
         MemoryId memory_id,
@@ -71,8 +71,8 @@ class MemoryManager {
     ) noexcept;
 
     static std::optional<DeviceId> find_valid_device_entry(const Buffer& buffer);
-    void make_entry_valid(MemoryId memory_id, Buffer& buffer, DeviceEventSet* deps_out);
-    void make_entry_exclusive(MemoryId memory_id, Buffer& buffer, DeviceEventSet* deps_out);
+    void make_entry_valid(MemoryId memory_id, Buffer& buffer, DeviceEventSet& deps_out);
+    void make_entry_exclusive(MemoryId memory_id, Buffer& buffer, DeviceEventSet& deps_out);
 
     DeviceEvent copy_h2d(DeviceId device_id, Buffer& buffer);
     DeviceEvent copy_d2h(DeviceId device_id, Buffer& buffer);
@@ -83,7 +83,7 @@ class MemoryManager {
 
     void check_consistency() const;
 
-    std::shared_ptr<MemorySystemBase> m_memory;
+    std::shared_ptr<MemorySystem> m_memory;
     std::unique_ptr<Device[]> m_devices;
     std::unordered_set<std::shared_ptr<Buffer>> m_buffers;
     std::unordered_set<std::shared_ptr<Request>> m_active_requests;

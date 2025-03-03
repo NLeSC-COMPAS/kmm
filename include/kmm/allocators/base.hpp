@@ -35,7 +35,7 @@ class AsyncAllocator {
     virtual AllocationResult allocate_async(
         size_t nbytes,
         void** addr_out,
-        DeviceEventSet* deps_out
+        DeviceEventSet& deps_out
     ) = 0;
 
     /**
@@ -80,7 +80,7 @@ class SyncAllocator: public AsyncAllocator {
      */
     virtual void deallocate(void* addr, size_t nbytes) = 0;
 
-    AllocationResult allocate_async(size_t nbytes, void** addr_out, DeviceEventSet* deps_out) final;
+    AllocationResult allocate_async(size_t nbytes, void** addr_out, DeviceEventSet& deps_out) final;
     void deallocate_async(void* addr, size_t nbytes, DeviceEventSet deps) final;
     void make_progress() final;
     void trim(size_t nbytes_remaining = 0) final;

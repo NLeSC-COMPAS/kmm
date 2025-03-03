@@ -18,7 +18,7 @@ class BlockAllocator: public AsyncAllocator {
         size_t min_block_size = DEFAULT_BLOCK_SIZE
     );
     ~BlockAllocator();
-    AllocationResult allocate_async(size_t nbytes, void** addr_out, DeviceEventSet* deps_out) final;
+    AllocationResult allocate_async(size_t nbytes, void** addr_out, DeviceEventSet& deps_out) final;
     void deallocate_async(void* addr, size_t nbytes, DeviceEventSet deps) final;
     void make_progress() final;
     void trim(size_t nbytes_remaining = 0) final;

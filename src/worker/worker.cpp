@@ -218,7 +218,7 @@ std::shared_ptr<Worker> make_worker(const WorkerConfig& config) {
         }
     }
 
-    auto memory_system = std::make_shared<MemorySystem>(
+    auto memory_system = std::make_shared<MemorySystemImpl>(
         stream_manager,
         contexts,
         std::move(host_mem),

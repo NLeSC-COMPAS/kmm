@@ -34,7 +34,7 @@ class BufferRegistry {
 
     BufferRequestList create_requests(const std::vector<BufferRequirement>& buffers);
 
-    Poll poll_requests(const BufferRequestList& requests, DeviceEventSet* dependencies_out);
+    Poll poll_requests(const BufferRequestList& requests, DeviceEventSet& dependencies_out);
 
     std::vector<BufferAccessor> access_requests(const BufferRequestList& requests);
 

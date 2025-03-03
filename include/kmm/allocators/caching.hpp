@@ -11,7 +11,7 @@ class CachingAllocator: public AsyncAllocator {
   public:
     CachingAllocator(std::unique_ptr<AsyncAllocator> allocator, size_t initial_watermark = 0);
     ~CachingAllocator();
-    AllocationResult allocate_async(size_t nbytes, void** addr_out, DeviceEventSet* deps_out) final;
+    AllocationResult allocate_async(size_t nbytes, void** addr_out, DeviceEventSet& deps_out) final;
     void deallocate_async(void* addr, size_t nbytes, DeviceEventSet deps) final;
     void make_progress() final;
     void trim(size_t nbytes_remaining = 0) final;

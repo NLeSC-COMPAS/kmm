@@ -344,7 +344,7 @@ static auto make_devices(std::index_sequence<Id...> /*unused*/) {
     return new MemoryManager::Device[MAX_DEVICES] {DeviceId(Id)...};
 }
 
-MemoryManager::MemoryManager(std::shared_ptr<MemorySystemBase> memory_system) :
+MemoryManager::MemoryManager(std::shared_ptr<MemorySystem> memory_system) :
     m_memory(std::move(memory_system)),
     m_devices(make_devices(std::make_index_sequence<MAX_DEVICES>())) {}
 
@@ -437,7 +437,7 @@ std::shared_ptr<MemoryManager::Request> MemoryManager::create_request(
     return req;
 }
 
-Poll MemoryManager::poll_request(Request& req, DeviceEventSet* deps_out) {
+Poll MemoryManager::poll_request(Request& req, DeviceEventSet& deps_out) {
     auto& buffer = *req.buffer;
     auto memory_id = req.memory_id;
 
@@ -547,7 +547,7 @@ void MemoryManager::allocate_host(Buffer& buffer) {
 
     void* ptr;
     DeviceEventSet events;
-    AllocationResult result = m_memory->allocate_host(size_in_bytes, &ptr, &events);
+    AllocationResult result = m_memory->allocate_host(size_in_bytes, &ptr, events);
 
     if (result != AllocationResult::Success) {
         throw std::runtime_error("could not allocate, out of host memory");
@@ -655,7 +655,7 @@ AllocationResult MemoryManager::try_allocate_device_async(DeviceId device_id, Bu
     GPUdeviceptr ptr_out;
     DeviceEventSet events;
     auto result =
-        m_memory->allocate_device(device_id, buffer.layout.size_in_bytes, &ptr_out, &events);
+        m_memory->allocate_device(device_id, buffer.layout.size_in_bytes, &ptr_out, events);
 
     if (result != AllocationResult::Success) {
         return result;
@@ -801,7 +801,7 @@ void MemoryManager::prepare_access_to_buffer(
     MemoryId memory_id,
     Buffer& buffer,
     AccessMode mode,
-    DeviceEventSet* deps_out
+    DeviceEventSet& deps_out
 ) {
     bool is_writer = mode != AccessMode::Read;
     bool is_exclusive = mode == AccessMode::Exclusive;
@@ -814,7 +814,7 @@ void MemoryManager::prepare_access_to_buffer(
     }
 
     if (is_exclusive) {
-        deps_out->insert(entry.access_events);
+        deps_out.insert(entry.access_events);
     }
 }
 
@@ -849,11 +849,11 @@ std::optional<DeviceId> MemoryManager::find_valid_device_entry(const Buffer& buf
     return std::nullopt;
 }
 
-void MemoryManager::make_entry_valid(MemoryId memory_id, Buffer& buffer, DeviceEventSet* deps_out) {
+void MemoryManager::make_entry_valid(MemoryId memory_id, Buffer& buffer, DeviceEventSet& deps_out) {
     auto& entry = buffer.entry(memory_id);
 
     KMM_ASSERT(entry.is_allocated);
-    deps_out->insert(entry.epoch_event);
+    deps_out.insert(entry.epoch_event);
 
     if (entry.is_valid) {
         return;
@@ -861,26 +861,26 @@ void MemoryManager::make_entry_valid(MemoryId memory_id, Buffer& buffer, DeviceE
 
     if (memory_id.is_host()) {
         if (auto src_id = find_valid_device_entry(buffer)) {
-            deps_out->insert(copy_d2h(*src_id, buffer));
+            deps_out.insert(copy_d2h(*src_id, buffer));
             return;
         }
     } else {
         auto device_id = memory_id.as_device();
 
         if (buffer.host_entry.is_valid) {
-            deps_out->insert(copy_h2d(device_id, buffer));
+            deps_out.insert(copy_h2d(device_id, buffer));
             return;
         }
 
         if (auto src_id = find_valid_device_entry(buffer)) {
             if (m_memory->is_copy_supported(*src_id, memory_id)) {
-                deps_out->insert(copy_d2d(*src_id, device_id, buffer));
+                deps_out.insert(copy_d2d(*src_id, device_id, buffer));
             } else {
                 if (!buffer.host_entry.is_allocated) {
                     allocate_host(buffer);
                 }
-                deps_out->insert(copy_d2h(*src_id, buffer));
-                deps_out->insert(copy_h2d(device_id, buffer));
+                deps_out.insert(copy_d2h(*src_id, buffer));
+                deps_out.insert(copy_h2d(device_id, buffer));
             }
 
             return;
@@ -893,14 +893,14 @@ void MemoryManager::make_entry_valid(MemoryId memory_id, Buffer& buffer, DeviceE
 void MemoryManager::make_entry_exclusive(
     MemoryId memory_id,
     Buffer& buffer,
-    DeviceEventSet* deps_out
+    DeviceEventSet& deps_out
 ) {
     make_entry_valid(memory_id, buffer, deps_out);
 
     // invalidate host if necessary
     if (memory_id != MemoryId::host()) {
         buffer.host_entry.is_valid = false;
-        deps_out->insert(buffer.host_entry.access_events);
+        deps_out.insert(buffer.host_entry.access_events);
     }
 
     // Invalidate all _other_ device entries
@@ -911,7 +911,7 @@ void MemoryManager::make_entry_exclusive(
 
         auto& peer_entry = buffer.device_entry[i];
         peer_entry.is_valid = false;
-        deps_out->insert(peer_entry.access_events);
+        deps_out.insert(peer_entry.access_events);
     }
 }
 

@@ -19,6 +19,11 @@ CachingAllocator::~CachingAllocator() {
 }
 
 struct CachingAllocator::AllocationSlot {
+    AllocationSlot(void* addr, size_t nbytes, DeviceEventSet dependencies) :
+        addr(addr),
+        nbytes(nbytes),
+        dependencies(std::move(dependencies)) {}
+
     void* addr = nullptr;
     size_t nbytes = 0;
     DeviceEventSet dependencies;
@@ -38,7 +43,7 @@ size_t round_up_allocation_size(size_t nbytes) {
 AllocationResult CachingAllocator::allocate_async(
     size_t nbytes,
     void** addr_out,
-    DeviceEventSet* deps_out
+    DeviceEventSet& deps_out
 ) {
     nbytes = round_up_allocation_size(nbytes);
     auto& [head, _] = m_allocations[nbytes];
@@ -80,7 +85,7 @@ AllocationResult CachingAllocator::allocate_async(
 
     m_bytes_in_use += nbytes;
     *addr_out = slot->addr;
-    deps_out->insert(std::move(slot->dependencies));
+    deps_out.insert(std::move(slot->dependencies));
     return AllocationResult::Success;
 }
 
@@ -88,10 +93,7 @@ void CachingAllocator::deallocate_async(void* addr, size_t nbytes, DeviceEventSe
     nbytes = round_up_allocation_size(nbytes);
     m_bytes_in_use -= nbytes;
 
-    auto slot = std::make_unique<AllocationSlot>(
-        AllocationSlot {.addr = addr, .nbytes = nbytes, .dependencies = std::move(deps)}
-    );
-
+    auto slot = std::make_unique<AllocationSlot>(addr, nbytes, std::move(deps));
     auto* slot_addr = slot.get();
 
     if (m_lru_newest != nullptr) {

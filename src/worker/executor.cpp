@@ -56,8 +56,7 @@ class HostJob: public Executor::Job {
 
         if (m_status == Status::Waiting) {
             try {
-                if (executor.buffers().poll_requests(m_requests, &m_dependencies)
-                    == Poll::Pending) {
+                if (executor.buffers().poll_requests(m_requests, m_dependencies) == Poll::Pending) {
                     return Poll::Pending;
                 }
 
@@ -135,8 +134,7 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
 
         if (m_status == Status::Pending) {
             try {
-                if (executor.buffers().poll_requests(m_requests, &m_dependencies)
-                    == Poll::Pending) {
+                if (executor.buffers().poll_requests(m_requests, m_dependencies) == Poll::Pending) {
                     return Poll::Pending;
                 }
 
@@ -429,7 +427,7 @@ class PrefetchJob: public Executor::Job {
         }
 
         if (m_status == Status::Waiting) {
-            if (executor.buffers().poll_requests(m_requests, &m_dependencies) == Poll::Pending) {
+            if (executor.buffers().poll_requests(m_requests, m_dependencies) == Poll::Pending) {
                 return Poll::Pending;
             }
 

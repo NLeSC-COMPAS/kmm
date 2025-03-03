@@ -8,7 +8,7 @@
 
 namespace kmm {
 
-struct MemorySystem::Device {
+struct MemorySystemImpl::Device {
     KMM_NOT_COPYABLE(Device)
 
   public:
@@ -33,7 +33,7 @@ struct MemorySystem::Device {
         d2h_hi_stream(streams.create_stream(context, true)) {}
 };
 
-MemorySystem::MemorySystem(
+MemorySystemImpl::MemorySystemImpl(
     std::shared_ptr<DeviceStreamManager> stream_manager,
     std::vector<GPUContextHandle> device_contexts,
     std::unique_ptr<AsyncAllocator> host_mem,
@@ -55,9 +55,9 @@ MemorySystem::MemorySystem(
     }
 }
 
-MemorySystem::~MemorySystem() {}
+MemorySystemImpl::~MemorySystemImpl() {}
 
-void MemorySystem::make_progress() {
+void MemorySystemImpl::make_progress() {
     m_host->make_progress();
 
     for (const auto& device : m_devices) {
@@ -69,30 +69,30 @@ void MemorySystem::make_progress() {
     }
 }
 
-void MemorySystem::trim_host(size_t bytes_remaining) {
+void MemorySystemImpl::trim_host(size_t bytes_remaining) {
     m_host->trim(bytes_remaining);
 }
 
-AllocationResult MemorySystem::allocate_host(
+AllocationResult MemorySystemImpl::allocate_host(
     size_t nbytes,
     void** ptr_out,
-    DeviceEventSet* deps_out
+    DeviceEventSet& deps_out
 ) {
     auto result = m_host->allocate_async(nbytes, ptr_out, deps_out);
     if (result != AllocationResult::Success) {
         return result;
     }
 
-    deps_out->remove_ready(*m_streams);
+    deps_out.remove_ready(*m_streams);
     return AllocationResult::Success;
 }
 
-void MemorySystem::deallocate_host(void* ptr, size_t nbytes, DeviceEventSet deps) {
+void MemorySystemImpl::deallocate_host(void* ptr, size_t nbytes, DeviceEventSet deps) {
     deps.remove_ready(*m_streams);
     return m_host->deallocate_async(ptr, nbytes, std::move(deps));
 }
 
-void MemorySystem::trim_device(size_t bytes_remaining) {
+void MemorySystemImpl::trim_device(size_t bytes_remaining) {
     for (const auto& device : m_devices) {
         if (device != nullptr) {
             device->allocator->trim(bytes_remaining);
@@ -100,11 +100,11 @@ void MemorySystem::trim_device(size_t bytes_remaining) {
     }
 }
 
-AllocationResult MemorySystem::allocate_device(
+AllocationResult MemorySystemImpl::allocate_device(
     DeviceId device_id,
     size_t nbytes,
     GPUdeviceptr* ptr_out,
-    DeviceEventSet* deps_out
+    DeviceEventSet& deps_out
 ) {
     KMM_ASSERT(m_devices[device_id]);
     auto& device = *m_devices[device_id];
@@ -117,12 +117,12 @@ AllocationResult MemorySystem::allocate_device(
         return result;
     }
 
-    deps_out->remove_ready(*m_streams);
+    deps_out.remove_ready(*m_streams);
     *ptr_out = (GPUdeviceptr)addr;
     return AllocationResult::Success;
 }
 
-void MemorySystem::deallocate_device(
+void MemorySystemImpl::deallocate_device(
     DeviceId device_id,
     GPUdeviceptr ptr,
     size_t nbytes,
@@ -142,7 +142,7 @@ void MemorySystem::deallocate_device(
 // slow copy jobs of several gigabytes.
 static constexpr size_t HIGH_PRIORITY_THRESHOLD = 1024L * 1024;
 
-DeviceEvent MemorySystem::copy_host_to_device(
+DeviceEvent MemorySystemImpl::copy_host_to_device(
     DeviceId device_id,
     const void* src_addr,
     GPUdeviceptr dst_addr,
@@ -159,7 +159,7 @@ DeviceEvent MemorySystem::copy_host_to_device(
     });
 }
 
-DeviceEvent MemorySystem::copy_device_to_host(
+DeviceEvent MemorySystemImpl::copy_device_to_host(
     DeviceId device_id,
     GPUdeviceptr src_addr,
     void* dst_addr,
@@ -176,7 +176,7 @@ DeviceEvent MemorySystem::copy_device_to_host(
     });
 }
 
-DeviceEvent MemorySystem::copy_device_to_device(
+DeviceEvent MemorySystemImpl::copy_device_to_device(
     DeviceId src_device_id,
     DeviceId dst_device_id,
     GPUdeviceptr src_addr,

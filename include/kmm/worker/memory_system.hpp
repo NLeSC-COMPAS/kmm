@@ -6,22 +6,27 @@
 
 namespace kmm {
 
-class MemorySystemBase {
+class MemorySystem {
   public:
-    virtual ~MemorySystemBase() = default;
+    virtual ~MemorySystem() = default;
+
+    virtual void make_progress() {}
+    virtual void trim_host(size_t bytes_remaining = 0) {}
+    virtual void trim_device(size_t bytes_remaining = 0) {}
 
     virtual AllocationResult allocate_host(
         size_t nbytes,
         void** ptr_out,
-        DeviceEventSet* deps_out
+        DeviceEventSet& deps_out
     ) = 0;
+
     virtual void deallocate_host(void* ptr, size_t nbytes, DeviceEventSet deps) = 0;
 
     virtual AllocationResult allocate_device(
         DeviceId device_id,
         size_t nbytes,
         GPUdeviceptr* ptr_out,
-        DeviceEventSet* deps_out
+        DeviceEventSet& deps_out
     ) = 0;
 
     virtual void deallocate_device(
@@ -61,32 +66,31 @@ class MemorySystemBase {
     }
 };
 
-class MemorySystem: public MemorySystemBase {
-    KMM_NOT_COPYABLE_OR_MOVABLE(MemorySystem)
+class MemorySystemImpl: public MemorySystem {
+    KMM_NOT_COPYABLE_OR_MOVABLE(MemorySystemImpl)
 
   public:
-    MemorySystem(
+    MemorySystemImpl(
         std::shared_ptr<DeviceStreamManager> stream_manager,
         std::vector<GPUContextHandle> device_contexts,
         std::unique_ptr<AsyncAllocator> host_mem,
         std::vector<std::unique_ptr<AsyncAllocator>> device_mem
     );
 
-    ~MemorySystem();
+    ~MemorySystemImpl();
 
     void make_progress();
-
     void trim_host(size_t bytes_remaining = 0);
     void trim_device(size_t bytes_remaining = 0);
 
-    AllocationResult allocate_host(size_t nbytes, void** ptr_out, DeviceEventSet* deps_out) final;
+    AllocationResult allocate_host(size_t nbytes, void** ptr_out, DeviceEventSet& deps_out) final;
     void deallocate_host(void* ptr, size_t nbytes, DeviceEventSet deps) final;
 
     AllocationResult allocate_device(
         DeviceId device_id,
         size_t nbytes,
         GPUdeviceptr* ptr_out,
-        DeviceEventSet* deps_out
+        DeviceEventSet& deps_out
     ) final;
 
     void deallocate_device(DeviceId device_id, GPUdeviceptr ptr, size_t nbytes, DeviceEventSet deps)
