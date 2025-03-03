@@ -11,7 +11,7 @@ namespace kmm {
 class DeviceResourceOperation {
   public:
     virtual ~DeviceResourceOperation() = default;
-    virtual void submit(DeviceResource& resource, std::vector<BufferAccessor> accessors) = 0;
+    virtual void execute(DeviceResource& resource, std::vector<BufferAccessor> accessors) = 0;
 };
 
 class DeviceResourceManager {
@@ -35,10 +35,10 @@ class DeviceResourceManager {
     );
 
   private:
-    struct State;
+    struct Device;
 
     std::shared_ptr<DeviceStreamManager> m_stream_manager;
-    std::vector<std::unique_ptr<State>> m_devices;
+    std::vector<std::unique_ptr<Device>> m_devices;
 };
 
 }  // namespace kmm

@@ -171,9 +171,6 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
         return Poll::Ready;
     }
 
-  protected:
-    virtual void submit(DeviceResource& device, std::vector<BufferAccessor> accessors) = 0;
-
   private:
     enum struct Status { Init, Pending, Running, Completing, Completed };
 
@@ -302,7 +299,7 @@ class ExecuteDeviceJob: public DeviceJob {
         DeviceJob(id, device_id, std::move(buffers), std::move(dependencies)),
         m_task(std::move(task)) {}
 
-    void submit(DeviceResource& device, std::vector<BufferAccessor> accessors) {
+    void execute(DeviceResource& device, std::vector<BufferAccessor> accessors) final {
         auto context = TaskContext {std::move(accessors)};
         m_task->execute(device, context);
     }
@@ -330,7 +327,7 @@ class CopyDeviceJob: public DeviceJob {
         ),
         m_copy(definition) {}
 
-    void submit(DeviceResource& device, std::vector<BufferAccessor> accessors) {
+    void execute(DeviceResource& device, std::vector<BufferAccessor> accessors) final {
         KMM_ASSERT(accessors[0].layout.size_in_bytes >= m_copy.minimum_source_bytes_needed());
         KMM_ASSERT(accessors[1].layout.size_in_bytes >= m_copy.minimum_destination_bytes_needed());
         KMM_ASSERT(accessors[1].is_writable);
@@ -366,7 +363,7 @@ class ReductionDeviceJob: public DeviceJob {
         ),
         m_reduction(std::move(definition)) {}
 
-    void submit(DeviceResource& device, std::vector<BufferAccessor> accessors) {
+    void execute(DeviceResource& device, std::vector<BufferAccessor> accessors) final {
         execute_gpu_reduction_async(
             device,
             reinterpret_cast<GPUdeviceptr>(accessors[0].address),
@@ -396,7 +393,7 @@ class FillDeviceJob: public DeviceJob {
         ),
         m_fill(std::move(definition)) {}
 
-    void submit(DeviceResource& device, std::vector<BufferAccessor> accessors) {
+    void execute(DeviceResource& device, std::vector<BufferAccessor> accessors) final {
         execute_gpu_fill_async(
             device,
             reinterpret_cast<GPUdeviceptr>(accessors[0].address),
@@ -411,32 +408,36 @@ class FillDeviceJob: public DeviceJob {
 class PrefetchJob: public Executor::Job {
   public:
     PrefetchJob(
-        std::shared_ptr<Task> id,
+        std::shared_ptr<Task> task,
         BufferId buffer_id,
         MemoryId memory_id,
         DeviceEventSet dependencies
     ) :
-        m_id(id),
+        m_task(task),
         m_buffers {{buffer_id, memory_id, AccessMode::Read}},
         m_dependencies(std::move(dependencies)) {}
 
     Poll poll(Executor& executor) final {
         if (m_status == Status::Init) {
             m_requests = executor.buffers().create_requests(m_buffers);
-            m_status = Status::Waiting;
+            m_status = Status::Polling;
         }
 
-        if (m_status == Status::Waiting) {
+        if (m_status == Status::Polling) {
             if (executor.buffers().poll_requests(m_requests, m_dependencies) == Poll::Pending) {
                 return Poll::Pending;
             }
 
+            executor.buffers().release_requests(m_requests);
+            m_status = Status::Completing;
+        }
+
+        if (m_status == Status::Completing) {
             if (!executor.streams().is_ready(m_dependencies)) {
                 return Poll::Pending;
             }
 
-            executor.buffers().release_requests(m_requests);
-            executor.scheduler().mark_as_completed(m_id);
+            executor.scheduler().mark_as_completed(m_task);
             m_status = Status::Completed;
         }
 
@@ -444,10 +445,10 @@ class PrefetchJob: public Executor::Job {
     }
 
   private:
-    enum struct Status { Init, Waiting, Completed };
+    enum struct Status { Init, Polling, Completing, Completed };
 
     Status m_status = Status::Init;
-    std::shared_ptr<Task> m_id;
+    std::shared_ptr<Task> m_task;
     std::vector<BufferRequirement> m_buffers;
     BufferRequestList m_requests;
     DeviceEventSet m_dependencies;
@@ -513,8 +514,15 @@ void Executor::execute_task(std::shared_ptr<Task> task, DeviceEventSet dependenc
         m_buffer_registry->remove(e->id);
         execute_task(task, CommandEmpty {}, std::move(dependencies));
 
-    } else if (std::get_if<CommandPrefetch>(&command) != nullptr) {
-        execute_task(task, CommandEmpty {}, std::move(dependencies));
+    } else if (const auto* e = std::get_if<CommandPrefetch>(&command)) {
+        auto job = std::make_unique<PrefetchJob>(
+            task,
+            e->buffer_id,
+            e->memory_id,
+            std::move(dependencies)
+        );
+
+        insert_job(std::move(job));
 
     } else if (const auto* e = std::get_if<CommandExecute>(&command)) {
         execute_task(task, *e, std::move(dependencies));

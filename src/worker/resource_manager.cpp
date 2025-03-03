@@ -2,11 +2,11 @@
 
 namespace kmm {
 
-struct DeviceResourceManager::State {
-    KMM_NOT_COPYABLE_OR_MOVABLE(State)
+struct DeviceResourceManager::Device {
+    KMM_NOT_COPYABLE_OR_MOVABLE(Device)
 
   public:
-    State(
+    Device(
         DeviceId device_id,
         DeviceStream stream,
         GPUContextHandle context,
@@ -30,7 +30,7 @@ DeviceResourceManager::DeviceResourceManager(
         auto stream = stream_manager->create_stream(contexts[i]);
 
         m_devices.emplace_back(
-            std::make_unique<State>(DeviceId(i), stream, contexts[i], stream_manager->get(stream))
+            std::make_unique<Device>(DeviceId(i), stream, contexts[i], stream_manager->get(stream))
         );
     }
 }
@@ -53,12 +53,13 @@ DeviceEvent DeviceResourceManager::submit(
 
     try {
         GPUContextGuard guard {state.context};
-
         m_stream_manager->wait_for_events(state.stream, deps);
 
-        op.submit(state.resource, std::move(accessors));
+        op.execute(state.resource, std::move(accessors));
 
+        m_stream_manager->wait_on_default_stream(state.stream);
         auto event = m_stream_manager->record_event(state.stream);
+
         state.last_event = event;
         return event;
     } catch (const std::exception& e) {
