@@ -4,9 +4,10 @@
 [![CUDA Build Status](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-cuda-multi-compiler.yml/badge.svg)](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-cuda-multi-compiler.yml)
 
 The **Kernel Memory Manager** (KMM) is a lightweight, high-performance framework designed for parallel dataflow execution and efficient memory management on multi-GPU platforms.
-It automatically manages GPU memory, partitions workloads across multiple GPUs, and schedules tasks efficiently.
+
+
+KMM automatically manages GPU memory, partitions workloads across multiple GPUs, and schedules tasks efficiently.
 Unlike frameworks that require a specific programming model, KMM integrates existing GPU kernels or functions without the need to fully rewrite your code.
-KMM can handle the massive workloads from scientific computing, deep learning, and high-performance data processing.
 
 
 ## Features
@@ -14,13 +15,13 @@ KMM can handle the massive workloads from scientific computing, deep learning, a
 * **Efficient Memory Management**:
   * Automatically allocates memory and transfers data between GPU and host only when neccessary.
 * **Scalable Computing**:
-  * Seamlessly "spills" data from the GPU to host memory, enabling processing of huge datasets that exceed GPU memory.
-* **Optimized ComputeTask Scheduling**:
-  * DAG scheduler to track dependencies and execute kernels in a sequentially consistent order while maximizing parallelism.
+  * Seamlessly spills data from GPU to host memory, enabling huge datasets that exceed GPU memory.
+* **Optimized Scheduling**:
+  * DAG scheduler automatically tracks dependencies and executes kernels in a sequentially consistent order.
 * **Flexible Work Partitioning**:
-  * Splits workloads and data according to user-defined strategies, ensuring efficient utilization of available resources.
+  * Split workloads and data according to user-defined distributions, ensuring utilization of available resources.
 * **Portable Execution**:
-  * Supports CUDA, HIP, and CPU-based functions, allowing seamless integration of existing kernels with minimal code changes.
+  * Supports existing CUDA, HIP, and CPU-based functions; seamless integration with minimal changes.
 * **Multi-Dimensional Arrays**:
   * Handles ND-arrays of any shape, dimensionality, and data type.
 

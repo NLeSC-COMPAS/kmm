@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "kmm/dag/dist_data_planner.hpp"
 #include "kmm/dag/dist_reduction_planner.hpp"
 #include "kmm/worker/worker.hpp"
