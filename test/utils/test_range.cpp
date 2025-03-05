@@ -6,10 +6,10 @@
 using namespace kmm;
 
 TEST_CASE("Range basics") {
-    Range<> a {0, 0};
-    Range<> b {3};
-    Range<> c {1, 5};
-    Range<> d {Range<char> {3, 8}};
+    Range<default_index_type> a {0, 0};
+    Range<default_index_type> b {3};
+    Range<default_index_type> c {1, 5};
+    Range<default_index_type> d {Range<char> {3, 8}};
 
     SECTION("constructor") {
         CHECK(a.begin == 0);
@@ -99,17 +99,17 @@ TEST_CASE("Range basics") {
 
         CHECK(b.intersection(a).is_empty());
         CHECK(b.intersection(b) == b);
-        CHECK(b.intersection(c) == Range<>(1, 3));
+        CHECK(b.intersection(c) == Range<default_index_type>(1, 3));
         CHECK(b.intersection(d).is_empty());
 
         CHECK(c.intersection(a).is_empty());
-        CHECK(c.intersection(b) == Range<>(1, 3));
+        CHECK(c.intersection(b) == Range<default_index_type>(1, 3));
         CHECK(c.intersection(c) == c);
-        CHECK(c.intersection(d) == Range<>(3, 5));
+        CHECK(c.intersection(d) == Range<default_index_type>(3, 5));
 
         CHECK(d.intersection(a).is_empty());
         CHECK(d.intersection(b).is_empty());
-        CHECK(d.intersection(c) == Range<>(3, 5));
+        CHECK(d.intersection(c) == Range<default_index_type>(3, 5));
         CHECK(d.intersection(d) == d);
     }
 
@@ -170,7 +170,7 @@ TEST_CASE("Range basics") {
     }
 }
 
-TEST_CASE("WorkBounds constructor") {
+TEST_CASE("DomainBounds constructor") {
     SECTION("default") {
         auto a = DomainBounds {};
         CHECK(a.x.begin == 0);

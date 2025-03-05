@@ -5,9 +5,7 @@
 
 namespace kmm {
 
-using default_index_type = int64_t;
-
-template<typename T = default_index_type>
+template<typename T>
 class Range {
   public:
     using value_type = T;
@@ -18,10 +16,10 @@ class Range {
     Range& operator=(Range&&) = default;
 
     KMM_HOST_DEVICE
-    constexpr Range() : begin(T {}), end(static_cast<T>(1)) {}
+    constexpr Range() : begin(static_cast<T>(0)), end(static_cast<T>(1)) {}
 
     KMM_HOST_DEVICE
-    constexpr Range(T end) : begin(T {}), end(end) {}
+    constexpr Range(T end) : begin(static_cast<T>(0)), end(end) {}
 
     KMM_HOST_DEVICE
     constexpr Range(T begin, T end) : begin(begin), end(end) {}

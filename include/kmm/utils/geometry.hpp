@@ -7,6 +7,8 @@
 
 namespace kmm {
 
+using default_index_type = int64_t;
+
 template<size_t N, typename T = default_index_type>
 class Index: public fixed_array<T, N> {
   public:

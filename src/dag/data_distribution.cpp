@@ -81,7 +81,7 @@ DataDistribution<N>::DataDistribution(
         throw std::runtime_error(fmt::format(
             "data distribution contains {} chunks, only {} memory locations provided",
             total_chunk_count,
-            memories.size()
+            m_memories.size()
         ));
     }
 }

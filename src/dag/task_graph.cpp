@@ -25,7 +25,7 @@ BufferId TaskGraph::create_buffer(DataLayout layout) {
     return buffer_id;
 }
 
-EventId TaskGraph::delete_buffer(BufferId id, EventList deps) {
+void TaskGraph::delete_buffer(BufferId id, EventList deps) {
     // Erase the buffer
     m_staged_buffer_deletions.push_back(id);
 }
@@ -258,8 +258,8 @@ TaskGraph::BufferMetaUpdate& TaskGraph::find_buffer_update(BufferId id) {
     }
 
     if (auto it = m_buffers.find(id); it != m_buffers.end()) {
-        auto result =
-            m_staged_delta_buffers.emplace(id, BufferMetaUpdate {.meta = it->second.get()});
+        auto& meta = it->second;
+        auto result = m_staged_delta_buffers.emplace(id, meta.get());
 
         return result.first->second;
     }

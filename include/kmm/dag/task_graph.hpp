@@ -26,7 +26,7 @@ class TaskGraph {
 
     BufferId create_buffer(DataLayout layout);
 
-    EventId delete_buffer(BufferId id, EventList deps = {});
+    void delete_buffer(BufferId id, EventList deps = {});
 
     const EventList& extract_buffer_dependencies(BufferId id);
 
