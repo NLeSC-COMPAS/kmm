@@ -96,12 +96,12 @@ class Array: public ArrayBase {
     }
 
     template<typename M = All>
-    Access<Array<T, N>, Read<M>> access(M mapper = {}) {
+    Read<Array<T, N>, M> access(M mapper = {}) {
         return {*this, {std::move(mapper)}};
     }
 
     template<typename M = All>
-    Access<const Array<T, N>, Read<M>> access(M mapper = {}) const {
+    Read<const Array<T, N>, M> access(M mapper = {}) const {
         return {*this, {std::move(mapper)}};
     }
 
@@ -116,12 +116,12 @@ class Array: public ArrayBase {
     }
 
     template<typename... Is>
-    Access<Array<T, N>, Read<MultiIndexMap<N>>> operator()(const Is&... index) {
+    Read<Array<T, N>, MultiIndexMap<N>> operator()(const Is&... index) {
         return access(bounds(index...));
     }
 
     template<typename... Is>
-    Access<const Array<T, N>, Read<MultiIndexMap<N>>> operator()(const Is&... index) const {
+    Read<const Array<T, N>, MultiIndexMap<N>> operator()(const Is&... index) const {
         return access(bounds(index...));
     }
 
@@ -163,12 +163,12 @@ template<typename T>
 using Scalar = Array<T, 0>;
 
 template<typename T, size_t N>
-struct ArgumentHandler<Array<T, N>> {
+struct ArgumentHandler<Read<const Array<T, N>>> {
     using type = ViewArgument<const T, views::dynamic_domain<N>>;
 
-    ArgumentHandler(const Array<T, N>& array) :
-        m_handle(array.handle().shared_from_this()),
-        m_array_shape(array.shape()) {}
+    ArgumentHandler(Read<const Array<T, N>> access) :
+        m_handle(access.argument.handle().shared_from_this()),
+        m_array_shape(access.argument.shape()) {}
 
     void initialize(const TaskGroupInit& init) {}
 
@@ -195,13 +195,12 @@ struct ArgumentHandler<Array<T, N>> {
 };
 
 template<typename T, size_t N>
-struct ArgumentHandler<Access<const Array<T, N>, Read<All>>>: ArgumentHandler<Array<T, N>> {
-    ArgumentHandler(Access<const Array<T, N>, Read<All>> arg) :  //
-        ArgumentHandler<Array<T, N>>(arg.argument) {}
+struct ArgumentHandler<Array<T, N>>: ArgumentHandler<Read<const Array<T, N>>> {
+    ArgumentHandler(Array<T, N> array) : ArgumentHandler<Read<const Array<T, N>>>(read(array)) {}
 };
 
 template<typename T, size_t N, typename M>
-struct ArgumentHandler<Access<const Array<T, N>, Read<M>>> {
+struct ArgumentHandler<Read<const Array<T, N>, M>> {
     using type = ViewArgument<const T, views::dynamic_subdomain<N>>;
 
     static_assert(
@@ -209,10 +208,10 @@ struct ArgumentHandler<Access<const Array<T, N>, Read<M>>> {
         "mapper of 'read' must return N-dimensional region"
     );
 
-    ArgumentHandler(Access<const Array<T, N>, Read<M>> access) :
+    ArgumentHandler(Read<const Array<T, N>, M> access) :
         m_handle(access.argument.handle().shared_from_this()),
         m_array_shape(access.argument.shape()),
-        m_access_mapper(access.mode.access_mapper) {}
+        m_access_mapper(access.access_mapper) {}
 
     void initialize(const TaskGroupInit& init) {}
 
@@ -242,10 +241,10 @@ struct ArgumentHandler<Access<const Array<T, N>, Read<M>>> {
 };
 
 template<typename T, size_t N>
-struct ArgumentHandler<Access<Array<T, N>, Write<All>>> {
+struct ArgumentHandler<Write<Array<T, N>>> {
     using type = ViewArgument<T, views::dynamic_domain<N>>;
 
-    ArgumentHandler(Access<Array<T, N>, Write<All>> access) : m_array(access.argument) {
+    ArgumentHandler(Write<Array<T, N>> access) : m_array(access.argument) {
         if (m_array.is_valid()) {
             throw std::runtime_error("array has already been written to, cannot overwrite array");
         }
@@ -277,7 +276,7 @@ struct ArgumentHandler<Access<Array<T, N>, Write<All>>> {
 };
 
 template<typename T, size_t N, typename M>
-struct ArgumentHandler<Access<Array<T, N>, Write<M>>> {
+struct ArgumentHandler<Write<Array<T, N>, M>> {
     using type = ViewArgument<T, views::dynamic_subdomain<N>>;
 
     static_assert(
@@ -285,9 +284,9 @@ struct ArgumentHandler<Access<Array<T, N>, Write<M>>> {
         "mapper of 'write' must return N-dimensional region"
     );
 
-    ArgumentHandler(Access<Array<T, N>, Write<M>> access) :
+    ArgumentHandler(Write<Array<T, N>, M> access) :
         m_array(access.argument),
-        m_access_mapper(access.mode.access_mapper) {
+        m_access_mapper(access.access_mapper) {
         if (m_array.is_valid()) {
             throw std::runtime_error("array has already been written to, cannot overwrite array");
         }
@@ -323,12 +322,10 @@ struct ArgumentHandler<Access<Array<T, N>, Write<M>>> {
 };
 
 template<typename T, size_t N>
-struct ArgumentHandler<Access<Array<T, N>, Reduce<All>>> {
+struct ArgumentHandler<Reduce<Array<T, N>>> {
     using type = ViewArgument<T, views::dynamic_domain<N>>;
 
-    ArgumentHandler(Access<Array<T, N>, Reduce<All>> access) :
-        m_array(access.argument),
-        m_operation(access.mode.op) {
+    ArgumentHandler(Reduce<Array<T, N>> access) : m_array(access.argument), m_operation(access.op) {
         if (m_array.is_valid()) {
             throw std::runtime_error("array has already been written to, cannot overwrite array");
         }
@@ -364,7 +361,7 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<All>>> {
 };
 
 template<typename T, size_t N, typename M, typename P>
-struct ArgumentHandler<Access<Array<T, N>, Reduce<M, P>>> {
+struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
     static constexpr size_t K = mapper_dimensionality<P>;
     using type = ViewArgument<T, views::dynamic_subdomain<K + N>>;
 
@@ -378,11 +375,11 @@ struct ArgumentHandler<Access<Array<T, N>, Reduce<M, P>>> {
         "private mapper of 'reduce' must return K-dimensional region"
     );
 
-    ArgumentHandler(Access<Array<T, N>, Reduce<M, P>> access) :
+    ArgumentHandler(Reduce<Array<T, N>, M, P> access) :
         m_array(access.argument),
-        m_operation(access.mode.op),
-        m_access_mapper(access.mode.access_mapper),
-        m_private_mapper(access.mode.private_mapper) {
+        m_operation(access.op),
+        m_access_mapper(access.access_mapper),
+        m_private_mapper(access.private_mapper) {
         if (m_array.is_valid()) {
             throw std::runtime_error("array has already been written to, cannot overwrite array");
         }
