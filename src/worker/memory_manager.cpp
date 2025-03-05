@@ -443,7 +443,7 @@ Poll MemoryManager::poll_request(Request& req, DeviceEventSet& deps_out) {
 
     if (req.status == Request::Status::Init) {
         if (memory_id.is_host()) {
-            lock_allocation_host(buffer, req);
+            lock_allocation_host(buffer, memory_id.device_affinity(), req);
         } else {
             if (!try_lock_allocation_device(memory_id.as_device(), buffer, req)) {
                 return Poll::Pending;
@@ -536,7 +536,7 @@ BufferAccessor MemoryManager::get_accessor(Request& req) {
         .address = address};
 }
 
-void MemoryManager::allocate_host(Buffer& buffer) {
+void MemoryManager::allocate_host(Buffer& buffer, DeviceId device_affinity) {
     auto& host_entry = buffer.host_entry;
     size_t size_in_bytes = buffer.layout.size_in_bytes;
 
@@ -547,7 +547,7 @@ void MemoryManager::allocate_host(Buffer& buffer) {
 
     void* ptr;
     DeviceEventSet events;
-    AllocationResult result = m_memory->allocate_host(size_in_bytes, &ptr, events);
+    AllocationResult result = m_memory->allocate_host(size_in_bytes, device_affinity, &ptr, events);
 
     if (result != AllocationResult::Success) {
         throw std::runtime_error("could not allocate, out of host memory");
@@ -619,7 +619,7 @@ bool MemoryManager::try_free_device_memory(DeviceId device_id) {
             }
 
             if (!victim->host_entry.is_allocated) {
-                allocate_host(*victim);
+                allocate_host(*victim, device_id);
             }
 
             copy_d2h(device_id, *victim);
@@ -709,11 +709,11 @@ void MemoryManager::deallocate_device_async(DeviceId device_id, Buffer& buffer) 
     check_consistency();
 }
 
-void MemoryManager::lock_allocation_host(Buffer& buffer, Request& req) {
+void MemoryManager::lock_allocation_host(Buffer& buffer, DeviceId device_affinity, Request& req) {
     auto& host_entry = buffer.host_entry;
 
     if (!host_entry.is_allocated) {
-        allocate_host(buffer);
+        allocate_host(buffer, device_affinity);
     }
 
     host_entry.num_allocation_locks++;
@@ -877,7 +877,7 @@ void MemoryManager::make_entry_valid(MemoryId memory_id, Buffer& buffer, DeviceE
                 deps_out.insert(copy_d2d(*src_id, device_id, buffer));
             } else {
                 if (!buffer.host_entry.is_allocated) {
-                    allocate_host(buffer);
+                    allocate_host(buffer, *src_id);
                 }
                 deps_out.insert(copy_d2h(*src_id, buffer));
                 deps_out.insert(copy_h2d(device_id, buffer));

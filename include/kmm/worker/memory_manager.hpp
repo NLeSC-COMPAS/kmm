@@ -44,14 +44,14 @@ class MemoryManager {
     BufferAccessor get_accessor(Request& req);
 
   private:
-    void allocate_host(Buffer& buffer);
+    void allocate_host(Buffer& buffer, DeviceId device_affinity);
     void deallocate_host(Buffer& buffer);
 
     bool try_free_device_memory(DeviceId device_id);
     AllocationResult try_allocate_device_async(DeviceId device_id, Buffer& buffer);
     void deallocate_device_async(DeviceId device_id, Buffer& buffer);
 
-    void lock_allocation_host(Buffer& buffer, Request& req);
+    void lock_allocation_host(Buffer& buffer, DeviceId device_affinity, Request& req);
     static void unlock_allocation_host(Buffer& buffer, Request& req);
 
     bool try_lock_allocation_device(DeviceId device_id, Buffer& buffer, Request& req);

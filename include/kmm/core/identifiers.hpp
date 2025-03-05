@@ -96,39 +96,47 @@ struct DeviceId {
 };
 
 struct MemoryId {
-  private:
-    constexpr MemoryId(uint8_t v) : m_value(v) {}
-
   public:
-    KMM_INLINE constexpr MemoryId(DeviceId device) : MemoryId(device.get()) {}
+    enum struct Type : uint8_t { Host, Device };
 
-    KMM_INLINE static constexpr MemoryId host() {
-        return MemoryId {HOST_ID};
+    KMM_INLINE constexpr MemoryId(Type kind, uint8_t v) : m_type(kind), m_value(v) {}
+
+    KMM_INLINE constexpr MemoryId(DeviceId device) : MemoryId(Type::Device, device.get()) {}
+
+    KMM_INLINE static constexpr MemoryId host(DeviceId device_affinity = DeviceId(0)) {
+        return MemoryId {Type::Host, device_affinity.get()};
     }
 
     KMM_INLINE constexpr bool is_host() const noexcept {
-        return m_value == HOST_ID;
+        return m_type == Type::Host;
     }
 
     KMM_INLINE constexpr bool is_device() const noexcept {
-        return m_value != HOST_ID;
+        return m_type == Type::Device;
     }
 
-    KMM_INLINE constexpr DeviceId as_device() const noexcept {
+    KMM_INLINE constexpr DeviceId as_device() const {
         KMM_ASSERT(is_device());
         return DeviceId(m_value);
     }
 
+    KMM_INLINE constexpr DeviceId device_affinity() const {
+        return DeviceId(m_value % MAX_DEVICES);
+    }
+
     KMM_INLINE constexpr bool operator==(const MemoryId& that) const {
-        return m_value == that.m_value;
+        if (m_type == Type::Device && m_type == Type::Device) {
+            return m_value == that.m_value;
+        } else {
+            return m_type == that.m_type;
+        }
     }
 
     KMM_INLINE constexpr bool operator<(const MemoryId& that) const {
-        // We assume the order: Host, Device 0, Device 1, Device 2, ...
-        if (is_host() || that.is_host()) {
-            return that.is_device();
-        } else {
+        if (m_type == Type::Device && m_type == Type::Device) {
             return m_value < that.m_value;
+        } else {
+            return m_type < that.m_type;
         }
     }
 
@@ -137,17 +145,17 @@ struct MemoryId {
     friend std::ostream& operator<<(std::ostream&, const MemoryId&);
 
   private:
-    static constexpr uint8_t HOST_ID = 0xff;
-    uint8_t m_value = HOST_ID;
+    Type m_type;
+    uint8_t m_value;
 };
 
 class ProcessorId {
   public:
-    enum struct Type : uint8_t { Host, Cuda };
+    enum struct Type : uint8_t { Host, Device };
 
     KMM_INLINE constexpr ProcessorId(Type type, uint8_t id = 0) : m_type(type), m_value(id) {}
 
-    KMM_INLINE constexpr ProcessorId(DeviceId device) : ProcessorId(Type::Cuda, device.get()) {}
+    KMM_INLINE constexpr ProcessorId(DeviceId device) : ProcessorId(Type::Device, device.get()) {}
 
     KMM_INLINE static constexpr ProcessorId host() {
         return ProcessorId {Type::Host};
@@ -158,7 +166,7 @@ class ProcessorId {
     }
 
     KMM_INLINE constexpr bool is_device() const {
-        return m_type == Type::Cuda;
+        return m_type == Type::Device;
     }
 
     KMM_INLINE constexpr DeviceId as_device() const {

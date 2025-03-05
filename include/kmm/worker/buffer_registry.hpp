@@ -9,16 +9,7 @@
 
 namespace kmm {
 
-class PoisonException final: public std::exception {
-  public:
-    PoisonException(const std::string& error);
-    PoisonException(EventId, const std::exception& error);
-    const char* what() const noexcept override;
-
-  private:
-    std::string m_message;
-};
-
+class PoisonException;
 using BufferRequest = std::shared_ptr<MemoryManager::Request>;
 using BufferRequestList = std::vector<BufferRequest>;
 
@@ -47,11 +38,21 @@ class BufferRegistry {
   private:
     struct BufferMeta {
         std::shared_ptr<MemoryManager::Buffer> buffer;
-        std::optional<PoisonException> poison_reason = std::nullopt;
+        std::unique_ptr<PoisonException> poison_reason_opt = nullptr;
     };
 
     std::shared_ptr<MemoryManager> m_memory_manager;
     std::unordered_map<BufferId, BufferMeta> m_buffers;
+};
+
+class PoisonException final: public std::exception {
+  public:
+    PoisonException(const std::string& error);
+    PoisonException(EventId, const std::exception& error);
+    const char* what() const noexcept override;
+
+  private:
+    std::string m_message;
 };
 
 }  // namespace kmm

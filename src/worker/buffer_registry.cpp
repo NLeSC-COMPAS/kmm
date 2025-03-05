@@ -41,8 +41,8 @@ std::shared_ptr<MemoryManager::Buffer> BufferRegistry::get(BufferId id) {
     auto& meta = it->second;
 
     // If poisoned, throw exception
-    if (meta.poison_reason) {
-        throw PoisonException(*meta.poison_reason);
+    if (meta.poison_reason_opt != nullptr) {
+        throw PoisonException(*meta.poison_reason_opt);
     }
 
     return meta.buffer;
@@ -59,12 +59,12 @@ void BufferRegistry::poison(BufferId id, PoisonException reason) {
     auto& meta = it->second;
 
     // Buffer already poisoned, ignore
-    if (meta.poison_reason.has_value()) {
+    if (meta.poison_reason_opt != nullptr) {
         return;
     }
 
     spdlog::warn("buffer {} was poisoned: {}", id, reason.what());
-    meta.poison_reason = std::move(reason);
+    meta.poison_reason_opt = std::make_unique<PoisonException>(std::move(reason));
 }
 
 BufferRequestList BufferRegistry::create_requests(const std::vector<BufferRequirement>& buffers) {

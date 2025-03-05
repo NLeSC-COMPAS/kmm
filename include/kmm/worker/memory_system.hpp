@@ -16,6 +16,7 @@ class MemorySystem {
 
     virtual AllocationResult allocate_host(
         size_t nbytes,
+        DeviceId device_affinity,
         void** ptr_out,
         DeviceEventSet& deps_out
     ) = 0;
@@ -83,7 +84,12 @@ class MemorySystemImpl: public MemorySystem {
     void trim_host(size_t bytes_remaining = 0);
     void trim_device(size_t bytes_remaining = 0);
 
-    AllocationResult allocate_host(size_t nbytes, void** ptr_out, DeviceEventSet& deps_out) final;
+    AllocationResult allocate_host(
+        size_t nbytes,
+        DeviceId device_affinity,
+        void** ptr_out,
+        DeviceEventSet& deps_out
+    ) final;
     void deallocate_host(void* ptr, size_t nbytes, DeviceEventSet deps) final;
 
     AllocationResult allocate_device(

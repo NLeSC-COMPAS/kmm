@@ -7,7 +7,7 @@
 
 #include "fmt/ostream.h"
 
-#include "kmm/utils/key_value_pair.hpp"
+#include "kmm/utils/key_value.hpp"
 
 namespace kmm {
 

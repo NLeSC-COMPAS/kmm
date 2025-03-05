@@ -75,9 +75,12 @@ void MemorySystemImpl::trim_host(size_t bytes_remaining) {
 
 AllocationResult MemorySystemImpl::allocate_host(
     size_t nbytes,
+    DeviceId device_affinity,
     void** ptr_out,
     DeviceEventSet& deps_out
 ) {
+    // TODO: take into account device_affinity
+
     auto result = m_host->allocate_async(nbytes, ptr_out, deps_out);
     if (result != AllocationResult::Success) {
         return result;
