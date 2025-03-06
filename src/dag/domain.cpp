@@ -1,11 +1,11 @@
 #include "spdlog/spdlog.h"
 
-#include "kmm/dag/domain_distribution.hpp"
+#include "kmm/dag/domain.hpp"
 #include "kmm/utils/integer_fun.hpp"
 
 namespace kmm {
 
-DomainDistribution TileDomain::operator()(const SystemInfo& info, ExecutionSpace space) const {
+Domain TileDomain::operator()(const SystemInfo& info, ExecutionSpace space) const {
     std::vector<ProcessorId> devices;
 
     if (space == ExecutionSpace::Host) {

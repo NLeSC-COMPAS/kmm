@@ -1,33 +1,36 @@
 #pragma once
 
+#include "kmm/core/buffer.hpp"
 #include "kmm/core/identifiers.hpp"
+#include "kmm/dag/domain.hpp"
 #include "kmm/utils/geometry.hpp"
 
 namespace kmm {
 
+class TaskGraph;
+
 template<size_t N>
-struct DataChunk {
+struct ArrayChunk {
     MemoryId owner_id;
     Index<N> offset;
     Dim<N> size;
 };
 
 template<size_t N>
-class DataDistribution {
-    DataDistribution();
-
-    DataDistribution(Dim<N> array_size, Dim<N> chunk_size, std::vector<MemoryId> memories);
-
+class Distribution {
   public:
-    static DataDistribution from_chunks(
+    Distribution();
+    Distribution(Dim<N> array_size, Dim<N> chunk_size, std::vector<MemoryId> memories);
+
+    static Distribution from_chunks(
         Dim<N> array_size,
-        std::vector<DataChunk<N>> chunks,
-        std::vector<BufferId>& buffers
+        std::vector<ArrayChunk<N>> chunks,
+        bool allow_duplicates = false
     );
 
     size_t region_to_chunk_index(Bounds<N> region) const;
 
-    DataChunk<N> chunk(size_t index) const;
+    ArrayChunk<N> chunk(size_t index) const;
 
     size_t num_chunks() const {
         return m_memories.size();
@@ -47,6 +50,27 @@ class DataDistribution {
     std::array<size_t, N> m_chunks_count;
     std::vector<MemoryId> m_memories;
 };
+
+template<size_t N, typename M>
+Distribution<N> map_domain_to_distribution(
+    Dim<N> array_size,
+    const Domain& domain,
+    M mapper,
+    bool allow_duplicates = false
+) {
+    std::vector<ArrayChunk<N>> chunks;
+
+    for (const auto& chunk : domain.chunks) {
+        Bounds<N> bounds = mapper(chunk, Bounds<N>(array_size));
+
+        chunks.push_back(ArrayChunk<N> {
+            .owner_id = chunk.owner_id.as_memory(),
+            .offset = bounds.begin(),
+            .size = bounds.sizes()});
+    }
+
+    return Distribution<N>::from_chunks(array_size, chunks, allow_duplicates);
+}
 
 #define KMM_INSTANTIATE_ARRAY_IMPL(NAME) \
     template class NAME<0>; /* NOLINT */ \

@@ -36,13 +36,13 @@ struct DomainChunk {
     DomainDim size;
 };
 
-struct DomainDistribution {
+struct Domain {
     std::vector<DomainChunk> chunks;
 };
 
 template<typename P>
-struct IntoDomainDistribution {
-    static DomainDistribution call(P partition, const SystemInfo& info, ExecutionSpace space) {
+struct IntoDomain {
+    static Domain call(P partition, const SystemInfo& info, ExecutionSpace space) {
         return partition;
     }
 };
@@ -52,7 +52,7 @@ struct TileDomain {
         m_domain_size(domain_size),
         m_tile_size(tile_size) {}
 
-    DomainDistribution operator()(const SystemInfo& info, ExecutionSpace space) const;
+    Domain operator()(const SystemInfo& info, ExecutionSpace space) const;
 
   private:
     DomainBounds m_domain_size;
@@ -60,12 +60,8 @@ struct TileDomain {
 };
 
 template<>
-struct IntoDomainDistribution<TileDomain> {
-    static DomainDistribution call(
-        TileDomain partition,
-        const SystemInfo& info,
-        ExecutionSpace space
-    ) {
+struct IntoDomain<TileDomain> {
+    static Domain call(TileDomain partition, const SystemInfo& info, ExecutionSpace space) {
         return partition(info, space);
     }
 };

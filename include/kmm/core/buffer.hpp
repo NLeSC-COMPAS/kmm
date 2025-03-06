@@ -60,22 +60,6 @@ struct BufferAccessor {
     void* address;
 };
 
-/**
- * Manages the lifetime and access of a buffer. The `BufferGuard` struct extends `BufferAccessor`
- * and ensures that the buffer's access and lifetime are properly managed using a shared tracker.
- */
-struct BufferGuard: public BufferAccessor {
-    BufferGuard(BufferAccessor accessor, std::shared_ptr<void> tracker) :
-        BufferAccessor(accessor),
-        m_tracker(tracker) {}
-
-    BufferAccessor accessor() const {
-        return *this;
-    }
-
-    std::shared_ptr<void> m_tracker;
-};
-
 inline std::ostream& operator<<(std::ostream& f, AccessMode mode) {
     switch (mode) {
         case AccessMode::Read:

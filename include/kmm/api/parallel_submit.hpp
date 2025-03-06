@@ -4,7 +4,7 @@
 #include "kmm/api/task_group.hpp"
 #include "kmm/core/buffer.hpp"
 #include "kmm/core/identifiers.hpp"
-#include "kmm/dag/domain_distribution.hpp"
+#include "kmm/dag/domain.hpp"
 #include "kmm/worker/worker.hpp"
 
 namespace kmm {
@@ -48,24 +48,23 @@ EventId parallel_submit_impl(
     std::index_sequence<Is...>,
     Worker& worker,
     const SystemInfo& system_info,
-    const DomainDistribution& partition,
+    const Domain& domain,
     Launcher launcher,
     Args&&... args
 ) {
     std::tuple<ArgumentHandler<Args>...> handlers = {
         ArgumentHandler<Args>(std::forward<Args>(args))...};
 
+    auto init = TaskGroupInit {
+        .worker = worker,  //
+        .domain = domain};
+
+    (std::get<Is>(handlers).initialize(init), ...);
+
     return worker.with_task_graph([&](TaskGraph& graph) {
         EventList events;
 
-        auto init = TaskGroupInit {
-            .worker = worker,  //
-            .graph = graph,
-            .partition = partition};
-
-        (std::get<Is>(handlers).initialize(init), ...);
-
-        for (const DomainChunk& chunk : partition.chunks) {
+        for (const DomainChunk& chunk : domain.chunks) {
             ProcessorId processor_id = chunk.owner_id;
 
             auto instance = TaskInstance {
@@ -95,11 +94,11 @@ EventId parallel_submit_impl(
         auto result = TaskGroupFinalize {
             .worker = worker,  //
             .graph = graph,
-            .events = std::move(events)};
+            .events = events};
 
         (std::get<Is>(handlers).finalize(result), ...);
 
-        return graph.join_events(result.events);
+        return graph.join_events(events);
     });
 }
 }  // namespace detail
@@ -108,7 +107,7 @@ template<typename Launcher, typename... Args>
 EventId parallel_submit(
     Worker& worker,
     const SystemInfo& system_info,
-    const DomainDistribution& partition,
+    const Domain& partition,
     Launcher launcher,
     Args&&... args
 ) {

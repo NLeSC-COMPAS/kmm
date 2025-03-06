@@ -41,7 +41,7 @@ class Runtime {
         return kmm::parallel_submit(
             *m_worker,
             info(),
-            DomainDistribution {{chunk}},
+            Domain {{chunk}},
             std::forward<L>(launcher),
             std::forward<Args>(args)...
         );
@@ -50,18 +50,18 @@ class Runtime {
     /**
      * Submit a set of tasks to the runtime systems.
      *
-     * @param dist The distribution describing how the work is split.
+     * @param dist The domain describing how the work is split.
      * @param launcher The task launcher.
      * @param args The arguments that are forwarded to the launcher.
      * @return The event identifier for the submitted task.
      */
     template<typename D, typename L, typename... Args>
-    EventId parallel_submit(D&& dist, L&& launcher, Args&&... args) const {
+    EventId parallel_submit(D&& domain, L&& launcher, Args&&... args) const {
         return kmm::parallel_submit(
             *m_worker,
             info(),
-            IntoDomainDistribution<std::decay_t<D>>::call(
-                std::forward<D>(dist),
+            IntoDomain<std::decay_t<D>>::call(
+                std::forward<D>(domain),
                 info(),
                 std::decay_t<L>::execution_space
             ),
@@ -73,16 +73,16 @@ class Runtime {
     /**
      * Submit a set of tasks to the runtime systems.
      *
-     * @param index_space The index space defining the work dimensions.
+     * @param domain_size The index space defining the domain dimensions.
      * @param partitioner The partitioner describing how the work is split.
      * @param launcher The task launcher.
      * @param args The arguments that are forwarded to the launcher.
      * @return The event identifier for the submitted task.
      */
     template<size_t N = DOMAIN_DIMS, typename L, typename... Args>
-    EventId parallel_submit(Dim<N> index_space, Dim<N> chunk, L&& launcher, Args&&... args) const {
+    EventId parallel_submit(Dim<N> domain_size, Dim<N> chunk, L&& launcher, Args&&... args) const {
         return this->parallel_submit(
-            TileDomain(index_space, chunk),
+            TileDomain(domain_size, chunk),
             std::forward<L>(launcher),
             std::forward<Args>(args)...
         );
@@ -104,8 +104,8 @@ class Runtime {
         auto layout = DataLayout::for_type<T>().repeat(checked_cast<size_t>(shape.volume()));
         auto buffer_id = allocate_bytes(data, layout, memory_id);
 
-        auto chunk = DataChunk<N> {memory_id, Index<N>::zero(), shape};
-        auto dist = DataDistribution<N> {shape, {chunk}};
+        auto chunk = ArrayChunk<N> {memory_id, Index<N>::zero(), shape};
+        auto dist = Distribution<N> {shape, {chunk}};
         auto buffers = std::vector {buffer_id};
         auto handle = std::make_shared<ArrayHandle<N>>(
             *m_worker,

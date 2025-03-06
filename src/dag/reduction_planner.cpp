@@ -1,24 +1,18 @@
 #include <algorithm>
 
-#include "kmm/dag/dist_data_planner.hpp"
-#include "kmm/dag/dist_reduction_planner.hpp"
+#include "kmm/dag/array_planner.hpp"
+#include "kmm/dag/reduction_planner.hpp"
 #include "kmm/worker/worker.hpp"
 
 namespace kmm {
 
-MemoryId ReductionPlanner::affinity_memory() const {
-    return m_inputs.at(0).memory_id;
-}
-
-BufferRequirement ReductionPlanner::add_chunk(
+BufferRequirement LocalReductionPlanner::plan_access(
     TaskGraph& graph,
     MemoryId memory_id,
     size_t replication_factor
 ) {
     auto num_elements = checked_mul(m_num_elements, replication_factor);
-    auto layout = DataLayout {
-        .size_in_bytes = checked_mul(m_dtype.size_in_bytes(), num_elements),
-        .alignment = m_dtype.alignment()};
+    auto layout = DataLayout::for_type(m_dtype).repeat(num_elements);
 
     // Create a new buffer
     auto buffer_id = graph.create_buffer(layout);
@@ -193,7 +187,7 @@ EventId insert_hierarchical_reduction(
     return event_id;
 }
 
-EventId ReductionPlanner::finalize(TaskGraph& graph, BufferId buffer_id, MemoryId memory_id) {
+EventId LocalReductionPlanner::finalize(TaskGraph& graph, BufferId buffer_id, MemoryId memory_id) {
     auto reduction = ReductionOutput {
         .operation = m_reduction,  //
         .data_type = m_dtype,
@@ -208,5 +202,71 @@ EventId ReductionPlanner::finalize(TaskGraph& graph, BufferId buffer_id, MemoryI
     m_inputs.clear();
     return event_id;
 }
+
+template<size_t N>
+ReductionPlanner<N>::ReductionPlanner(
+    const ArrayInstance<N>* instance,
+    DataType data_type,
+    Reduction operation
+) :
+    m_instance(instance),
+    m_dtype(data_type),
+    m_reduction(operation) {
+    KMM_ASSERT(m_instance);
+    size_t num_chunks = m_instance->distribution().num_chunks();
+    m_partial_inputs.resize(num_chunks);
+}
+
+template<size_t N>
+BufferRequirement ReductionPlanner<N>::plan_access(
+    TaskGraph& graph,
+    MemoryId memory_id,
+    Bounds<N>& access_region,
+    size_t replication_factor
+) {
+    KMM_ASSERT(m_instance != nullptr);
+    const auto& dist = m_instance->distribution();
+    auto chunk_index = dist.region_to_chunk_index(access_region);
+    auto chunk = dist.chunk(chunk_index);
+
+    access_region = Bounds<N>::from_offset_size(chunk.offset, chunk.size);
+
+    if (m_partial_inputs[chunk_index] == nullptr) {
+        m_partial_inputs[chunk_index] =
+            std::make_unique<LocalReductionPlanner>(chunk.size.volume(), m_dtype, m_reduction);
+    }
+
+    size_t input_index = m_partial_inputs[chunk_index]->m_inputs.size();
+    m_access_indices.emplace_back(chunk_index, input_index);
+
+    return m_partial_inputs[chunk_index]->plan_access(graph, memory_id, replication_factor);
+}
+
+template<size_t N>
+EventId ReductionPlanner<N>::finalize(TaskGraph& graph, const EventList& events) {
+    KMM_ASSERT(m_instance != nullptr);
+    auto deps = EventList();
+    const auto& dist = m_instance->distribution();
+
+    for (size_t i = 0; i < m_access_indices.size(); i++) {
+        auto [a, b] = m_access_indices[i];
+        m_partial_inputs[a]->m_inputs[b].dependencies.push_back(events[i]);
+    }
+
+    for (size_t i = 0; i < dist.num_chunks(); i++) {
+        if (m_partial_inputs[i] == nullptr) {
+            continue;
+        }
+
+        auto event_id =
+            m_partial_inputs[i]->finalize(graph, m_instance->buffers()[i], dist.chunk(i).owner_id);
+
+        deps.push_back(event_id);
+    }
+
+    return graph.join_events(deps);
+}
+
+KMM_INSTANTIATE_ARRAY_IMPL(ReductionPlanner)
 
 }  // namespace kmm

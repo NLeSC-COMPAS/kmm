@@ -1,4 +1,5 @@
-#include "kmm/dag/data_distribution.hpp"
+#include "kmm/dag/distribution.hpp"
+#include "kmm/dag/task_graph.hpp"
 #include "kmm/utils/integer_fun.hpp"
 
 namespace kmm {
@@ -59,10 +60,10 @@ size_t region2index(
 }
 
 template<size_t N>
-DataDistribution<N>::DataDistribution() : DataDistribution(Dim<N>::zero(), Dim<N>::one(), {}) {}
+Distribution<N>::Distribution() : Distribution(Dim<N>::zero(), Dim<N>::one(), {}) {}
 
 template<size_t N>
-DataDistribution<N>::DataDistribution(
+Distribution<N>::Distribution(
     Dim<N> array_size,
     Dim<N> chunk_size,
     std::vector<MemoryId> memories
@@ -87,10 +88,10 @@ DataDistribution<N>::DataDistribution(
 }
 
 template<size_t N>
-DataDistribution<N> DataDistribution<N>::from_chunks(
+Distribution<N> Distribution<N>::from_chunks(
     Dim<N> array_size,
-    std::vector<DataChunk<N>> chunks,
-    std::vector<BufferId>& buffers
+    std::vector<ArrayChunk<N>> chunks,
+    bool allow_duplicates
 ) {
     size_t total_chunk_count = 1;
     std::array<size_t, N> chunks_count;
@@ -111,9 +112,8 @@ DataDistribution<N> DataDistribution<N>::from_chunks(
         total_chunk_count = checked_mul(total_chunk_count, chunks_count[i]);
     }
 
-    static constexpr BufferId INVALID_BUFFER_ID = BufferId(~uint64_t(0));
-    auto new_buffers = std::vector<BufferId>(total_chunk_count, INVALID_BUFFER_ID);
     auto memories = std::vector<MemoryId>(total_chunk_count, MemoryId::host());
+    auto visited = std::vector<bool>(total_chunk_count, false);
 
     for (size_t index = 0; index < chunks.size(); index++) {
         const auto chunk = chunks[index];
@@ -138,19 +138,25 @@ DataDistribution<N> DataDistribution<N>::from_chunks(
             ));
         }
 
-        if (new_buffers[linear_index] != INVALID_BUFFER_ID) {
-            throw std::runtime_error(fmt::format(
-                "invalid write access pattern, the region {} is written to by more one task",
-                Bounds<N>::from_offset_size(expected_offset, expected_size)
-            ));
-        }
+        if (visited[linear_index]) {
+            if (!allow_duplicates) {
+                throw std::runtime_error(fmt::format(
+                    "invalid write access pattern, the region {} is written to by more one task",
+                    Bounds<N>::from_offset_size(expected_offset, expected_size)
+                ));
+            }
 
-        memories[linear_index] = chunk.owner_id;
-        new_buffers[linear_index] = buffers[index];
+            if (memories[linear_index] != chunk.owner_id) {
+                memories[linear_index] = MemoryId::host();
+            }
+        } else {
+            visited[linear_index] = true;
+            memories[linear_index] = chunk.owner_id;
+        }
     }
 
     for (size_t i = 0; i < total_chunk_count; i++) {
-        if (new_buffers[i] == INVALID_BUFFER_ID) {
+        if (!visited[i]) {
             auto region = index2region(i, chunks_count, chunk_size, array_size);
 
             throw std::runtime_error(
@@ -159,18 +165,16 @@ DataDistribution<N> DataDistribution<N>::from_chunks(
         }
     }
 
-    buffers = std::move(new_buffers);
-
     return {array_size, chunk_size, std::move(memories)};
 }
 
 template<size_t N>
-size_t DataDistribution<N>::region_to_chunk_index(Bounds<N> region) const {
+size_t Distribution<N>::region_to_chunk_index(Bounds<N> region) const {
     return region2index(region, m_chunk_size, m_array_size, m_chunks_count);
 }
 
 template<size_t N>
-DataChunk<N> DataDistribution<N>::chunk(size_t index) const {
+ArrayChunk<N> Distribution<N>::chunk(size_t index) const {
     if (index >= m_memories.size()) {
         throw std::runtime_error(fmt::format(
             "chunk {} is out of range, there are only {} chunk(s)",
@@ -181,12 +185,12 @@ DataChunk<N> DataDistribution<N>::chunk(size_t index) const {
 
     auto region = index2region(index, m_chunks_count, m_chunk_size, m_array_size);
 
-    return DataChunk<N> {
+    return ArrayChunk<N> {
         .owner_id = m_memories[index],
         .offset = region.begin(),
         .size = region.sizes()};
 }
 
-KMM_INSTANTIATE_ARRAY_IMPL(DataDistribution)
+KMM_INSTANTIATE_ARRAY_IMPL(Distribution)
 
 }  // namespace kmm

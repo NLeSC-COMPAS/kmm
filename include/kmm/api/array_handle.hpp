@@ -1,7 +1,8 @@
 #pragma once
 
 #include "kmm/core/identifiers.hpp"
-#include "kmm/dag/data_distribution.hpp"
+#include "kmm/dag/array_planner.hpp"
+#include "kmm/dag/distribution.hpp"
 #include "kmm/utils/geometry.hpp"
 
 namespace kmm {
@@ -13,15 +14,25 @@ class ArrayHandle: public std::enable_shared_from_this<ArrayHandle<N>> {
     KMM_NOT_COPYABLE_OR_MOVABLE(ArrayHandle)
 
   public:
-    ArrayHandle(Worker& worker, std::pair<DataDistribution<N>, std::vector<BufferId>> distribution);
+    ArrayHandle(Worker& worker, ArrayInstance<N> instance);
     ~ArrayHandle();
+
+    static std::shared_ptr<ArrayHandle> instantiate(
+        Worker& worker,
+        Distribution<N> dist,
+        DataLayout element_layout
+    );
 
     BufferId buffer(size_t index) const;
     void copy_bytes(void* dest_addr, size_t element_size) const;
     void synchronize() const;
 
-    const DataDistribution<N>& distribution() const {
-        return m_distribution;
+    const ArrayInstance<N>& instance() const {
+        return m_instance;
+    }
+
+    const Distribution<N>& distribution() const {
+        return m_instance.distribution();
     }
 
     const Worker& worker() const {
@@ -29,9 +40,8 @@ class ArrayHandle: public std::enable_shared_from_this<ArrayHandle<N>> {
     }
 
   private:
-    DataDistribution<N> m_distribution;
     std::shared_ptr<Worker> m_worker;
-    std::vector<BufferId> m_buffers;
+    ArrayInstance<N> m_instance;
 };
 
 }  // namespace kmm

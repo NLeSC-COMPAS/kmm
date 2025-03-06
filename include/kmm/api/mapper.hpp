@@ -4,7 +4,7 @@
 
 #include "kmm/api/argument.hpp"
 #include "kmm/core/reduction.hpp"
-#include "kmm/dag/domain_distribution.hpp"
+#include "kmm/dag/domain.hpp"
 #include "kmm/utils/geometry.hpp"
 #include "kmm/utils/integer_fun.hpp"
 

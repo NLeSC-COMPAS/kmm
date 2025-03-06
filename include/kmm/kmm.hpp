@@ -8,5 +8,5 @@
 #include "kmm/api/runtime.hpp"
 #include "kmm/api/task_group.hpp"
 #include "kmm/api/view_argument.hpp"
-#include "kmm/dag/data_distribution.hpp"
-#include "kmm/dag/domain_distribution.hpp"
+#include "kmm/dag/distribution.hpp"
+#include "kmm/dag/domain.hpp"

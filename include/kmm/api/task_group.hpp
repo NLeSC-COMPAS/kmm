@@ -1,7 +1,7 @@
 #pragma once
 
 #include "kmm/core/identifiers.hpp"
-#include "kmm/dag/domain_distribution.hpp"
+#include "kmm/dag/domain.hpp"
 
 namespace kmm {
 
@@ -13,8 +13,7 @@ struct TaskGroupInit {
 
   public:
     Worker& worker;
-    TaskGraph& graph;
-    const DomainDistribution& partition;
+    const Domain& domain;
 };
 
 struct TaskInstance {
@@ -41,7 +40,7 @@ struct TaskGroupFinalize {
   public:
     Worker& worker;
     TaskGraph& graph;
-    EventList events;
+    const EventList& events;
 };
 
 }  // namespace kmm
