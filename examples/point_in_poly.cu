@@ -4,6 +4,9 @@
     #include <rocrand/rocrand_kernel.h>
 #endif
 
+#include "spdlog/spdlog.h"
+
+#include "kmm/api/launcher.hpp"
 #include "kmm/api/mapper.hpp"
 #include "kmm/api/runtime.hpp"
 

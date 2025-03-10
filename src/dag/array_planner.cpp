@@ -4,7 +4,7 @@
 namespace kmm {
 
 template<size_t N>
-ArrayInstance<N> ArrayInstance<N>::instantiate(
+std::unique_ptr<ArrayInstance<N>> ArrayInstance<N>::instantiate(
     TaskGraph& graph,
     Distribution<N> dist,
     DataLayout element_layout
@@ -17,7 +17,9 @@ ArrayInstance<N> ArrayInstance<N>::instantiate(
         buffers[i] = graph.create_buffer(element_layout.repeat(chunk.size.volume()));
     }
 
-    return {std::move(dist), std::move(buffers), element_layout};
+    return std::unique_ptr<ArrayInstance<N>>(
+        new ArrayInstance<N>(std::move(dist), std::move(buffers), element_layout)
+    );
 }
 
 template<size_t N>
@@ -31,7 +33,7 @@ void ArrayInstance<N>::destroy(TaskGraph& graph) {
 }
 
 template<size_t N>
-BufferRequirement ArrayReadPlanner<N>::plan_access(
+BufferRequirement ArrayReadPlanner<N>::prepare_access(
     TaskGraph& graph,
     MemoryId memory_id,
     Bounds<N>& region
@@ -52,12 +54,12 @@ BufferRequirement ArrayReadPlanner<N>::plan_access(
 }
 
 template<size_t N>
-void ArrayReadPlanner<N>::finalize(TaskGraph& graph, const EventList& access_events) {
+void ArrayReadPlanner<N>::finalize_access(TaskGraph& graph, EventId event_id) {
     // Nothing for now
 }
 
 template<size_t N>
-BufferRequirement ArrayWritePlanner<N>::plan_access(
+BufferRequirement ArrayWritePlanner<N>::prepare_access(
     TaskGraph& graph,
     MemoryId memory_id,
     Bounds<N>& region
@@ -88,7 +90,7 @@ BufferRequirement ArrayWritePlanner<N>::plan_access(
 }
 
 template<size_t N>
-void ArrayWritePlanner<N>::finalize(TaskGraph& graph, const EventList& access_events) {
+void ArrayWritePlanner<N>::finalize_access(TaskGraph& graph, EventId event_id) {
     // Nothing for now
 }
 

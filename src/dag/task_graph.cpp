@@ -26,8 +26,9 @@ BufferId TaskGraph::create_buffer(DataLayout layout) {
 }
 
 void TaskGraph::delete_buffer(BufferId id, EventList deps) {
-    // Erase the buffer
-    m_staged_buffer_deletions.push_back(id);
+    auto& meta = find_buffer_update(id);
+    meta.new_accesses.insert_all(std::move(deps));
+    meta.should_delete = true;
 }
 
 const EventList& TaskGraph::extract_buffer_dependencies(BufferId id) {
@@ -196,7 +197,6 @@ void TaskGraph::rollback() {
     m_events.clear();
     m_staged_new_buffers.clear();
     m_staged_delta_buffers.clear();
-    m_staged_buffer_deletions.clear();
 }
 
 EventId TaskGraph::commit() {
@@ -212,21 +212,15 @@ EventId TaskGraph::commit() {
         if (!delta.new_writes.is_empty()) {
             meta->last_write = join_events(std::move(delta.new_writes));
         }
-    }
 
-    for (auto& id : m_staged_buffer_deletions) {
-        auto it = m_buffers.find(id);
-        KMM_ASSERT(it != m_buffers.end());
-
-        auto meta = std::move(it->second);
-        m_buffers.erase(it);
-
-        insert_node(CommandBufferDelete {id}, std::move(meta->accesses));
+        if (delta.should_delete) {
+            insert_node(CommandBufferDelete {id}, std::move(meta->accesses));
+            m_buffers.erase(id);
+        }
     }
 
     m_staged_new_buffers.clear();
     m_staged_delta_buffers.clear();
-    m_staged_buffer_deletions.clear();
 
     return insert_barrier();
 }

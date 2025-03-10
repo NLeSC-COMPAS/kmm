@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include "spdlog/spdlog.h"
+
 #include "kmm/kmm.hpp"
 
 __global__ void initialize_range(kmm::Range<int64_t> range, kmm::GPUSubviewMut<float> output) {

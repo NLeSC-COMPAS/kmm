@@ -24,7 +24,7 @@ class ArrayInstance {
   public:
     ArrayInstance() = default;
 
-    static ArrayInstance instantiate(
+    static std::unique_ptr<ArrayInstance> instantiate(
         TaskGraph& graph,
         Distribution<N> dist,
         DataLayout element_layout
@@ -55,9 +55,9 @@ class ArrayReadPlanner {
   public:
     ArrayReadPlanner(const ArrayInstance<N>* instance = nullptr) : m_instance(instance) {}
 
-    BufferRequirement plan_access(TaskGraph& graph, MemoryId memory_id, Bounds<N>& region);
+    BufferRequirement prepare_access(TaskGraph& graph, MemoryId memory_id, Bounds<N>& region);
 
-    void finalize(TaskGraph& graph, const EventList& access_events);
+    void finalize_access(TaskGraph& graph, EventId event_id);
 
   private:
     const ArrayInstance<N>* m_instance;
@@ -68,9 +68,9 @@ class ArrayWritePlanner {
   public:
     ArrayWritePlanner(const ArrayInstance<N>* instance = nullptr) : m_instance(instance) {}
 
-    BufferRequirement plan_access(TaskGraph& graph, MemoryId memory_id, Bounds<N>& region);
+    BufferRequirement prepare_access(TaskGraph& graph, MemoryId memory_id, Bounds<N>& region);
 
-    void finalize(TaskGraph& graph, const EventList& access_events);
+    void finalize_access(TaskGraph& graph, EventId event_id);
 
   private:
     const ArrayInstance<N>* m_instance;

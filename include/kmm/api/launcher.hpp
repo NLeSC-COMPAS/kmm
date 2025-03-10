@@ -1,6 +1,7 @@
 #pragma once
 
 #include "kmm/core/resource.hpp"
+#include "kmm/dag/domain.hpp"
 
 namespace kmm {
 

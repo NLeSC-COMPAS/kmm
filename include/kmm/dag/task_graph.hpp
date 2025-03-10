@@ -88,6 +88,7 @@ class TaskGraph {
         BufferMeta* meta;
         EventList new_writes;
         EventList new_accesses;
+        bool should_delete = false;
     };
 
     BufferMetaUpdate& find_buffer_update(BufferId id);
@@ -114,7 +115,6 @@ class TaskGraph {
 
     std::vector<std::pair<BufferId, std::unique_ptr<BufferMeta>>> m_staged_new_buffers;
     std::unordered_map<BufferId, BufferMetaUpdate> m_staged_delta_buffers;
-    std::vector<BufferId> m_staged_buffer_deletions;
 };
 
 }  // namespace kmm

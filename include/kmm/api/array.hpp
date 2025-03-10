@@ -173,18 +173,18 @@ struct ArgumentHandler<Read<const Array<T, N>>> {
 
     void initialize(const TaskGroupInit& init) {}
 
-    type process_chunk(TaskInstance& task) {
+    type before_submit(TaskInstance& task) {
         auto region = Bounds<N>(m_array_shape);
         size_t buffer_index = task.add_buffer_requirement(  //
-            m_planner.plan_access(task.graph, task.memory_id, region)
+            m_planner.prepare_access(task.graph, task.memory_id, region)
         );
 
         auto domain = views::dynamic_domain<N> {region.sizes()};
         return {buffer_index, domain};
     }
 
-    void finalize(const TaskGroupFinalize& result) {
-        m_planner.finalize(result.graph, result.events);
+    void after_submit(const TaskSubmissionResult& result) {
+        m_planner.finalize_access(result.graph, result.event_id);
     }
 
   private:
@@ -215,18 +215,18 @@ struct ArgumentHandler<Read<const Array<T, N>, M>> {
 
     void initialize(const TaskGroupInit& init) {}
 
-    type process_chunk(TaskInstance& task) {
+    type before_submit(TaskInstance& task) {
         Bounds<N> region = m_access_mapper(task.chunk, Bounds<N>(m_array_shape));
         auto buffer_index = task.add_buffer_requirement(  //
-            m_planner.plan_access(task.graph, task.memory_id, region)
+            m_planner.prepare_access(task.graph, task.memory_id, region)
         );
 
         auto domain = views::dynamic_subdomain<N> {region.begin(), region.sizes()};
         return {buffer_index, domain};
     }
 
-    void finalize(const TaskGroupFinalize& result) {
-        m_planner.finalize(result.graph, result.events);
+    void after_submit(const TaskSubmissionResult& result) {
+        m_planner.finalize_access(result.graph, result.event_id);
     }
 
   private:
@@ -257,18 +257,18 @@ struct ArgumentHandler<Write<Array<T, N>>> {
         m_planner = ArrayWritePlanner<N>(&m_handle->instance());
     }
 
-    type process_chunk(TaskInstance& task) {
+    type before_submit(TaskInstance& task) {
         auto access_region = Bounds<N>(m_array.shape());
         auto buffer_index = task.add_buffer_requirement(
-            m_planner.plan_access(task.graph, task.memory_id, access_region)
+            m_planner.prepare_access(task.graph, task.memory_id, access_region)
         );
 
         auto domain = views::dynamic_domain<N> {access_region.sizes()};
         return {buffer_index, domain};
     }
 
-    void finalize(const TaskGroupFinalize& result) {
-        m_planner.finalize(result.graph, result.events);
+    void after_submit(const TaskSubmissionResult& result) {
+        m_planner.finalize_access(result.graph, result.event_id);
     }
 
   private:
@@ -306,18 +306,18 @@ struct ArgumentHandler<Write<Array<T, N>, M>> {
         m_planner = ArrayWritePlanner<N>(&m_handle->instance());
     }
 
-    type process_chunk(TaskInstance& task) {
+    type before_submit(TaskInstance& task) {
         auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_shape));
         auto buffer_index = task.add_buffer_requirement(
-            m_planner.plan_access(task.graph, task.memory_id, access_region)
+            m_planner.prepare_access(task.graph, task.memory_id, access_region)
         );
 
         auto domain = views::dynamic_subdomain<N> {access_region.begin(), access_region.sizes()};
         return {buffer_index, domain};
     }
 
-    void finalize(const TaskGroupFinalize& result) {
-        m_planner.finalize(result.graph, result.events);
+    void after_submit(const TaskSubmissionResult& result) {
+        m_planner.finalize_access(result.graph, result.event_id);
     }
 
   private:
@@ -356,13 +356,14 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
 
         m_handle = m_array.handle();
         m_planner = ReductionPlanner<N>(&m_handle->instance(), DataType::of<T>(), m_operation);
+        m_remaining = init.domain.chunks.size();
     }
 
-    type process_chunk(TaskInstance& task) {
+    type before_submit(TaskInstance& task) {
         auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_array.shape()));
 
         size_t buffer_index = task.add_buffer_requirement(
-            m_planner.plan_access(task.graph, task.memory_id, access_region)
+            m_planner.prepare_access(task.graph, task.memory_id, access_region)
         );
 
         views::dynamic_domain<N> domain = {access_region.begin(), access_region.sizes()};
@@ -370,8 +371,12 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
         return {buffer_index, domain};
     }
 
-    void finalize(const TaskGroupFinalize& result) {
-        m_planner.finalize(result.graph, result.events);
+    void after_submit(const TaskSubmissionResult& result) {
+        m_planner.finalize_access(result.graph, result.event_id);
+
+        if (--m_remaining == 0) {
+            m_planner.finalize(result.graph);
+        }
     }
 
   private:
@@ -379,6 +384,7 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
     std::shared_ptr<const ArrayHandle<N>> m_handle;
     Reduction m_operation;
     ReductionPlanner<N> m_planner;
+    size_t m_remaining = 0;
 };
 
 template<typename T, size_t N, typename M, typename P>
@@ -420,15 +426,16 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
 
         m_handle = m_array.handle().shared_from_this();
         m_planner = ReductionPlanner<N>(&m_handle->instance(), DataType::of<T>(), m_operation);
+        m_remaining = init.domain.chunks.size();
     }
 
-    type process_chunk(TaskInstance& task) {
+    type before_submit(TaskInstance& task) {
         auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_array.shape()));
         auto private_region = m_private_mapper(task.chunk);
 
         auto rep = checked_cast<size_t>(private_region.size());
         size_t buffer_index = task.add_buffer_requirement(
-            m_planner.plan_access(task.graph, task.memory_id, access_region, rep)
+            m_planner.prepare_access(task.graph, task.memory_id, access_region, rep)
         );
 
         views::dynamic_subdomain<K + N> domain = {
@@ -438,8 +445,12 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
         return {buffer_index, domain};
     }
 
-    void finalize(const TaskGroupFinalize& result) {
-        m_planner.finalize(result.graph, result.events);
+    void after_submit(const TaskSubmissionResult& result) {
+        m_planner.finalize_access(result.graph, result.event_id);
+
+        if (--m_remaining == 0) {
+            m_planner.finalize(result.graph);
+        }
     }
 
   private:
@@ -449,6 +460,7 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
     ReductionPlanner<N> m_planner;
     M m_access_mapper;
     P m_private_mapper;
+    size_t m_remaining = 0;
 };
 
 }  // namespace kmm

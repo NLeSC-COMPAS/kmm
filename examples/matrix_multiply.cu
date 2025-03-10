@@ -1,3 +1,5 @@
+#include "spdlog/spdlog.h"
+
 #include "kmm/kmm.hpp"
 
 void fill_array(kmm::Bounds<2> region, kmm::SubviewMut<float, 2> array, float value) {

@@ -66,11 +66,11 @@ struct ArgumentHandler {
         // Nothing to do
     }
 
-    type process_chunk(TaskInstance& builder) {
+    type before_submit(TaskInstance& builder) {
         return Argument<T>::pack(builder, m_value);
     }
 
-    void finalize(const TaskGroupFinalize& result) {
+    void after_submit(const TaskSubmissionResult& result) {
         // Nothing to do
     }
 

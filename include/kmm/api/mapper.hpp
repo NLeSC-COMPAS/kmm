@@ -233,11 +233,11 @@ struct ArgumentHandler<IndexMap> {
 
     void initialize(const TaskGroupInit& init) {}
 
-    type process_chunk(TaskInstance& builder) {
+    type before_submit(TaskInstance& builder) {
         return m_mapper(builder.chunk).get_or_default(0);
     }
 
-    void finalize(const TaskGroupFinalize& result) {}
+    void after_submit(const TaskSubmissionResult& result) {}
 
   private:
     IndexMap m_mapper;
@@ -256,11 +256,11 @@ struct ArgumentHandler<MultiIndexMap<N>> {
 
     void initialize(const TaskGroupInit& init) {}
 
-    type process_chunk(TaskInstance& builder) {
+    type before_submit(TaskInstance& builder) {
         return m_mapper(builder.chunk);
     }
 
-    void finalize(const TaskGroupFinalize& result) {}
+    void after_submit(const TaskSubmissionResult& result) {}
 
   private:
     MultiIndexMap<N> m_mapper;

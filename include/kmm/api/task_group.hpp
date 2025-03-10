@@ -34,13 +34,14 @@ struct TaskInstance {
     }
 };
 
-struct TaskGroupFinalize {
-    KMM_NOT_COPYABLE_OR_MOVABLE(TaskGroupFinalize)
+struct TaskSubmissionResult {
+    KMM_NOT_COPYABLE_OR_MOVABLE(TaskSubmissionResult)
 
   public:
     Worker& worker;
     TaskGraph& graph;
-    const EventList& events;
+    EventId event_id;
+    EventList& dependencies;
 };
 
 }  // namespace kmm

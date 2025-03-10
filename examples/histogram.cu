@@ -1,5 +1,7 @@
 #include <random>
 
+#include "spdlog/spdlog.h"
+
 #include "kmm/kmm.hpp"
 
 void initialize_image(

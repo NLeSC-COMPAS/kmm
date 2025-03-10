@@ -14,7 +14,7 @@ class ArrayHandle: public std::enable_shared_from_this<ArrayHandle<N>> {
     KMM_NOT_COPYABLE_OR_MOVABLE(ArrayHandle)
 
   public:
-    ArrayHandle(Worker& worker, ArrayInstance<N> instance);
+    ArrayHandle(Worker& worker, std::unique_ptr<ArrayInstance<N>> instance);
     ~ArrayHandle();
 
     static std::shared_ptr<ArrayHandle> instantiate(
@@ -28,11 +28,11 @@ class ArrayHandle: public std::enable_shared_from_this<ArrayHandle<N>> {
     void synchronize() const;
 
     const ArrayInstance<N>& instance() const {
-        return m_instance;
+        return *m_instance;
     }
 
     const Distribution<N>& distribution() const {
-        return m_instance.distribution();
+        return m_instance->distribution();
     }
 
     const Worker& worker() const {
@@ -41,7 +41,7 @@ class ArrayHandle: public std::enable_shared_from_this<ArrayHandle<N>> {
 
   private:
     std::shared_ptr<Worker> m_worker;
-    ArrayInstance<N> m_instance;
+    std::unique_ptr<ArrayInstance<N>> m_instance;
 };
 
 }  // namespace kmm

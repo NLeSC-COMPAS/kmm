@@ -3,6 +3,7 @@
 #include <string>
 
 #include "kmm/kmm.hpp"
+#include "kmm/utils/integer_fun.hpp"
 
 using real_type = float;
 const unsigned int max_iterations = 10;

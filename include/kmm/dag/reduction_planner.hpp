@@ -22,7 +22,7 @@ class LocalReductionPlanner {
         m_dtype(data_type),
         m_reduction(operation) {}
 
-    BufferRequirement plan_access(
+    BufferRequirement prepare_access(
         TaskGraph& graph,
         MemoryId memory_id,
         size_t replication_factor = 1
@@ -44,21 +44,23 @@ class ReductionPlanner {
     ReductionPlanner() = default;
     ReductionPlanner(const ArrayInstance<N>* instance, DataType data_type, Reduction operation);
 
-    BufferRequirement plan_access(
+    BufferRequirement prepare_access(
         TaskGraph& graph,
         MemoryId memory_id,
         Bounds<N>& access_region,
         size_t replication_factor = 1
     );
 
-    EventId finalize(TaskGraph& graph, const EventList& events);
+    void finalize_access(TaskGraph& graph, EventId event_id);
+
+    EventId finalize(TaskGraph& graph);
 
   private:
     const ArrayInstance<N>* m_instance = nullptr;
     DataType m_dtype = ScalarKind::Invalid;
     Reduction m_reduction = Reduction::Invalid;
     std::vector<std::unique_ptr<LocalReductionPlanner>> m_partial_inputs;
-    std::vector<std::pair<size_t, size_t>> m_access_indices;
+    LocalReductionPlanner* m_last_access;
 };
 
 }  // namespace kmm

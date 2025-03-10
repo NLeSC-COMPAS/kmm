@@ -78,7 +78,7 @@ EventId parallel_submit_impl(
             auto task = std::make_shared<ComputeTaskImpl<Launcher, packed_argument_t<Args>...>>(
                 chunk,
                 launcher,
-                std::get<Is>(handlers).process_chunk(instance)...
+                std::get<Is>(handlers).before_submit(instance)...
             );
 
             EventId event_id = graph.insert_compute_task(
@@ -89,14 +89,15 @@ EventId parallel_submit_impl(
             );
 
             events.push_back(event_id);
+
+            auto result = TaskSubmissionResult {
+                .worker = worker,  //
+                .graph = graph,
+                .event_id = event_id,
+                .dependencies = events};
+
+            (std::get<Is>(handlers).after_submit(result), ...);
         }
-
-        auto result = TaskGroupFinalize {
-            .worker = worker,  //
-            .graph = graph,
-            .events = events};
-
-        (std::get<Is>(handlers).finalize(result), ...);
 
         return graph.join_events(events);
     });

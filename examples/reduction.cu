@@ -1,3 +1,5 @@
+#include "spdlog/spdlog.h"
+
 #include "kmm/kmm.hpp"
 
 __global__ void initialize_matrix_kernel(

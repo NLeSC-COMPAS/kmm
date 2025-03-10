@@ -8,13 +8,15 @@
 namespace kmm {
 
 template<size_t N>
-ArrayHandle<N>::ArrayHandle(Worker& worker, ArrayInstance<N> instance) :
+ArrayHandle<N>::ArrayHandle(Worker& worker, std::unique_ptr<ArrayInstance<N>> instance) :
     m_worker(worker.shared_from_this()),
-    m_instance(std::move(instance)) {}
+    m_instance(std::move(instance)) {
+    KMM_ASSERT(m_instance);
+}
 
 template<size_t N>
 ArrayHandle<N>::~ArrayHandle() {
-    m_worker->with_task_graph([&](auto& graph) { m_instance.destroy(graph); });
+    m_worker->with_task_graph([&](auto& graph) { m_instance->destroy(graph); });
 }
 
 template<size_t N>
@@ -32,7 +34,7 @@ std::shared_ptr<ArrayHandle<N>> ArrayHandle<N>::instantiate(
 
 template<size_t N>
 BufferId ArrayHandle<N>::buffer(size_t index) const {
-    return m_instance.buffers().at(index);
+    return m_instance->buffers().at(index);
 }
 
 template<size_t N>
@@ -40,7 +42,7 @@ void ArrayHandle<N>::synchronize() const {
     auto event_id = m_worker->with_task_graph([&](TaskGraph& graph) {
         auto deps = EventList {};
 
-        for (const auto& buffer_id : m_instance.buffers()) {
+        for (const auto& buffer_id : m_instance->buffers()) {
             deps.insert_all(graph.extract_buffer_dependencies(buffer_id));
         }
 
@@ -50,7 +52,7 @@ void ArrayHandle<N>::synchronize() const {
     m_worker->query_event(event_id, std::chrono::system_clock::time_point::max());
 
     // Access each buffer once to check for errors.
-    for (size_t i = 0; i < m_instance.buffers().size(); i++) {
+    for (size_t i = 0; i < m_instance->buffers().size(); i++) {
         //        auto memory_id = this->chunk(i).owner_id;
         //        m_worker->access_buffer(m_buffers[i], memory_id, AccessMode::Read);
         //        KMM_TODO();
@@ -105,18 +107,18 @@ void ArrayHandle<N>::copy_bytes(void* dest_addr, size_t element_size) const {
     auto event_id = m_worker->with_task_graph([&](TaskGraph& graph) {
         EventList deps;
 
-        for (size_t i = 0; i < m_instance.buffers().size(); i++) {
-            auto chunk = m_instance.distribution().chunk(i);
+        for (size_t i = 0; i < m_instance->buffers().size(); i++) {
+            auto chunk = distribution().chunk(i);
             auto region = Bounds<N>::from_offset_size(chunk.offset, chunk.size);
 
             auto task = std::make_shared<CopyOutTask<N>>(
                 dest_addr,
                 element_size,
-                m_instance.distribution().array_size(),
+                distribution().array_size(),
                 region
             );
 
-            auto buffer_id = m_instance.buffers()[i];
+            auto buffer_id = m_instance->buffers()[i];
             auto buffer = BufferRequirement {
                 .buffer_id = buffer_id,
                 .memory_id = MemoryId::host(),

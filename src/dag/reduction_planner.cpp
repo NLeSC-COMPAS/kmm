@@ -6,7 +6,7 @@
 
 namespace kmm {
 
-BufferRequirement LocalReductionPlanner::plan_access(
+BufferRequirement LocalReductionPlanner::prepare_access(
     TaskGraph& graph,
     MemoryId memory_id,
     size_t replication_factor
@@ -218,7 +218,7 @@ ReductionPlanner<N>::ReductionPlanner(
 }
 
 template<size_t N>
-BufferRequirement ReductionPlanner<N>::plan_access(
+BufferRequirement ReductionPlanner<N>::prepare_access(
     TaskGraph& graph,
     MemoryId memory_id,
     Bounds<N>& access_region,
@@ -236,22 +236,23 @@ BufferRequirement ReductionPlanner<N>::plan_access(
             std::make_unique<LocalReductionPlanner>(chunk.size.volume(), m_dtype, m_reduction);
     }
 
-    size_t input_index = m_partial_inputs[chunk_index]->m_inputs.size();
-    m_access_indices.emplace_back(chunk_index, input_index);
+    m_last_access = m_partial_inputs[chunk_index].get();
 
-    return m_partial_inputs[chunk_index]->plan_access(graph, memory_id, replication_factor);
+    return m_partial_inputs[chunk_index]->prepare_access(graph, memory_id, replication_factor);
 }
 
 template<size_t N>
-EventId ReductionPlanner<N>::finalize(TaskGraph& graph, const EventList& events) {
+void ReductionPlanner<N>::finalize_access(TaskGraph& graph, EventId event_id) {
+    KMM_ASSERT(m_last_access != nullptr);
+    m_last_access->m_inputs.back().dependencies.push_back(event_id);
+    m_last_access = nullptr;
+}
+
+template<size_t N>
+EventId ReductionPlanner<N>::finalize(TaskGraph& graph) {
     KMM_ASSERT(m_instance != nullptr);
     auto deps = EventList();
     const auto& dist = m_instance->distribution();
-
-    for (size_t i = 0; i < m_access_indices.size(); i++) {
-        auto [a, b] = m_access_indices[i];
-        m_partial_inputs[a]->m_inputs[b].dependencies.push_back(events[i]);
-    }
 
     for (size_t i = 0; i < dist.num_chunks(); i++) {
         if (m_partial_inputs[i] == nullptr) {
