@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
     } else {
         num_threads = std::stoi(argv[1]);
         num_chunks = std::stoi(argv[2]);
-        n = std::stol(argv[3]);
+        n = std::stoll(argv[3]);
     }
     ops *= double(n);
     mem *= double(n);
