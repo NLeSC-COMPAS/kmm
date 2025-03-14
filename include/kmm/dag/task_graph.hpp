@@ -24,7 +24,7 @@ class TaskGraph {
     TaskGraph();
     ~TaskGraph();
 
-    BufferId create_buffer(DataLayout layout);
+    BufferId create_buffer(BufferLayout layout);
 
     void delete_buffer(BufferId id, EventList deps = {});
 

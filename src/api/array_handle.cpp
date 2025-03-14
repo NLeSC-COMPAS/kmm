@@ -2,34 +2,36 @@
 
 #include "kmm/api/array.hpp"
 #include "kmm/memops/host_copy.hpp"
+#include "kmm/runtime/runtime.hpp"
 #include "kmm/utils/integer_fun.hpp"
-#include "kmm/worker/worker.hpp"
 
 namespace kmm {
 
 template<size_t N>
-ArrayHandle<N>::ArrayHandle(Worker& worker, std::unique_ptr<ArrayInstance<N>> instance) :
-    m_worker(worker.shared_from_this()),
+ArrayHandle<N>::ArrayHandle(Runtime& rt, std::unique_ptr<ArrayInstance<N>> instance) :
+    m_rt(rt.shared_from_this()),
     m_instance(std::move(instance)) {
     KMM_ASSERT(m_instance);
 }
 
 template<size_t N>
 ArrayHandle<N>::~ArrayHandle() {
-    m_worker->with_task_graph([&](auto& graph) { m_instance->destroy(graph); });
+    m_rt->with_task_graph([&](auto& graph) { m_instance->destroy(graph); });
 }
 
 template<size_t N>
 std::shared_ptr<ArrayHandle<N>> ArrayHandle<N>::instantiate(
-    Worker& worker,
+    Runtime& runtime,
     Distribution<N> dist,
-    DataLayout element_layout
+    DataType dtype
 ) {
-    auto instance = worker.with_task_graph([&](auto& graph) {
-        return ArrayInstance<N>::instantiate(graph, std::move(dist), element_layout);
+    auto instance = std::unique_ptr<ArrayInstance<N>> {};
+
+    runtime.with_task_graph([&](auto& graph) {
+        instance = ArrayInstance<N>::instantiate(graph, std::move(dist), dtype);
     });
 
-    return std::make_shared<ArrayHandle<N>>(worker, std::move(instance));
+    return std::make_shared<ArrayHandle<N>>(runtime, std::move(instance));
 }
 
 template<size_t N>
@@ -39,17 +41,19 @@ BufferId ArrayHandle<N>::buffer(size_t index) const {
 
 template<size_t N>
 void ArrayHandle<N>::synchronize() const {
-    auto event_id = m_worker->with_task_graph([&](TaskGraph& graph) {
+    EventId event_id;
+
+    m_rt->with_task_graph([&](TaskGraph& graph) {
         auto deps = EventList {};
 
         for (const auto& buffer_id : m_instance->buffers()) {
             deps.insert_all(graph.extract_buffer_dependencies(buffer_id));
         }
 
-        return graph.join_events(deps);
+        event_id = graph.join_events(deps);
     });
 
-    m_worker->query_event(event_id, std::chrono::system_clock::time_point::max());
+    m_rt->query_event(event_id, std::chrono::system_clock::time_point::max());
 
     // Access each buffer once to check for errors.
     for (size_t i = 0; i < m_instance->buffers().size(); i++) {
@@ -69,7 +73,7 @@ class CopyOutTask: public ComputeTask {
 
         m_copy = CopyDef(element_size);
 
-        for (size_t j = 0; compare_less(j, N); j++) {
+        for (size_t j = 0; checked_less(j, N); j++) {
             size_t i = N - j - 1;
 
             m_copy.add_dimension(
@@ -98,13 +102,14 @@ class CopyOutTask: public ComputeTask {
 
 template<size_t N>
 void ArrayHandle<N>::copy_bytes(void* dest_addr, size_t element_size) const {
+    auto event_id = EventId {};
     auto dest_mem = MemoryId::host();
 
     if (auto ordinal = get_gpu_device_by_address(dest_addr)) {
-        dest_mem = m_worker->system_info().device_by_ordinal(*ordinal).memory_id();
+        dest_mem = m_rt->system_info().device_by_ordinal(*ordinal).memory_id();
     }
 
-    auto event_id = m_worker->with_task_graph([&](TaskGraph& graph) {
+    m_rt->with_task_graph([&](TaskGraph& graph) {
         EventList deps;
 
         for (size_t i = 0; i < m_instance->buffers().size(); i++) {
@@ -125,15 +130,14 @@ void ArrayHandle<N>::copy_bytes(void* dest_addr, size_t element_size) const {
                 .access_mode = AccessMode::Read,
             };
 
-            auto event_id =
-                graph.insert_compute_task(ProcessorId::host(), std::move(task), {buffer});
-            deps.push_back(event_id);
+            auto dep_id = graph.insert_compute_task(ProcessorId::host(), std::move(task), {buffer});
+            deps.push_back(dep_id);
         }
 
-        return graph.join_events(std::move(deps));
+        event_id = graph.join_events(std::move(deps));
     });
 
-    m_worker->query_event(event_id, std::chrono::system_clock::time_point::max());
+    m_rt->query_event(event_id, std::chrono::system_clock::time_point::max());
 }
 
 KMM_INSTANTIATE_ARRAY_IMPL(ArrayHandle)

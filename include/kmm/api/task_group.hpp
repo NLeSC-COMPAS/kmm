@@ -5,14 +5,14 @@
 
 namespace kmm {
 
-class Worker;
+class Runtime;
 class TaskGraph;
 
 struct TaskGroupInit {
     KMM_NOT_COPYABLE_OR_MOVABLE(TaskGroupInit)
 
   public:
-    Worker& worker;
+    Runtime& runtime;
     const Domain& domain;
 };
 
@@ -20,7 +20,7 @@ struct TaskInstance {
     KMM_NOT_COPYABLE_OR_MOVABLE(TaskInstance)
 
   public:
-    Worker& worker;
+    Runtime& runtime;
     TaskGraph& graph;
     DomainChunk chunk;
     MemoryId memory_id;
@@ -38,7 +38,7 @@ struct TaskSubmissionResult {
     KMM_NOT_COPYABLE_OR_MOVABLE(TaskSubmissionResult)
 
   public:
-    Worker& worker;
+    Runtime& runtime;
     TaskGraph& graph;
     EventId event_id;
     EventList& dependencies;

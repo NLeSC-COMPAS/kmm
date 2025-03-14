@@ -54,8 +54,8 @@ static size_t parse_byte_size(const char* input) {
     return static_cast<size_t>(result);
 }
 
-WorkerConfig default_config_from_environment() {
-    WorkerConfig config;
+RuntimeConfig default_config_from_environment() {
+    RuntimeConfig config;
 
     if (auto* s = getenv("KMM_HOST_MEM")) {
         config.host_memory_limit = parse_byte_size(s);

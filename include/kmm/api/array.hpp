@@ -22,7 +22,7 @@ class ArrayBase {
     virtual const std::type_info& type_info() const = 0;
     virtual size_t rank() const = 0;
     virtual int64_t size(size_t axis) const = 0;
-    virtual const Worker& worker() const = 0;
+    virtual const Runtime& runtime() const = 0;
     virtual void synchronize() const = 0;
     virtual void copy_bytes_to(void* output, size_t num_bytes) const = 0;
 };
@@ -81,8 +81,8 @@ class Array: public ArrayBase {
         return chunk_size().get_or_default(axis);
     }
 
-    const Worker& worker() const final {
-        return handle().worker();
+    const Runtime& runtime() const final {
+        return handle().runtime();
     }
 
     void synchronize() const final {
@@ -127,7 +127,7 @@ class Array: public ArrayBase {
 
     void copy_bytes_to(void* output, size_t num_bytes) const {
         KMM_ASSERT(num_bytes % sizeof(T) == 0);
-        KMM_ASSERT(compare_equal(num_bytes / sizeof(T), size()));
+        KMM_ASSERT(checked_equals(num_bytes / sizeof(T), size()));
 
         handle().copy_bytes(output, sizeof(T));
     }
@@ -138,7 +138,7 @@ class Array: public ArrayBase {
 
     template<typename I>
     void copy_to(T* output, I num_elements) const {
-        KMM_ASSERT(compare_equal(num_elements, size()));
+        KMM_ASSERT(checked_equals(num_elements, size()));
         handle().copy_bytes(output, sizeof(T));
     }
 
@@ -245,9 +245,9 @@ struct ArgumentHandler<Write<Array<T, N>>> {
     void initialize(const TaskGroupInit& init) {
         if (!m_array.is_valid()) {
             m_handle = ArrayHandle<N>::instantiate(  //
-                init.worker,
+                init.runtime,
                 map_domain_to_distribution(m_array.shape(), init.domain, All()),
-                DataLayout::for_type<T>()
+                DataType::of<T>()
             );
 
             m_array = Array<T, N>(m_handle);
@@ -294,9 +294,9 @@ struct ArgumentHandler<Write<Array<T, N>, M>> {
     void initialize(const TaskGroupInit& init) {
         if (!m_array.is_valid()) {
             m_handle = ArrayHandle<N>::instantiate(  //
-                init.worker,
+                init.runtime,
                 map_domain_to_distribution(m_shape, init.domain, m_access_mapper),
-                DataLayout::for_type<T>()
+                DataType::of<T>()
             );
 
             m_array = Array<T, N>(m_handle);
@@ -346,9 +346,9 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
             );
 
             m_handle = ArrayHandle<N>::instantiate(  //
-                init.worker,
+                init.runtime,
                 std::move(dist),
-                DataLayout::for_type<T>()
+                DataType::of<T>()
             );
 
             m_array = Array<T, N>(m_handle);
@@ -411,21 +411,21 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
     void initialize(const TaskGroupInit& init) {
         if (!m_array.is_valid()) {
             m_handle = ArrayHandle<N>::instantiate(  //
-                init.worker,
+                init.runtime,
                 map_domain_to_distribution(  //
                     m_array.shape(),
                     init.domain,
                     All(),
                     true
                 ),
-                DataLayout::for_type<T>()
+                DataType::of<T>()
             );
 
             m_array = Array<T, N>(m_handle);
         }
 
         m_handle = m_array.handle().shared_from_this();
-        m_planner = ReductionPlanner<N>(&m_handle->instance(), DataType::of<T>(), m_operation);
+        m_planner = ReductionPlanner<N>(&m_handle->instance(), m_operation);
         m_remaining = init.domain.chunks.size();
     }
 

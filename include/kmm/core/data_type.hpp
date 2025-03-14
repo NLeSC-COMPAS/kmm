@@ -11,7 +11,7 @@
 
 namespace kmm {
 
-enum struct ScalarKind : uint8_t {
+enum struct ScalarType : uint8_t {
     Invalid = 0,
     Int8,
     Int16,
@@ -36,60 +36,86 @@ template<typename T>
 struct DataTypeOf;
 
 struct DataType {
+    DataType() = default;
+
+    static DataType of(ScalarType kind);
+
     template<typename T>
     static DataType of() {
-        return DataTypeOf<T>::value;
+        static_assert(DataTypeOf<T>::value.size_in_bytes == sizeof(T));
+        static_assert(DataTypeOf<T>::value.alignment >= alignof(T));
+        return DataType {&DataTypeOf<T>::value};
     }
 
-    DataType(ScalarKind ty = ScalarKind::Invalid) : m_kind(ty) {}
+    const std::type_info& type_info() const;
 
-    ScalarKind get() const {
-        return m_kind;
-    }
+    ScalarType as_scalar() const;
+
+    size_t size_in_bytes() const;
 
     size_t alignment() const;
-    size_t size_in_bytes() const;
+
+    const char* name() const;
+
     const char* c_name() const;
-    const char* name() const noexcept;
 
-    friend bool operator==(const DataType& a, const DataType& b) {
-        return a.get() == b.get();
-    }
-
-    friend bool operator!=(const DataType& a, const DataType& b) {
-        return !(a == b);
-    }
+  public:
+    struct Info {
+        size_t size_in_bytes;
+        size_t alignment;
+        const char* name = nullptr;
+        const char* c_name = nullptr;
+        const std::type_info& type_id;
+        ScalarType scalar_type = ScalarType::Invalid;
+    };
 
   private:
-    ScalarKind m_kind;
+    explicit DataType(const Info* info) : m_info(info) {}
+    const Info* m_info = nullptr;
 };
 
-#define KMM_DEFINE_SCALAR_ALIAS(S, T) \
-    template<>                        \
-    struct DataTypeOf<T>: std::integral_constant<ScalarKind, ScalarKind::S> {};
+template<typename T>
+struct DataTypeOf {
+    static constexpr DataType::Info value = {
+        .size_in_bytes = sizeof(T),
+        .alignment = alignof(T),
+        .type_id = typeid(T)};
+};
 
-KMM_DEFINE_SCALAR_ALIAS(Int8, int8_t)
-KMM_DEFINE_SCALAR_ALIAS(Int16, int16_t)
-KMM_DEFINE_SCALAR_ALIAS(Int32, int32_t)
-KMM_DEFINE_SCALAR_ALIAS(Int64, int64_t)
-KMM_DEFINE_SCALAR_ALIAS(Uint8, uint8_t)
-KMM_DEFINE_SCALAR_ALIAS(Uint16, uint16_t)
-KMM_DEFINE_SCALAR_ALIAS(Uint32, uint32_t)
-KMM_DEFINE_SCALAR_ALIAS(Uint64, uint64_t)
-KMM_DEFINE_SCALAR_ALIAS(Float32, float)
-KMM_DEFINE_SCALAR_ALIAS(Float64, double)
-KMM_DEFINE_SCALAR_ALIAS(Complex32, ::std::complex<float>)
-KMM_DEFINE_SCALAR_ALIAS(Complex64, ::std::complex<double>)
-KMM_DEFINE_SCALAR_ALIAS(KeyAndInt64, KeyValue<int64_t>)
-KMM_DEFINE_SCALAR_ALIAS(KeyAndFloat64, KeyValue<double>)
+#define KMM_DEFINE_SCALAR_TYPE(S, T)              \
+    template<>                                    \
+    struct DataTypeOf<T> {                        \
+        static constexpr DataType::Info value = { \
+            .size_in_bytes = sizeof(T),           \
+            .alignment = alignof(T),              \
+            .name = #S,                           \
+            .c_name = #T,                         \
+            .type_id = typeid(T),                 \
+            .scalar_type = ScalarType::S};        \
+    };
 
-std::ostream& operator<<(std::ostream& f, ScalarKind p);
+KMM_DEFINE_SCALAR_TYPE(Int8, int8_t)
+KMM_DEFINE_SCALAR_TYPE(Int16, int16_t)
+KMM_DEFINE_SCALAR_TYPE(Int32, int32_t)
+KMM_DEFINE_SCALAR_TYPE(Int64, int64_t)
+KMM_DEFINE_SCALAR_TYPE(Uint8, uint8_t)
+KMM_DEFINE_SCALAR_TYPE(Uint16, uint16_t)
+KMM_DEFINE_SCALAR_TYPE(Uint32, uint32_t)
+KMM_DEFINE_SCALAR_TYPE(Uint64, uint64_t)
+KMM_DEFINE_SCALAR_TYPE(Float32, float)
+KMM_DEFINE_SCALAR_TYPE(Float64, double)
+KMM_DEFINE_SCALAR_TYPE(Complex32, ::std::complex<float>)
+KMM_DEFINE_SCALAR_TYPE(Complex64, ::std::complex<double>)
+KMM_DEFINE_SCALAR_TYPE(KeyAndInt64, KeyValue<int64_t>)
+KMM_DEFINE_SCALAR_TYPE(KeyAndFloat64, KeyValue<double>)
+
+std::ostream& operator<<(std::ostream& f, ScalarType p);
 std::ostream& operator<<(std::ostream& f, DataType p);
 
 }  // namespace kmm
 
 template<>
-struct fmt::formatter<kmm::ScalarKind>: fmt::ostream_formatter {};
+struct fmt::formatter<kmm::ScalarType>: fmt::ostream_formatter {};
 
 template<>
 struct fmt::formatter<kmm::DataType>: fmt::ostream_formatter {};

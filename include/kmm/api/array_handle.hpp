@@ -7,20 +7,20 @@
 
 namespace kmm {
 
-class Worker;
+class Runtime;
 
 template<size_t N>
 class ArrayHandle: public std::enable_shared_from_this<ArrayHandle<N>> {
     KMM_NOT_COPYABLE_OR_MOVABLE(ArrayHandle)
 
   public:
-    ArrayHandle(Worker& worker, std::unique_ptr<ArrayInstance<N>> instance);
+    ArrayHandle(Runtime& rt, std::unique_ptr<ArrayInstance<N>> instance);
     ~ArrayHandle();
 
     static std::shared_ptr<ArrayHandle> instantiate(
-        Worker& worker,
+        Runtime& rt,
         Distribution<N> dist,
-        DataLayout element_layout
+        DataType dtype
     );
 
     BufferId buffer(size_t index) const;
@@ -35,12 +35,12 @@ class ArrayHandle: public std::enable_shared_from_this<ArrayHandle<N>> {
         return m_instance->distribution();
     }
 
-    const Worker& worker() const {
-        return *m_worker;
+    const Runtime& runtime() const {
+        return *m_rt;
     }
 
   private:
-    std::shared_ptr<Worker> m_worker;
+    std::shared_ptr<Runtime> m_rt;
     std::unique_ptr<ArrayInstance<N>> m_instance;
 };
 

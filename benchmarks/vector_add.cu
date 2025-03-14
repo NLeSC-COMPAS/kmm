@@ -46,7 +46,7 @@ __global__ void vector_add(
 }
 
 bool inner_loop(
-    kmm::Runtime& rt,
+    kmm::RuntimeHandle& rt,
     unsigned int threads,
     int64_t n,
     int64_t chunk_size,

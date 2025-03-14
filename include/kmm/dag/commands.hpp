@@ -7,14 +7,14 @@
 #include "kmm/core/buffer.hpp"
 #include "kmm/core/identifiers.hpp"
 #include "kmm/core/reduction.hpp"
-#include "kmm/core/task.hpp"
+#include "kmm/core/resource.hpp"
 #include "kmm/memops/types.hpp"
 
 namespace kmm {
 
 struct CommandBufferCreate {
     BufferId id;
-    DataLayout layout;
+    BufferLayout layout;
 };
 
 struct CommandBufferDelete {

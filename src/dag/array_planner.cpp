@@ -1,5 +1,5 @@
 #include "kmm/dag/array_planner.hpp"
-#include "kmm/worker/worker.hpp"
+#include "kmm/runtime/runtime.hpp"
 
 namespace kmm {
 
@@ -7,18 +7,19 @@ template<size_t N>
 std::unique_ptr<ArrayInstance<N>> ArrayInstance<N>::instantiate(
     TaskGraph& graph,
     Distribution<N> dist,
-    DataLayout element_layout
+    DataType dtype
 ) {
     size_t n = dist.num_chunks();
     auto buffers = std::vector<BufferId>(n);
 
     for (size_t i = 0; i < n; i++) {
         auto chunk = dist.chunk(i);
-        buffers[i] = graph.create_buffer(element_layout.repeat(chunk.size.volume()));
+        auto n = checked_cast<size_t>(chunk.size.volume());
+        buffers[i] = graph.create_buffer(BufferLayout::for_type(dtype, n));
     }
 
     return std::unique_ptr<ArrayInstance<N>>(
-        new ArrayInstance<N>(std::move(dist), std::move(buffers), element_layout)
+        new ArrayInstance<N>(std::move(dist), std::move(buffers), dtype)
     );
 }
 

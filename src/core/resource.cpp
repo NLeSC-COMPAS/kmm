@@ -9,7 +9,10 @@
 
 namespace kmm {
 
-InvalidResource::InvalidResource(const std::type_info& expected, const std::type_info& gotten) {
+InvalidResourceException::InvalidResourceException(
+    const std::type_info& expected,
+    const std::type_info& gotten
+) {
     m_message = fmt::format(
         "task expected an execution context of type {}, but was executed with type {}",
         expected.name(),
@@ -17,7 +20,7 @@ InvalidResource::InvalidResource(const std::type_info& expected, const std::type
     );
 }
 
-const char* InvalidResource::what() const noexcept {
+const char* InvalidResourceException::what() const noexcept {
     return m_message.c_str();
 }
 

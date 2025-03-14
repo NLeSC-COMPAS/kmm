@@ -2,7 +2,7 @@
 
 #include "kmm/dag/array_planner.hpp"
 #include "kmm/dag/reduction_planner.hpp"
-#include "kmm/worker/worker.hpp"
+#include "kmm/runtime/runtime.hpp"
 
 namespace kmm {
 
@@ -12,7 +12,7 @@ BufferRequirement LocalReductionPlanner::prepare_access(
     size_t replication_factor
 ) {
     auto num_elements = checked_mul(m_num_elements, replication_factor);
-    auto layout = DataLayout::for_type(m_dtype).repeat(num_elements);
+    auto layout = BufferLayout::for_type(m_dtype).repeat(num_elements);
 
     // Create a new buffer
     auto buffer_id = graph.create_buffer(layout);
@@ -68,7 +68,7 @@ EventId insert_multi_reduction(
         );
     }
 
-    auto scratch_layout = DataLayout::for_type(dtype).repeat(num_elements).repeat(inputs.size());
+    auto scratch_layout = BufferLayout::for_type(dtype).repeat(num_elements).repeat(inputs.size());
     auto scratch_id = graph.create_buffer(scratch_layout);
     auto scratch_deps = EventList {};
 
@@ -132,7 +132,7 @@ EventId insert_hierarchical_reduction(
         return a.memory_id < b.memory_id;
     });
 
-    auto temporary_layout = DataLayout::for_type(dtype).repeat(num_elements);
+    auto temporary_layout = BufferLayout::for_type(dtype).repeat(num_elements);
     auto temporary_buffers = std::vector<BufferId> {};
     std::vector<ReductionInput> result_per_device;
     size_t cursor = 0;
@@ -204,13 +204,8 @@ EventId LocalReductionPlanner::finalize(TaskGraph& graph, BufferId buffer_id, Me
 }
 
 template<size_t N>
-ReductionPlanner<N>::ReductionPlanner(
-    const ArrayInstance<N>* instance,
-    DataType data_type,
-    Reduction operation
-) :
+ReductionPlanner<N>::ReductionPlanner(const ArrayInstance<N>* instance, Reduction operation) :
     m_instance(instance),
-    m_dtype(data_type),
     m_reduction(operation) {
     KMM_ASSERT(m_instance);
     size_t num_chunks = m_instance->distribution().num_chunks();
@@ -225,6 +220,7 @@ BufferRequirement ReductionPlanner<N>::prepare_access(
     size_t replication_factor
 ) {
     KMM_ASSERT(m_instance != nullptr);
+    auto dtype = m_instance->data_type();
     const auto& dist = m_instance->distribution();
     auto chunk_index = dist.region_to_chunk_index(access_region);
     auto chunk = dist.chunk(chunk_index);
@@ -233,7 +229,7 @@ BufferRequirement ReductionPlanner<N>::prepare_access(
 
     if (m_partial_inputs[chunk_index] == nullptr) {
         m_partial_inputs[chunk_index] =
-            std::make_unique<LocalReductionPlanner>(chunk.size.volume(), m_dtype, m_reduction);
+            std::make_unique<LocalReductionPlanner>(chunk.size.volume(), dtype, m_reduction);
     }
 
     m_last_access = m_partial_inputs[chunk_index].get();

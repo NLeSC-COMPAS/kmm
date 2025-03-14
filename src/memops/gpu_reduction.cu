@@ -259,47 +259,47 @@ void execute_gpu_reduction_async(
         2 * reduction.input_stride_elements                                 \
     );
 
-    switch (reduction.data_type.get()) {
-        case ScalarKind::Int8:
+    switch (reduction.data_type.as_scalar()) {
+        case ScalarType::Int8:
             KMM_CALL_REDUCTION_FOR_TYPE(int8_t)
             return;
-        case ScalarKind::Int16:
+        case ScalarType::Int16:
             KMM_CALL_REDUCTION_FOR_TYPE(int16_t)
             return;
-        case ScalarKind::Int32:
+        case ScalarType::Int32:
             KMM_CALL_REDUCTION_FOR_TYPE(int32_t)
             return;
-        case ScalarKind::Int64:
+        case ScalarType::Int64:
             KMM_CALL_REDUCTION_FOR_TYPE(int64_t)
             return;
-        case ScalarKind::Uint8:
+        case ScalarType::Uint8:
             KMM_CALL_REDUCTION_FOR_TYPE(uint8_t)
             return;
-        case ScalarKind::Uint16:
+        case ScalarType::Uint16:
             KMM_CALL_REDUCTION_FOR_TYPE(uint16_t)
             return;
-        case ScalarKind::Uint32:
+        case ScalarType::Uint32:
             KMM_CALL_REDUCTION_FOR_TYPE(uint32_t)
             return;
-        case ScalarKind::Uint64:
+        case ScalarType::Uint64:
             KMM_CALL_REDUCTION_FOR_TYPE(uint64_t)
             return;
-        case ScalarKind::Float32:
+        case ScalarType::Float32:
             KMM_CALL_REDUCTION_FOR_TYPE(float)
             return;
-        case ScalarKind::Float64:
+        case ScalarType::Float64:
             KMM_CALL_REDUCTION_FOR_TYPE(double)
             return;
-        case ScalarKind::KeyAndInt64:
+        case ScalarType::KeyAndInt64:
             KMM_CALL_REDUCTION_FOR_TYPE(KeyValue<int64_t>)
             return;
-        case ScalarKind::KeyAndFloat64:
+        case ScalarType::KeyAndFloat64:
             KMM_CALL_REDUCTION_FOR_TYPE(KeyValue<double>)
             return;
-        case ScalarKind::Complex32:
+        case ScalarType::Complex32:
             KMM_CALL_REDUCTION_FOR_COMPLEX(float)
             return;
-        case ScalarKind::Complex64:
+        case ScalarType::Complex64:
             KMM_CALL_REDUCTION_FOR_COMPLEX(double)
             return;
         default:

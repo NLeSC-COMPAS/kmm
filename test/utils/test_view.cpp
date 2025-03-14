@@ -1,6 +1,6 @@
 #include "catch2/catch_all.hpp"
 
-#include "kmm/utils/view.hpp"
+#include "kmm/core/view.hpp"
 #define CHECK_EQ(A, B) CHECK((A) == (B))
 
 using namespace kmm;

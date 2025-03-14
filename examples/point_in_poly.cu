@@ -8,7 +8,7 @@
 
 #include "kmm/api/launcher.hpp"
 #include "kmm/api/mapper.hpp"
-#include "kmm/api/runtime.hpp"
+#include "kmm/api/runtime_handle.hpp"
 
 __global__ void cn_pnpoly(
     kmm::Range<int> chunk,

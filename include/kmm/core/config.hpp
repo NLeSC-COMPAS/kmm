@@ -16,7 +16,7 @@ enum struct DeviceMemoryKind {
     NoPool,
 };
 
-struct WorkerConfig {
+struct RuntimeConfig {
     /// Maximum amount of memory that can be allocated on the host, in bytes.
     size_t host_memory_limit = std::numeric_limits<size_t>::max();
 
@@ -42,7 +42,7 @@ struct WorkerConfig {
     bool debug_mode = false;
 };
 
-WorkerConfig default_config_from_environment();
+RuntimeConfig default_config_from_environment();
 
 void set_global_log_level(const std::string& name);
 

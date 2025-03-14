@@ -200,34 +200,34 @@ std::vector<uint8_t> identity_value_for_type(Reduction op) {
 }
 
 std::vector<uint8_t> reduction_identity_value(DataType dtype, Reduction op) {
-    switch (dtype.get()) {
-        case ScalarKind::Int8:
+    switch (dtype.as_scalar()) {
+        case ScalarType::Int8:
             return identity_value_for_type<int8_t>(op);
-        case ScalarKind::Int16:
+        case ScalarType::Int16:
             return identity_value_for_type<int16_t>(op);
-        case ScalarKind::Int32:
+        case ScalarType::Int32:
             return identity_value_for_type<int32_t>(op);
-        case ScalarKind::Int64:
+        case ScalarType::Int64:
             return identity_value_for_type<int64_t>(op);
-        case ScalarKind::Uint8:
+        case ScalarType::Uint8:
             return identity_value_for_type<uint8_t>(op);
-        case ScalarKind::Uint16:
+        case ScalarType::Uint16:
             return identity_value_for_type<uint16_t>(op);
-        case ScalarKind::Uint32:
+        case ScalarType::Uint32:
             return identity_value_for_type<uint32_t>(op);
-        case ScalarKind::Uint64:
+        case ScalarType::Uint64:
             return identity_value_for_type<uint64_t>(op);
-        case ScalarKind::Float32:
+        case ScalarType::Float32:
             return identity_value_for_type<float>(op);
-        case ScalarKind::Float64:
+        case ScalarType::Float64:
             return identity_value_for_type<double>(op);
-        case ScalarKind::Complex32:
+        case ScalarType::Complex32:
             return identity_value_for_type<std::complex<float>>(op);
-        case ScalarKind::Complex64:
+        case ScalarType::Complex64:
             return identity_value_for_type<std::complex<double>>(op);
-        case ScalarKind::KeyAndInt64:
+        case ScalarType::KeyAndInt64:
             return identity_value_for_type<KeyValue<int64_t>>(op);
-        case ScalarKind::KeyAndFloat64:
+        case ScalarType::KeyAndFloat64:
             return identity_value_for_type<KeyValue<double>>(op);
         default:
             throw_invalid_reduction_exception(dtype, op);

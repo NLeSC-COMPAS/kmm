@@ -9,7 +9,7 @@ namespace kmm {
 TaskGraph::TaskGraph() = default;
 TaskGraph::~TaskGraph() = default;
 
-BufferId TaskGraph::create_buffer(DataLayout layout) {
+BufferId TaskGraph::create_buffer(BufferLayout layout) {
     auto buffer_id = BufferId(m_next_buffer_id);
     m_next_buffer_id++;
 

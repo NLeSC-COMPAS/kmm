@@ -1,7 +1,7 @@
 #pragma once
 
 #include "kmm/api/task_group.hpp"
-#include "kmm/core/task.hpp"
+#include "kmm/core/resource.hpp"
 
 namespace kmm {
 

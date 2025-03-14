@@ -13,7 +13,7 @@ Bounds<N> index2region(
 ) {
     Bounds<N> result;
 
-    for (size_t j = 0; compare_less(j, N); j++) {
+    for (size_t j = 0; checked_less(j, N); j++) {
         size_t i = N - 1 - j;
         auto k = index % num_chunks[i];
         index /= num_chunks[i];
@@ -34,7 +34,7 @@ size_t region2index(
 ) {
     size_t index = 0;
 
-    for (size_t i = 0; compare_less(i, N); i++) {
+    for (size_t i = 0; checked_less(i, N); i++) {
         auto k = div_floor(region.begin(i), chunk_size[i]);
 
         if (!in_range(k, chunks_count[i])) {
@@ -73,7 +73,7 @@ Distribution<N>::Distribution(
     m_memories(std::move(memories)) {
     size_t total_chunk_count = 1;
 
-    for (size_t i = 0; compare_less(i, N); i++) {
+    for (size_t i = 0; checked_less(i, N); i++) {
         m_chunks_count[i] = checked_cast<size_t>(div_ceil(array_size[i], chunk_size[i]));
         total_chunk_count = checked_mul(total_chunk_count, m_chunks_count[i]);
     }
@@ -107,7 +107,7 @@ Distribution<N> Distribution<N>::from_chunks(
         throw std::runtime_error("chunk size cannot be empty");
     }
 
-    for (size_t i = 0; compare_less(i, N); i++) {
+    for (size_t i = 0; checked_less(i, N); i++) {
         chunks_count[i] = checked_cast<size_t>(div_ceil(array_size[i], chunk_size[i]));
         total_chunk_count = checked_mul(total_chunk_count, chunks_count[i]);
     }
@@ -121,7 +121,7 @@ Distribution<N> Distribution<N>::from_chunks(
         Index<N> expected_offset;
         Dim<N> expected_size;
 
-        for (size_t i = 0; compare_less(i, N); i++) {
+        for (size_t i = 0; checked_less(i, N); i++) {
             auto k = div_floor(chunk.offset[i], chunk_size[i]);
 
             expected_offset[i] = k * chunk_size[i];

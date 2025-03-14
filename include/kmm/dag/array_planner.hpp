@@ -12,14 +12,10 @@ class ArrayInstance {
     KMM_NOT_COPYABLE(ArrayInstance)
 
   private:
-    ArrayInstance(
-        Distribution<N> distribution,
-        std::vector<BufferId> buffers,
-        DataLayout element_layout
-    ) :
+    ArrayInstance(Distribution<N> distribution, std::vector<BufferId> buffers, DataType data_type) :
         m_distribution(std::move(distribution)),
         m_buffers(std::move(buffers)),
-        m_element_layout(element_layout) {}
+        m_dtype(data_type) {}
 
   public:
     ArrayInstance() = default;
@@ -27,7 +23,7 @@ class ArrayInstance {
     static std::unique_ptr<ArrayInstance> instantiate(
         TaskGraph& graph,
         Distribution<N> dist,
-        DataLayout element_layout
+        DataType data_type
     );
 
     void destroy(TaskGraph& graph);
@@ -40,14 +36,14 @@ class ArrayInstance {
         return m_buffers;
     }
 
-    DataLayout element_layout() const {
-        return m_element_layout;
+    DataType data_type() const {
+        return m_dtype;
     }
 
   private:
     Distribution<N> m_distribution;
     std::vector<BufferId> m_buffers;
-    DataLayout m_element_layout;
+    DataType m_dtype;
 };
 
 template<size_t N>

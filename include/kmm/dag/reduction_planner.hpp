@@ -2,10 +2,10 @@
 
 #include "kmm/core/buffer.hpp"
 #include "kmm/core/reduction.hpp"
+#include "kmm/core/view.hpp"
 #include "kmm/dag/distribution.hpp"
 #include "kmm/dag/reduction_planner.hpp"
 #include "kmm/utils/geometry.hpp"
-#include "kmm/utils/view.hpp"
 
 namespace kmm {
 
@@ -31,7 +31,7 @@ class LocalReductionPlanner {
     EventId finalize(TaskGraph& graph, BufferId buffer_id, MemoryId memory_id);
 
     size_t m_num_elements = 0;
-    DataType m_dtype = ScalarKind::Invalid;
+    DataType m_dtype;
     Reduction m_reduction = Reduction::Invalid;
     std::vector<ReductionInput> m_inputs;
 };
@@ -42,7 +42,7 @@ class ReductionPlanner {
 
   public:
     ReductionPlanner() = default;
-    ReductionPlanner(const ArrayInstance<N>* instance, DataType data_type, Reduction operation);
+    ReductionPlanner(const ArrayInstance<N>* instance, Reduction operation);
 
     BufferRequirement prepare_access(
         TaskGraph& graph,
@@ -57,7 +57,6 @@ class ReductionPlanner {
 
   private:
     const ArrayInstance<N>* m_instance = nullptr;
-    DataType m_dtype = ScalarKind::Invalid;
     Reduction m_reduction = Reduction::Invalid;
     std::vector<std::unique_ptr<LocalReductionPlanner>> m_partial_inputs;
     LocalReductionPlanner* m_last_access;

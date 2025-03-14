@@ -268,7 +268,7 @@ T saturating_negate(T value) {
  * Returns true if `left < right`. This function correctly handles different operand types.
  */
 template<typename L, typename R>
-bool compare_less(const L& left, const R& right) {
+bool checked_less(const L& left, const R& right) {
     return detail::checked_compare_impl<L, R>::is_less(left, right);
 }
 
@@ -276,15 +276,15 @@ bool compare_less(const L& left, const R& right) {
  * Returns true if `left > right`. This function correctly handles different operand types.
  */
 template<typename L, typename R>
-bool compare_greater(const L& left, const R& right) {
-    return compare_less(right, left);
+bool checked_greater(const L& left, const R& right) {
+    return checked_less(right, left);
 }
 
 /**
  * Returns true if `left == right`. This function correctly handles different operand types.
  */
 template<typename L, typename R>
-bool compare_equal(const L& left, const R& right) {
+bool checked_equals(const L& left, const R& right) {
     return detail::checked_compare_impl<L, R>::is_equal(left, right);
 }
 
@@ -294,8 +294,8 @@ bool compare_equal(const L& left, const R& right) {
  */
 template<typename U, typename T>
 bool in_range(const T& value) {
-    return !compare_less(value, std::numeric_limits<U>::lowest())
-        && !compare_greater(value, std::numeric_limits<U>::max());
+    return !checked_less(value, std::numeric_limits<U>::lowest())
+        && !checked_greater(value, std::numeric_limits<U>::max());
 }
 
 /**
@@ -304,7 +304,7 @@ bool in_range(const T& value) {
  */
 template<typename U, typename T>
 constexpr bool in_range(const T& value, const U& length) {
-    return !compare_less(value, static_cast<T>(0)) && compare_less(value, length);
+    return !checked_less(value, static_cast<T>(0)) && checked_less(value, length);
 }
 
 /**
@@ -326,7 +326,7 @@ constexpr U checked_cast(const T& value) {
  */
 template<typename U, typename T>
 constexpr U checked_cast(const T& value, const U& length) {
-    if (compare_less(value, static_cast<T>(0)) || !compare_less(value, length)) {
+    if (checked_less(value, static_cast<T>(0)) || !checked_less(value, length)) {
         throw_overflow_exception();
     }
 

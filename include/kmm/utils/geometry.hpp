@@ -97,7 +97,7 @@ class Index: public fixed_array<T, N> {
             if (is_less(i, M)) {
                 result &= in_range<U>((*this)[i]);
             } else {
-                result &= compare_equal((*this)[i], static_cast<T>(0));
+                result &= checked_equals((*this)[i], static_cast<T>(0));
             }
         }
 
@@ -119,6 +119,11 @@ struct Dim: public fixed_array<T, N> {
             (*this)[i] = static_cast<T>(1);
         }
     }
+
+    constexpr Dim(const Dim&) = default;
+    constexpr Dim(Dim&&) noexcept = default;
+    Dim& operator=(const Dim&) = default;
+    Dim& operator=(Dim&&) noexcept = default;
 
     template<typename... Ts, typename = typename std::enable_if<(sizeof...(Ts) < N)>::type>
     KMM_HOST_DEVICE Dim(T first, Ts&&... args) : Dim() {
@@ -188,7 +193,7 @@ struct Dim: public fixed_array<T, N> {
             if (i < M) {
                 result &= in_range<U>((*this)[i]);
             } else {
-                result &= compare_equal((*this)[i], static_cast<T>(0));
+                result &= checked_equals((*this)[i], static_cast<T>(1));
             }
         }
 

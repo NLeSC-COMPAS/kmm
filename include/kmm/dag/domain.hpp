@@ -4,8 +4,8 @@
 #include <vector>
 
 #include "kmm/core/identifiers.hpp"
+#include "kmm/core/resource.hpp"
 #include "kmm/core/system_info.hpp"
-#include "kmm/core/task.hpp"
 #include "kmm/utils/geometry.hpp"
 
 namespace kmm {
