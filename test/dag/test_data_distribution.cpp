@@ -2,7 +2,7 @@
 
 #include "catch2/catch_all.hpp"
 
-#include "kmm/dag/distribution.hpp"
+#include "kmm/core/distribution.hpp"
 
 using namespace kmm;
 

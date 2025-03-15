@@ -1,6 +1,6 @@
 #include "catch2/catch_all.hpp"
 
-#include "kmm/dag/domain.hpp"
+#include "kmm/core/domain.hpp"
 #include "kmm/utils/range.hpp"
 
 using namespace kmm;

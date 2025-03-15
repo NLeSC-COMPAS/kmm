@@ -1,9 +1,9 @@
 #pragma once
 
 #include "kmm/core/buffer.hpp"
+#include "kmm/core/distribution.hpp"
 #include "kmm/core/reduction.hpp"
 #include "kmm/core/view.hpp"
-#include "kmm/dag/distribution.hpp"
 #include "kmm/dag/reduction_planner.hpp"
 #include "kmm/utils/geometry.hpp"
 

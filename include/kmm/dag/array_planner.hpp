@@ -1,8 +1,8 @@
 #pragma once
 
-#include "distribution.hpp"
 #include "task_graph.hpp"
 
+#include "kmm/core/distribution.hpp"
 #include "kmm/utils/macros.hpp"
 
 namespace kmm {

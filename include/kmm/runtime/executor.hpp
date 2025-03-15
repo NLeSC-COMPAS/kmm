@@ -2,8 +2,8 @@
 
 #include <future>
 
+#include "kmm/core/commands.hpp"
 #include "kmm/core/resource.hpp"
-#include "kmm/dag/commands.hpp"
 #include "kmm/runtime/buffer_registry.hpp"
 #include "kmm/runtime/memory_manager.hpp"
 #include "kmm/runtime/resource_manager.hpp"
@@ -39,7 +39,7 @@ class Executor {
 
     ~Executor();
 
-    void execute_task(std::shared_ptr<Task> task, DeviceEventSet dependencies);
+    void execute_task(TaskHandle task, DeviceEventSet dependencies);
     bool is_idle() const;
     void make_progress();
 
@@ -61,31 +61,19 @@ class Executor {
 
   private:
     void insert_job(std::unique_ptr<Job> job);
+    void execute_task(TaskHandle task, const CommandEmpty& command, DeviceEventSet dependencies);
+
+    void execute_task(TaskHandle task, const CommandExecute& command, DeviceEventSet dependencies);
+
+    void execute_task(TaskHandle task, const CommandCopy& command, DeviceEventSet dependencies);
+
     void execute_task(
-        std::shared_ptr<Task> task,
-        const CommandEmpty& command,
-        DeviceEventSet dependencies
-    );
-    void execute_task(
-        std::shared_ptr<Task> task,
-        const CommandExecute& command,
-        DeviceEventSet dependencies
-    );
-    void execute_task(
-        std::shared_ptr<Task> task,
-        const CommandCopy& command,
-        DeviceEventSet dependencies
-    );
-    void execute_task(
-        std::shared_ptr<Task> task,
+        TaskHandle task,
         const CommandReduction& command,
         DeviceEventSet dependencies
     );
-    void execute_task(
-        std::shared_ptr<Task> task,
-        const CommandFill& command,
-        DeviceEventSet dependencies
-    );
+
+    void execute_task(TaskHandle task, const CommandFill& command, DeviceEventSet dependencies);
 
     std::shared_ptr<DeviceResourceManager> m_device_manager;
     std::shared_ptr<DeviceStreamManager> m_stream_manager;

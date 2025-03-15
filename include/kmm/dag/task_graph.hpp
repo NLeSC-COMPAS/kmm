@@ -5,8 +5,8 @@
 #include <vector>
 
 #include "kmm/core/buffer.hpp"
+#include "kmm/core/commands.hpp"
 #include "kmm/core/reduction.hpp"
-#include "kmm/dag/commands.hpp"
 #include "kmm/utils/macros.hpp"
 
 namespace kmm {

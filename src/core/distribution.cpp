@@ -1,5 +1,4 @@
-#include "kmm/dag/distribution.hpp"
-#include "kmm/dag/task_graph.hpp"
+#include "kmm/core/distribution.hpp"
 #include "kmm/utils/integer_fun.hpp"
 
 namespace kmm {

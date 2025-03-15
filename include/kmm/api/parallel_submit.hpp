@@ -3,8 +3,8 @@
 #include "kmm/api/argument.hpp"
 #include "kmm/api/task_group.hpp"
 #include "kmm/core/buffer.hpp"
+#include "kmm/core/domain.hpp"
 #include "kmm/core/identifiers.hpp"
-#include "kmm/dag/domain.hpp"
 #include "kmm/runtime/runtime.hpp"
 
 namespace kmm {

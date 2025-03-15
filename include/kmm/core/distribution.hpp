@@ -1,13 +1,11 @@
 #pragma once
 
 #include "kmm/core/buffer.hpp"
+#include "kmm/core/domain.hpp"
 #include "kmm/core/identifiers.hpp"
-#include "kmm/dag/domain.hpp"
 #include "kmm/utils/geometry.hpp"
 
 namespace kmm {
-
-class TaskGraph;
 
 template<size_t N>
 struct ArrayChunk {

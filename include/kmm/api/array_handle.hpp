@@ -1,8 +1,8 @@
 #pragma once
 
+#include "kmm/core/distribution.hpp"
 #include "kmm/core/identifiers.hpp"
 #include "kmm/dag/array_planner.hpp"
-#include "kmm/dag/distribution.hpp"
 #include "kmm/utils/geometry.hpp"
 
 namespace kmm {

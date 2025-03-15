@@ -1,7 +1,7 @@
 #pragma once
 
+#include "kmm/core/domain.hpp"
 #include "kmm/core/resource.hpp"
-#include "kmm/dag/domain.hpp"
 
 namespace kmm {
 

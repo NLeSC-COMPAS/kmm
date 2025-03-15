@@ -1,6 +1,6 @@
 #include "spdlog/spdlog.h"
 
-#include "kmm/dag/domain.hpp"
+#include "kmm/core/domain.hpp"
 #include "kmm/utils/integer_fun.hpp"
 
 namespace kmm {
