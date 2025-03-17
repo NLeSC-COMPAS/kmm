@@ -45,20 +45,18 @@ MemoryId RuntimeHandle::memory_affinity_for_address(const void* address) const {
 
 BufferId RuntimeHandle::allocate_bytes(const void* data, BufferLayout layout, MemoryId memory_id)
     const {
-    ProcessorId proc = memory_id.is_device() ? memory_id.as_device() : ProcessorId::host();
-    BufferId buffer_id;
+    ProcessorId proc = info().affinity_processor(memory_id);
+    BufferId buffer_id = m_worker->create_buffer(layout);
     EventId event_id;
 
-    m_worker->with_task_graph([&](TaskGraph& graph) {
-        buffer_id = graph.create_buffer(layout);
+    m_worker->schedule([&](TaskGraphStage& graph) {
+        auto task = std::make_unique<CopyInTask>(data, layout.size_in_bytes);
         auto req = BufferRequirement {
-            .buffer_id = buffer_id,
+            .buffer_id = buffer_id,  //
             .memory_id = memory_id,
-            .access_mode = AccessMode::Exclusive  //
-        };
+            .access_mode = AccessMode::Exclusive};
 
-        auto task = std::make_shared<CopyInTask>(data, layout.size_in_bytes);
-        event_id = graph.insert_compute_task(proc, task, {req});
+        event_id = graph.insert_compute_task(proc, std::move(task), {req});
     });
 
     wait(event_id);
@@ -84,9 +82,7 @@ bool RuntimeHandle::wait_for(EventId id, typename std::chrono::system_clock::dur
 }
 
 EventId RuntimeHandle::barrier() const {
-    auto event_id = EventId {};
-    m_worker->with_task_graph([&](TaskGraph& g) { event_id = g.insert_barrier(); });
-    return event_id;
+    return m_worker->schedule([&](TaskGraphStage& g) { g.insert_barrier(); });
 }
 
 void RuntimeHandle::synchronize() const {

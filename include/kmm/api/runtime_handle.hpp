@@ -101,16 +101,14 @@ class RuntimeHandle {
      */
     template<size_t N = 1, typename T>
     Array<T, N> allocate(const T* data, Dim<N> shape, MemoryId memory_id) const {
-        auto layout = BufferLayout::for_type<T>().repeat(checked_cast<size_t>(shape.volume()));
-        auto buffer_id = allocate_bytes(data, layout, memory_id);
-
-        auto chunk = ArrayChunk<N> {memory_id, Index<N>::zero(), shape};
-        auto dist = Distribution<N> {shape, {chunk}};
-        auto buffers = std::vector {buffer_id};
-        auto handle = std::make_shared<ArrayHandle<N>>(
+        auto handle = std::make_shared<ArrayInstance<N>>(
             *m_worker,
-            std::pair {std::move(dist), std::move(buffers)}
+            Distribution<N> {shape, shape, {memory_id}},
+            DataType::of<T>()
         );
+
+        KMM_TODO();
+
         return Array<T, N> {std::move(handle)};
     }
 

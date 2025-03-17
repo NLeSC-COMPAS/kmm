@@ -12,11 +12,6 @@
 
 namespace kmm {
 
-struct CommandBufferCreate {
-    BufferId id;
-    BufferLayout layout;
-};
-
 struct CommandBufferDelete {
     BufferId id;
 };
@@ -36,7 +31,7 @@ struct CommandCopy {
 
 struct CommandExecute {
     ProcessorId processor_id;
-    std::shared_ptr<ComputeTask> task;
+    std::unique_ptr<ComputeTask> task;
     std::vector<BufferRequirement> buffers;
 };
 
@@ -57,7 +52,6 @@ struct CommandEmpty {};
 
 using Command = std::variant<
     CommandEmpty,
-    CommandBufferCreate,
     CommandBufferDelete,
     CommandPrefetch,
     CommandCopy,
@@ -68,7 +62,6 @@ using Command = std::variant<
 inline const char* command_name(const Command& cmd) {
     static constexpr const char* names[] = {
         "CommandEmpty",
-        "CommandBufferCreate",
         "CommandBufferDelete",
         "CommandPrefetch",
         "CommandCopy",

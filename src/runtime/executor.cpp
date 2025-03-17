@@ -115,13 +115,13 @@ class HostJob: public Executor::Job {
 class ExecuteHostJob: public HostJob {
   public:
     ExecuteHostJob(
-        TaskHandle id,
-        std::shared_ptr<ComputeTask> task,
+        TaskHandle task,
+        ComputeTask* compute_task,
         std::vector<BufferRequirement> buffers,
         DeviceEventSet dependencies
     ) :
-        HostJob(id, std::move(buffers), std::move(dependencies)),
-        m_task(std::move(task)) {}
+        HostJob(task, std::move(buffers), std::move(dependencies)),
+        m_task(compute_task) {}
 
     std::future<void> submit(Executor& executor, std::vector<BufferAccessor> accessors) override {
         return std::async(std::launch::async, [=] {
@@ -219,12 +219,12 @@ class FillHostJob: public HostJob {
 class DeviceJob: public Executor::Job, public DeviceResourceOperation {
   public:
     DeviceJob(
-        TaskHandle id,
+        TaskHandle task,
         DeviceId device_id,
         std::vector<BufferRequirement> buffers,
         DeviceEventSet dependencies
     ) :
-        m_task(id),
+        m_task(task),
         m_device_id(device_id),
         m_buffers(std::move(buffers)),
         m_dependencies(std::move(dependencies)) {}
@@ -294,14 +294,14 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
 class ExecuteDeviceJob: public DeviceJob {
   public:
     ExecuteDeviceJob(
-        TaskHandle id,
+        TaskHandle task,
         DeviceId device_id,
-        std::shared_ptr<ComputeTask> task,
+        ComputeTask* compute_task,
         std::vector<BufferRequirement> buffers,
         DeviceEventSet dependencies
     ) :
-        DeviceJob(id, device_id, std::move(buffers), std::move(dependencies)),
-        m_task(std::move(task)) {}
+        DeviceJob(task, device_id, std::move(buffers), std::move(dependencies)),
+        m_task(compute_task) {}
 
     void execute(DeviceResource& device, std::vector<BufferAccessor> accessors) final {
         auto context = TaskContext {std::move(accessors)};
@@ -309,7 +309,7 @@ class ExecuteDeviceJob: public DeviceJob {
     }
 
   private:
-    std::shared_ptr<ComputeTask> m_task;
+    ComputeTask* m_task;
 };
 
 class CopyDeviceJob: public DeviceJob {
@@ -510,10 +510,6 @@ void Executor::execute_task(TaskHandle task, DeviceEventSet dependencies) {
     if (std::get_if<CommandEmpty>(&command) != nullptr) {
         execute_task(task, CommandEmpty {}, std::move(dependencies));
 
-    } else if (const auto* e = std::get_if<CommandBufferCreate>(&command)) {
-        m_buffer_registry->add(e->id, e->layout);
-        execute_task(task, CommandEmpty {}, std::move(dependencies));
-
     } else if (const auto* e = std::get_if<CommandBufferDelete>(&command)) {
         m_buffer_registry->remove(e->id);
         execute_task(task, CommandEmpty {}, std::move(dependencies));
@@ -568,14 +564,14 @@ void Executor::execute_task(
         insert_job(std::make_unique<ExecuteDeviceJob>(
             task,
             proc.as_device(),
-            command.task,
+            command.task.get(),
             command.buffers,
             std::move(dependencies)
         ));
     } else {
         insert_job(std::make_unique<ExecuteHostJob>(
             task,
-            command.task,
+            command.task.get(),
             command.buffers,
             std::move(dependencies)
         ));

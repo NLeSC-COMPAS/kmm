@@ -9,6 +9,50 @@
 
 namespace kmm {
 
+static SystemInfo make_system_info(const std::vector<GPUContextHandle>& contexts) {
+    spdlog::info("detected {} GPU device(s):", contexts.size());
+    std::vector<DeviceInfo> device_infos;
+
+    for (size_t i = 0; i < contexts.size(); i++) {
+        auto info = DeviceInfo(DeviceId(i), contexts[i]);
+        auto memory_gb = static_cast<double>(info.total_memory_size()) / 1e9;
+
+        spdlog::info(" - {} ({:.2} GB)", info.name(), memory_gb);
+        device_infos.push_back(info);
+    }
+
+    return device_infos;
+}
+
+Runtime::Runtime(
+    std::vector<GPUContextHandle> contexts,
+    std::shared_ptr<DeviceStreamManager> stream_manager,
+    std::shared_ptr<MemorySystem> memory_system,
+    const RuntimeConfig& config
+) :
+    m_memory_system(memory_system),
+    m_memory_manager(std::make_shared<MemoryManager>(memory_system)),
+    m_buffer_registry(std::make_shared<BufferRegistry>(m_memory_manager)),
+    m_stream_manager(stream_manager),
+    m_devices(std::make_shared<DeviceResourceManager>(contexts, m_stream_manager)),
+    m_scheduler(std::make_shared<Scheduler>(contexts.size())),
+    m_info(make_system_info(contexts)),
+    m_executor(m_devices, stream_manager, m_buffer_registry, m_scheduler, config.debug_mode) {}
+
+Runtime::~Runtime() {
+    shutdown();
+}
+
+BufferId Runtime::create_buffer(BufferLayout layout) {
+    std::unique_lock guard {m_mutex};
+    return m_buffer_registry->add(layout);
+}
+
+void Runtime::delete_buffer(BufferId id) {
+    std::unique_lock guard {m_mutex};
+    m_buffer_registry->remove(id);
+}
+
 bool Runtime::query_event(EventId event_id, std::chrono::system_clock::time_point deadline) {
     static constexpr auto TIMEOUT = std::chrono::microseconds {100};
 
@@ -70,8 +114,6 @@ void Runtime::shutdown() {
     }
 
     m_has_shutdown = true;
-
-    m_graph.shutdown();
     flush_events_impl();
 
     while (!is_idle_impl()) {
@@ -86,8 +128,6 @@ void Runtime::shutdown() {
 }
 
 void Runtime::flush_events_impl() {
-    std::lock_guard guard {m_graph_mutex};
-
     // Flush all events from the DAG builder to the scheduler
     for (auto&& e : m_graph.flush()) {
         m_scheduler->submit(e.id, std::move(e.command), std::move(e.dependencies));
@@ -109,40 +149,6 @@ bool Runtime::is_idle_impl() {
     return m_stream_manager->is_idle() && m_executor.is_idle() && m_scheduler->is_idle()
         && m_memory_manager->is_idle(*m_stream_manager);
 }
-
-Runtime::~Runtime() {
-    shutdown();
-}
-
-SystemInfo make_system_info(const std::vector<GPUContextHandle>& contexts) {
-    spdlog::info("detected {} GPU device(s):", contexts.size());
-    std::vector<DeviceInfo> device_infos;
-
-    for (size_t i = 0; i < contexts.size(); i++) {
-        auto info = DeviceInfo(DeviceId(i), contexts[i]);
-        auto memory_gb = static_cast<double>(info.total_memory_size()) / 1e9;
-
-        spdlog::info(" - {} ({:.2} GB)", info.name(), memory_gb);
-        device_infos.push_back(info);
-    }
-
-    return device_infos;
-}
-
-Runtime::Runtime(
-    std::vector<GPUContextHandle> contexts,
-    std::shared_ptr<DeviceStreamManager> stream_manager,
-    std::shared_ptr<MemorySystem> memory_system,
-    const RuntimeConfig& config
-) :
-    m_memory_system(memory_system),
-    m_memory_manager(std::make_shared<MemoryManager>(memory_system)),
-    m_buffer_registry(std::make_shared<BufferRegistry>(m_memory_manager)),
-    m_stream_manager(stream_manager),
-    m_devices(std::make_shared<DeviceResourceManager>(contexts, m_stream_manager)),
-    m_scheduler(std::make_shared<Scheduler>(contexts.size())),
-    m_info(make_system_info(contexts)),
-    m_executor(m_devices, stream_manager, m_buffer_registry, m_scheduler, config.debug_mode) {}
 
 std::unique_ptr<AsyncAllocator> create_device_allocator(
     const RuntimeConfig& config,

@@ -6,7 +6,7 @@
 namespace kmm {
 
 class Runtime;
-class TaskGraph;
+class TaskGraphStage;
 
 struct TaskGroupInit {
     KMM_NOT_COPYABLE_OR_MOVABLE(TaskGroupInit)
@@ -21,7 +21,7 @@ struct TaskInstance {
 
   public:
     Runtime& runtime;
-    TaskGraph& graph;
+    TaskGraphStage& graph;
     DomainChunk chunk;
     MemoryId memory_id;
     std::vector<BufferRequirement> buffers;
@@ -39,9 +39,13 @@ struct TaskSubmissionResult {
 
   public:
     Runtime& runtime;
-    TaskGraph& graph;
+    TaskGraphStage& graph;
     EventId event_id;
-    EventList& dependencies;
+};
+
+struct TaskGroupCommit {
+    Runtime& runtime;
+    TaskGraphStage& graph;
 };
 
 }  // namespace kmm

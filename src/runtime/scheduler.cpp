@@ -203,7 +203,7 @@ size_t Scheduler::determine_queue_id(const Command& cmd) {
         } else {
             return QUEUE_HOST;
         }
-    } else if (std::holds_alternative<CommandBufferCreate>(cmd) || std::holds_alternative<CommandBufferDelete>(cmd) || std::holds_alternative<CommandEmpty>(cmd)) {
+    } else if (std::holds_alternative<CommandBufferDelete>(cmd) || std::holds_alternative<CommandEmpty>(cmd)) {
         return QUEUE_BUFFERS;
     } else {
         return QUEUE_MISC;

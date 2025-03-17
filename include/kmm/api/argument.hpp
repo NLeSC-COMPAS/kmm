@@ -74,6 +74,10 @@ struct ArgumentHandler {
         // Nothing to do
     }
 
+    void commit(const TaskGroupCommit& commit) {
+        // Nothing to do
+    }
+
   private:
     T m_value;
 };

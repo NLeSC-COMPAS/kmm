@@ -53,17 +53,16 @@ EventId parallel_submit_impl(
     Args&&... args
 ) {
     EventId result_event;
-    std::tuple<ArgumentHandler<Args>...> handlers = {
-        ArgumentHandler<Args>(std::forward<Args>(args))...};
+    std::tuple<ArgumentHandler<Args>...> handlers = {std::forward<Args>(args)...};
 
-    auto init = TaskGroupInit {
-        .runtime = runtime,  //
-        .domain = domain};
-
-    (std::get<Is>(handlers).initialize(init), ...);
-
-    runtime.with_task_graph([&](TaskGraph& graph) {
+    runtime.schedule([&](TaskGraphStage& graph) {
         EventList events;
+
+        auto init = TaskGroupInit {
+            .runtime = runtime,  //
+            .domain = domain};
+
+        (std::get<Is>(handlers).initialize(init), ...);
 
         for (const DomainChunk& chunk : domain.chunks) {
             ProcessorId processor_id = chunk.owner_id;
@@ -76,7 +75,7 @@ EventId parallel_submit_impl(
                 .buffers = {},
                 .dependencies = {}};
 
-            auto task = std::make_shared<ComputeTaskImpl<Launcher, packed_argument_t<Args>...>>(
+            auto task = std::make_unique<ComputeTaskImpl<Launcher, packed_argument_t<Args>...>>(
                 chunk,
                 launcher,
                 std::get<Is>(handlers).before_submit(instance)...
@@ -94,11 +93,14 @@ EventId parallel_submit_impl(
             auto result = TaskSubmissionResult {
                 .runtime = runtime,  //
                 .graph = graph,
-                .event_id = event_id,
-                .dependencies = events};
+                .event_id = event_id};
 
             (std::get<Is>(handlers).after_submit(result), ...);
         }
+
+        auto commit = TaskGroupCommit {.runtime = runtime, .graph = graph};
+
+        (std::get<Is>(handlers).commit(commit), ...);
 
         result_event = graph.join_events(events);
     });
@@ -109,7 +111,7 @@ EventId parallel_submit_impl(
 
 template<typename Launcher, typename... Args>
 EventId parallel_submit(
-    Runtime& worker,
+    Runtime& runtime,
     const SystemInfo& system_info,
     const Domain& partition,
     Launcher launcher,
@@ -117,7 +119,7 @@ EventId parallel_submit(
 ) {
     return detail::parallel_submit_impl(
         std::index_sequence_for<Args...> {},
-        worker,
+        runtime,
         system_info,
         partition,
         launcher,

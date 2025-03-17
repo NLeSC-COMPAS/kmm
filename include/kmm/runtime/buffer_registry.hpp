@@ -17,7 +17,7 @@ class BufferRegistry {
   public:
     BufferRegistry(std::shared_ptr<MemoryManager> memory_manager);
 
-    void add(BufferId buffer_id, BufferLayout layout);
+    BufferId add(BufferLayout layout);
 
     std::shared_ptr<MemoryManager::Buffer> get(BufferId id);
 
@@ -43,6 +43,7 @@ class BufferRegistry {
 
     std::shared_ptr<MemoryManager> m_memory_manager;
     std::unordered_map<BufferId, BufferMeta> m_buffers;
+    BufferId m_next_buffer_id = BufferId(1);
 };
 
 class PoisonException final: public std::exception {

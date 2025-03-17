@@ -7,8 +7,8 @@
 
 #include "kmm/core/config.hpp"
 #include "kmm/core/system_info.hpp"
-#include "kmm/dag/task_graph.hpp"
 #include "kmm/runtime/memory_system.hpp"
+#include "kmm/runtime/task_graph.hpp"
 
 namespace kmm {
 
@@ -24,6 +24,9 @@ class Runtime: public std::enable_shared_from_this<Runtime> {
     );
     ~Runtime();
 
+    BufferId create_buffer(BufferLayout layout);
+    void delete_buffer(BufferId buffer_id);
+
     bool query_event(EventId event_id, std::chrono::system_clock::time_point deadline);
     bool is_idle();
     void trim_memory();
@@ -31,16 +34,14 @@ class Runtime: public std::enable_shared_from_this<Runtime> {
     void shutdown();
 
     template<typename F>
-    void with_task_graph(F fun) {
-        std::lock_guard guard {m_graph_mutex};
+    EventId schedule(F fun) {
+        auto stage = TaskGraphStage(&m_graph);
+        fun(stage);
+        return stage.commit();
+    }
 
-        try {
-            fun(m_graph);
-            m_graph.commit();
-        } catch (...) {
-            m_graph.rollback();
-            throw;
-        }
+    TaskGraphStage new_stage() {
+        return TaskGraphStage(&m_graph);
     }
 
     const SystemInfo& system_info() const {
@@ -63,7 +64,6 @@ class Runtime: public std::enable_shared_from_this<Runtime> {
     SystemInfo m_info;
     Executor m_executor;
 
-    mutable std::mutex m_graph_mutex;
     TaskGraph m_graph;
 };
 

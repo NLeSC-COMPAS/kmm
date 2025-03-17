@@ -1,7 +1,6 @@
 #include "kmm/api/access.hpp"
 #include "kmm/api/argument.hpp"
 #include "kmm/api/array.hpp"
-#include "kmm/api/array_handle.hpp"
 #include "kmm/api/launcher.hpp"
 #include "kmm/api/mapper.hpp"
 #include "kmm/api/parallel_submit.hpp"

@@ -9,10 +9,11 @@
 
 #include "kmm/api/access.hpp"
 #include "kmm/api/argument.hpp"
-#include "kmm/api/array_handle.hpp"
 #include "kmm/api/view_argument.hpp"
-#include "kmm/dag/array_planner.hpp"
-#include "kmm/dag/reduction_planner.hpp"
+#include "kmm/planner/array_instance.hpp"
+#include "kmm/planner/read_planner.hpp"
+#include "kmm/planner/reduction_planner.hpp"
+#include "kmm/planner/write_planner.hpp"
 
 namespace kmm {
 
@@ -32,9 +33,9 @@ class Array: public ArrayBase {
   public:
     Array(Dim<N> shape = {}) : m_shape(shape) {}
 
-    explicit Array(std::shared_ptr<const ArrayHandle<N>> b) :
-        m_handle(b),
-        m_shape(m_handle->distribution().array_size()) {}
+    explicit Array(std::shared_ptr<ArrayInstance<N>> b) :
+        m_instance(b),
+        m_shape(m_instance->distribution().array_size()) {}
 
     const std::type_info& type_info() const final {
         return typeid(T);
@@ -60,17 +61,17 @@ class Array: public ArrayBase {
         return m_shape.is_empty();
     }
 
-    bool is_valid() const {
-        return m_handle != nullptr;
+    bool has_instance() const {
+        return m_instance != nullptr;
     }
 
-    const ArrayHandle<N>& handle() const {
-        KMM_ASSERT(m_handle != nullptr);
-        return *m_handle;
+    ArrayInstance<N>& instance() const {
+        KMM_ASSERT(m_instance != nullptr);
+        return *m_instance;
     }
 
     const Distribution<N>& distribution() const {
-        return handle().distribution();
+        return instance().distribution();
     }
 
     Dim<N> chunk_size() const {
@@ -82,17 +83,17 @@ class Array: public ArrayBase {
     }
 
     const Runtime& runtime() const final {
-        return handle().runtime();
+        return instance().runtime();
     }
 
     void synchronize() const final {
-        if (m_handle) {
-            m_handle->synchronize();
+        if (m_instance) {
+            m_instance->synchronize();
         }
     }
 
     void reset() {
-        m_handle = nullptr;
+        m_instance = nullptr;
     }
 
     template<typename M = All>
@@ -129,22 +130,22 @@ class Array: public ArrayBase {
         KMM_ASSERT(num_bytes % sizeof(T) == 0);
         KMM_ASSERT(checked_equals(num_bytes / sizeof(T), size()));
 
-        handle().copy_bytes(output, sizeof(T));
+        instance().copy_bytes(output);
     }
 
     void copy_to(T* output) const {
-        handle().copy_bytes(output, sizeof(T));
+        instance().copy_bytes(output);
     }
 
     template<typename I>
     void copy_to(T* output, I num_elements) const {
         KMM_ASSERT(checked_equals(num_elements, size()));
-        handle().copy_bytes(output, sizeof(T));
+        instance().copy_bytes(output);
     }
 
     void copy_to(std::vector<T>& output) const {
         output.resize(checked_cast<size_t>(size()));
-        handle().copy_bytes(output.data(), sizeof(T));
+        instance().copy_bytes(output.data());
     }
 
     std::vector<T> copy() const {
@@ -154,7 +155,7 @@ class Array: public ArrayBase {
     }
 
   private:
-    std::shared_ptr<const ArrayHandle<N>> m_handle;
+    std::shared_ptr<ArrayInstance<N>> m_instance;
     Index<N> m_offset;  // Unused for now, always zero
     Dim<N> m_shape;
 };
@@ -167,8 +168,7 @@ struct ArgumentHandler<Read<const Array<T, N>>> {
     using type = ViewArgument<const T, views::dynamic_domain<N>>;
 
     ArgumentHandler(Read<const Array<T, N>> access) :
-        m_handle(access.argument.handle().shared_from_this()),
-        m_planner(&m_handle->instance()),
+        m_planner(access.argument.instance().shared_from_this()),
         m_array_shape(access.argument.shape()) {}
 
     void initialize(const TaskGroupInit& init) {}
@@ -176,7 +176,7 @@ struct ArgumentHandler<Read<const Array<T, N>>> {
     type before_submit(TaskInstance& task) {
         auto region = Bounds<N>(m_array_shape);
         size_t buffer_index = task.add_buffer_requirement(  //
-            m_planner.prepare_access(task.graph, task.memory_id, region)
+            m_planner.prepare_access(task.graph, task.memory_id, region, task.dependencies)
         );
 
         auto domain = views::dynamic_domain<N> {region.sizes()};
@@ -187,8 +187,11 @@ struct ArgumentHandler<Read<const Array<T, N>>> {
         m_planner.finalize_access(result.graph, result.event_id);
     }
 
+    void commit(const TaskGroupCommit& commit) {
+        m_planner.commit(commit.graph);
+    }
+
   private:
-    std::shared_ptr<const ArrayHandle<N>> m_handle;
     ArrayReadPlanner<N> m_planner;
     Dim<N> m_array_shape;
 };
@@ -208,8 +211,7 @@ struct ArgumentHandler<Read<const Array<T, N>, M>> {
     );
 
     ArgumentHandler(Read<const Array<T, N>, M> access) :
-        m_handle(access.argument.handle().shared_from_this()),
-        m_planner(&m_handle->instance()),
+        m_planner(access.argument.instance().shared_from_this()),
         m_array_shape(access.argument.shape()),
         m_access_mapper(access.access_mapper) {}
 
@@ -218,7 +220,7 @@ struct ArgumentHandler<Read<const Array<T, N>, M>> {
     type before_submit(TaskInstance& task) {
         Bounds<N> region = m_access_mapper(task.chunk, Bounds<N>(m_array_shape));
         auto buffer_index = task.add_buffer_requirement(  //
-            m_planner.prepare_access(task.graph, task.memory_id, region)
+            m_planner.prepare_access(task.graph, task.memory_id, region, task.dependencies)
         );
 
         auto domain = views::dynamic_subdomain<N> {region.begin(), region.sizes()};
@@ -229,8 +231,11 @@ struct ArgumentHandler<Read<const Array<T, N>, M>> {
         m_planner.finalize_access(result.graph, result.event_id);
     }
 
+    void commit(const TaskGroupCommit& commit) {
+        m_planner.commit(commit.graph);
+    }
+
   private:
-    std::shared_ptr<const ArrayHandle<N>> m_handle;
     ArrayReadPlanner<N> m_planner;
     Dim<N> m_array_shape;
     M m_access_mapper;
@@ -243,24 +248,23 @@ struct ArgumentHandler<Write<Array<T, N>>> {
     ArgumentHandler(Write<Array<T, N>> access) : m_array(access.argument) {}
 
     void initialize(const TaskGroupInit& init) {
-        if (!m_array.is_valid()) {
-            m_handle = ArrayHandle<N>::instantiate(  //
+        if (!m_array.has_instance()) {
+            auto instance = std::make_shared<ArrayInstance<N>>(  //
                 init.runtime,
                 map_domain_to_distribution(m_array.shape(), init.domain, All()),
                 DataType::of<T>()
             );
 
-            m_array = Array<T, N>(m_handle);
+            m_array = Array<T, N>(instance);
         }
 
-        m_handle = m_array.handle().shared_from_this();
-        m_planner = ArrayWritePlanner<N>(&m_handle->instance());
+        m_planner = ArrayWritePlanner<N>(m_array.instance().shared_from_this());
     }
 
     type before_submit(TaskInstance& task) {
         auto access_region = Bounds<N>(m_array.shape());
         auto buffer_index = task.add_buffer_requirement(
-            m_planner.prepare_access(task.graph, task.memory_id, access_region)
+            m_planner.prepare_access(task.graph, task.memory_id, access_region, task.dependencies)
         );
 
         auto domain = views::dynamic_domain<N> {access_region.sizes()};
@@ -271,9 +275,12 @@ struct ArgumentHandler<Write<Array<T, N>>> {
         m_planner.finalize_access(result.graph, result.event_id);
     }
 
+    void commit(const TaskGroupCommit& commit) {
+        m_planner.commit(commit.graph);
+    }
+
   private:
     Array<T, N>& m_array;
-    std::shared_ptr<const ArrayHandle<N>> m_handle;
     ArrayWritePlanner<N> m_planner;
 };
 
@@ -292,24 +299,23 @@ struct ArgumentHandler<Write<Array<T, N>, M>> {
         m_access_mapper(access.access_mapper) {}
 
     void initialize(const TaskGroupInit& init) {
-        if (!m_array.is_valid()) {
-            m_handle = ArrayHandle<N>::instantiate(  //
+        if (!m_array.has_instance()) {
+            auto instance = std::make_shared<ArrayInstance<N>>(  //
                 init.runtime,
-                map_domain_to_distribution(m_shape, init.domain, m_access_mapper),
+                map_domain_to_distribution(m_array.shape(), init.domain, All()),
                 DataType::of<T>()
             );
 
-            m_array = Array<T, N>(m_handle);
+            m_array = Array<T, N>(instance);
         }
 
-        m_handle = m_array.handle().shared_from_this();
-        m_planner = ArrayWritePlanner<N>(&m_handle->instance());
+        m_planner = ArrayWritePlanner<N>(m_array.instance().shared_from_this());
     }
 
     type before_submit(TaskInstance& task) {
         auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_shape));
         auto buffer_index = task.add_buffer_requirement(
-            m_planner.prepare_access(task.graph, task.memory_id, access_region)
+            m_planner.prepare_access(task.graph, task.memory_id, access_region, task.dependencies)
         );
 
         auto domain = views::dynamic_subdomain<N> {access_region.begin(), access_region.sizes()};
@@ -320,9 +326,12 @@ struct ArgumentHandler<Write<Array<T, N>, M>> {
         m_planner.finalize_access(result.graph, result.event_id);
     }
 
+    void commit(const TaskGroupCommit& commit) {
+        m_planner.commit(commit.graph);
+    }
+
   private:
     Array<T, N>& m_array;
-    std::shared_ptr<const ArrayHandle<N>> m_handle;
     Dim<N> m_shape;
     M m_access_mapper;
     ArrayWritePlanner<N> m_planner;
@@ -337,33 +346,34 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
         m_operation(access.op) {}
 
     void initialize(const TaskGroupInit& init) {
-        if (!m_array.is_valid()) {
-            Distribution<N> dist = map_domain_to_distribution(  //
-                m_array.shape(),
-                init.domain,
-                All(),
-                true
-            );
-
-            m_handle = ArrayHandle<N>::instantiate(  //
+        if (!m_array.has_instance()) {
+            auto instance = std::make_shared<ArrayInstance<N>>(  //
                 init.runtime,
-                std::move(dist),
+                map_domain_to_distribution(  //
+                    m_array.shape(),
+                    init.domain,
+                    All(),
+                    true
+                ),
                 DataType::of<T>()
             );
 
-            m_array = Array<T, N>(m_handle);
+            m_array = Array<T, N>(instance);
         }
 
-        m_handle = m_array.handle();
-        m_planner = ReductionPlanner<N>(&m_handle->instance(), DataType::of<T>(), m_operation);
-        m_remaining = init.domain.chunks.size();
+        m_planner = ArrayReductionPlanner<N>(
+            m_array.instance().shared_from_this(),
+            DataType::of<T>(),
+            m_operation
+        );
     }
 
     type before_submit(TaskInstance& task) {
         auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_array.shape()));
 
         size_t buffer_index = task.add_buffer_requirement(
-            m_planner.prepare_access(task.graph, task.memory_id, access_region)
+            m_planner
+                .prepare_access(task.graph, task.memory_id, access_region, 1, task.dependencies)
         );
 
         views::dynamic_domain<N> domain = {access_region.begin(), access_region.sizes()};
@@ -373,18 +383,16 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
 
     void after_submit(const TaskSubmissionResult& result) {
         m_planner.finalize_access(result.graph, result.event_id);
+    }
 
-        if (--m_remaining == 0) {
-            m_planner.finalize(result.graph);
-        }
+    void commit(const TaskGroupCommit& commit) {
+        m_planner.commit(commit.graph);
     }
 
   private:
     Array<T, N>& m_array;
-    std::shared_ptr<const ArrayHandle<N>> m_handle;
     Reduction m_operation;
-    ReductionPlanner<N> m_planner;
-    size_t m_remaining = 0;
+    ArrayReductionPlanner<N> m_planner;
 };
 
 template<typename T, size_t N, typename M, typename P>
@@ -409,8 +417,8 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
         m_private_mapper(access.private_mapper) {}
 
     void initialize(const TaskGroupInit& init) {
-        if (!m_array.is_valid()) {
-            m_handle = ArrayHandle<N>::instantiate(  //
+        if (!m_array.has_instance()) {
+            auto instance = std::make_shared<ArrayInstance<N>>(  //
                 init.runtime,
                 map_domain_to_distribution(  //
                     m_array.shape(),
@@ -421,12 +429,10 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
                 DataType::of<T>()
             );
 
-            m_array = Array<T, N>(m_handle);
+            m_array = Array<T, N>(instance);
         }
 
-        m_handle = m_array.handle().shared_from_this();
-        m_planner = ReductionPlanner<N>(&m_handle->instance(), m_operation);
-        m_remaining = init.domain.chunks.size();
+        m_planner = ArrayReductionPlanner<N>(m_array.instance().shared_from_this(), m_operation);
     }
 
     type before_submit(TaskInstance& task) {
@@ -435,7 +441,8 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
 
         auto rep = checked_cast<size_t>(private_region.size());
         size_t buffer_index = task.add_buffer_requirement(
-            m_planner.prepare_access(task.graph, task.memory_id, access_region, rep)
+            m_planner
+                .prepare_access(task.graph, task.memory_id, access_region, rep, task.dependencies)
         );
 
         views::dynamic_subdomain<K + N> domain = {
@@ -447,20 +454,18 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
 
     void after_submit(const TaskSubmissionResult& result) {
         m_planner.finalize_access(result.graph, result.event_id);
+    }
 
-        if (--m_remaining == 0) {
-            m_planner.finalize(result.graph);
-        }
+    void commit(const TaskGroupCommit& commit) {
+        m_planner.commit(commit.graph);
     }
 
   private:
     Array<T, N>& m_array;
-    std::shared_ptr<const ArrayHandle<N>> m_handle;
     Reduction m_operation;
-    ReductionPlanner<N> m_planner;
+    ArrayReductionPlanner<N> m_planner;
     M m_access_mapper;
     P m_private_mapper;
-    size_t m_remaining = 0;
 };
 
 }  // namespace kmm
