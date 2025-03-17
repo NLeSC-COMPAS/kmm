@@ -51,19 +51,28 @@ class HostJob: public Executor::Job {
         if (m_status == Status::Init) {
             try {
                 m_requests = executor.buffers().create_requests(m_buffers);
-                m_status = Status::Waiting;
+                m_status = Status::PollingBuffers;
             } catch (const std::exception& e) {
                 executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
                 m_status = Status::Completing;
             }
         }
 
-        if (m_status == Status::Waiting) {
+        if (m_status == Status::PollingBuffers) {
             try {
                 if (executor.buffers().poll_requests(m_requests, m_dependencies) == Poll::Pending) {
                     return Poll::Pending;
                 }
 
+                m_status = Status::PollingDependencies;
+            } catch (const std::exception& e) {
+                executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
+                m_status = Status::Completing;
+            }
+        }
+
+        if (m_status == Status::PollingDependencies) {
+            try {
                 if (!executor.streams().is_ready(m_dependencies)) {
                     return Poll::Pending;
                 }
@@ -102,7 +111,14 @@ class HostJob: public Executor::Job {
     virtual std::future<void> submit(Executor& executor, std::vector<BufferAccessor> accessors) = 0;
 
   private:
-    enum struct Status { Init, Waiting, Running, Completing, Completed };
+    enum struct Status {
+        Init,
+        PollingBuffers,
+        PollingDependencies,
+        Running,
+        Completing,
+        Completed
+    };
 
     Status m_status = Status::Init;
     TaskHandle m_task;
@@ -233,38 +249,59 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
         if (m_status == Status::Init) {
             try {
                 m_requests = executor.buffers().create_requests(m_buffers);
-                m_status = Status::Pending;
+                m_status = Status::PollingBuffers;
             } catch (const std::exception& e) {
                 executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
                 m_status = Status::Completing;
             }
         }
 
-        if (m_status == Status::Pending) {
+        if (m_status == Status::PollingBuffers) {
             try {
                 if (executor.buffers().poll_requests(m_requests, m_dependencies) == Poll::Pending) {
                     return Poll::Pending;
                 }
 
-                m_event = executor.devices().submit(
+                // Remove the `local` events from the list of dependencies. These events
+                // have the same context as the current device, and thus can be directly put
+                // as dependencies on the current device stream.
+                m_local_dependencies = m_dependencies.extract_events_for_context(
+                    executor.streams(),
+                    executor.devices().context(m_device_id)
+                );
+
+                m_status = Status::PollingDependencies;
+            } catch (const std::exception& e) {
+                executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
+                m_status = Status::Completing;
+            }
+        }
+
+        if (m_status == Status::PollingDependencies) {
+            if (!executor.streams().is_ready(m_dependencies)) {
+                return Poll::Pending;
+            }
+
+            try {
+                m_execution_event = executor.devices().submit(
                     m_device_id,
-                    m_dependencies,
+                    m_local_dependencies,
                     *this,
                     executor.buffers().access_requests(m_requests)
                 );
 
-                executor.scheduler().mark_as_scheduled(m_task, m_event);
+                executor.scheduler().mark_as_scheduled(m_task, m_execution_event);
                 m_status = Status::Running;
             } catch (const std::exception& e) {
                 executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
                 m_status = Status::Completing;
             }
 
-            executor.buffers().release_requests(m_requests, m_event);
+            executor.buffers().release_requests(m_requests, m_execution_event);
         }
 
         if (m_status == Status::Running) {
-            if (!executor.streams().is_ready(m_event)) {
+            if (!executor.streams().is_ready(m_execution_event)) {
                 return Poll::Pending;
             }
 
@@ -280,15 +317,23 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
     }
 
   private:
-    enum struct Status { Init, Pending, Running, Completing, Completed };
+    enum struct Status {
+        Init,
+        PollingBuffers,
+        PollingDependencies,
+        Running,
+        Completing,
+        Completed
+    };
 
     Status m_status = Status::Init;
     TaskHandle m_task;
     DeviceId m_device_id;
     std::vector<BufferRequirement> m_buffers;
     BufferRequestList m_requests;
-    DeviceEvent m_event;
+    DeviceEvent m_execution_event;
     DeviceEventSet m_dependencies;
+    DeviceEventSet m_local_dependencies;
 };
 
 class ExecuteDeviceJob: public DeviceJob {

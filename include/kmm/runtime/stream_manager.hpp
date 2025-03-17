@@ -162,20 +162,31 @@ class DeviceEventSet {
     void insert(DeviceEventSet&& that) noexcept;
 
     /**
-     * Remove all events from the list for which the manager indicates that they are ready.
+     * Remove all events from the set for which the manager indicates that they are ready.
      *
      * @return true if all events were ready, false otherwise.
      */
     bool remove_ready(const DeviceStreamManager&) noexcept;
 
     /**
-     * Remove events from the list for which the manager indicates that they are ready. This
+     * Remove events from the set for which the manager indicates that they are ready. This
      * differs from `remove_ready` in that it only remove sthe events at the end of the list and
      * does not reorder the leading events in the list.
      *
      * @return true if all events were ready, false otherwise.
      */
     bool remove_ready_trailing(const DeviceStreamManager&) noexcept;
+
+    /**
+     * Find the events from this set that have the same context as indicated by `context. The
+     * matching events are removed from the current set and returned as a new set.
+     *
+     * @return The extracted events.
+     */
+    DeviceEventSet extract_events_for_context(
+        const DeviceStreamManager& manager,
+        GPUContextHandle context
+    );
 
     /**
      * Remove all events.

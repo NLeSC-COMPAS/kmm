@@ -449,6 +449,34 @@ bool DeviceEventSet::remove_ready_trailing(const DeviceStreamManager& m) noexcep
     return true;
 }
 
+DeviceEventSet DeviceEventSet::extract_events_for_context(
+    const DeviceStreamManager& manager,
+    GPUContextHandle context
+) {
+    // Remove all events that have completed.
+    remove_ready(manager);
+
+    // Push all events with a different context to the front of the list.
+    auto mid = std::partition(m_events.begin(), m_events.end(), [&](DeviceEvent e) {
+        return manager.context(e.stream()) != context;
+    });
+
+    // If all events have the same context, then we can just return the current set.
+    if (m_events.begin() == mid) {
+        return std::move(*this);
+    }
+
+    // If all events have a different context, then we can just return an empty set.
+    if (m_events.end() == mid) {
+        return DeviceEventSet {};
+    }
+
+    DeviceEventSet result;
+    result.m_events.insert_all(mid, m_events.end());
+    m_events.truncate(static_cast<size_t>(mid - m_events.begin()));
+    return result;
+}
+
 void DeviceEventSet::clear() noexcept {
     m_events.clear();
 }
