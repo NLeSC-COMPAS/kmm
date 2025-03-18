@@ -35,6 +35,9 @@ class ArrayDescriptor {
         return m_dtype;
     }
 
+    EventId copy_bytes_into_buffer(TaskGraphStage& stage, void* dst_data);
+    EventId copy_bytes_from_buffer(TaskGraphStage& stage, const void* src_data);
+
     EventId join_events(TaskGraphStage& stage) const;
     void destroy(TaskGraphStage& stage);
 
@@ -46,29 +49,6 @@ class ArrayDescriptor {
     size_t m_num_writers = 0;
 };
 
-template<size_t N>
-class ArrayInstance:
-    public ArrayDescriptor<N>,
-    public std::enable_shared_from_this<ArrayInstance<N>> {
-    KMM_NOT_COPYABLE_OR_MOVABLE(ArrayInstance)
-
-  public:
-    ArrayInstance(Runtime& rt, Distribution<N> dist, DataType dtype);
-    ~ArrayInstance();
-
-    void copy_bytes_into(void* data);
-    void copy_bytes_from(const void* data);
-    void synchronize() const;
-
-    const Runtime& runtime() const {
-        return *m_rt;
-    }
-
-  private:
-    std::shared_ptr<Runtime> m_rt;
-};
-
 KMM_INSTANTIATE_ARRAY_IMPL(ArrayDescriptor)
-KMM_INSTANTIATE_ARRAY_IMPL(ArrayInstance)
 
 }  // namespace kmm

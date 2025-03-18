@@ -9,8 +9,8 @@
 
 #include "kmm/api/access.hpp"
 #include "kmm/api/argument.hpp"
+#include "kmm/api/array_instance.hpp"
 #include "kmm/api/view_argument.hpp"
-#include "kmm/planner/array_instance.hpp"
 #include "kmm/planner/read_planner.hpp"
 #include "kmm/planner/reduction_planner.hpp"
 #include "kmm/planner/write_planner.hpp"
@@ -25,7 +25,6 @@ class ArrayBase {
     virtual int64_t size(size_t axis) const = 0;
     virtual const Runtime& runtime() const = 0;
     virtual void synchronize() const = 0;
-    virtual void copy_bytes_to(void* output, size_t num_bytes) const = 0;
 };
 
 template<typename T, size_t N = 1>
@@ -66,7 +65,10 @@ class Array: public ArrayBase {
     }
 
     ArrayInstance<N>& instance() const {
-        KMM_ASSERT(m_instance != nullptr);
+        if (m_instance == nullptr) {
+            throw_uninitialized_array_exception();
+        }
+
         return *m_instance;
     }
 
@@ -82,7 +84,7 @@ class Array: public ArrayBase {
         return chunk_size().get_or_default(axis);
     }
 
-    const Runtime& runtime() const final {
+    Runtime& runtime() const final {
         return instance().runtime();
     }
 
@@ -147,10 +149,30 @@ class Array: public ArrayBase {
         instance().copy_bytes_into(output.data());
     }
 
-    std::vector<T> copy() const {
-        std::vector<T> output;
+    std::vector<T> copy_to_vector() const {
+        std::vector<T> output(size());
         copy_to(output);
         return output;
+    }
+
+    void copy_bytes_from(const void* input, size_t num_bytes) const {
+        KMM_ASSERT(num_bytes % sizeof(T) == 0);
+        KMM_ASSERT(checked_equals(num_bytes / sizeof(T), size()));
+        instance().copy_bytes_from(input);
+    }
+
+    void copy_from(T* input) const {
+        instance().copy_bytes_from(input);
+    }
+
+    template<typename I>
+    void copy_from(T* input, I num_elements) const {
+        KMM_ASSERT(checked_equals(num_elements, size()));
+        instance().copy_bytes_from(input);
+    }
+
+    void copy_from(const std::vector<T>& input) const {
+        copy_from(input.data(), input.size());
     }
 
   private:

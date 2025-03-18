@@ -4,30 +4,6 @@
 
 namespace kmm {
 
-class CopyInTask: public ComputeTask {
-  public:
-    CopyInTask(const void* data, size_t nbytes) : m_src_addr(data), m_nbytes(nbytes) {}
-
-    void execute(Resource& proc, TaskContext context) override {
-        KMM_ASSERT(context.accessors.size() == 1);
-        KMM_ASSERT(context.accessors[0].layout.size_in_bytes == m_nbytes);
-
-        void* dst_addr = context.accessors[0].address;
-
-        if (auto* device = proc.cast_if<DeviceResource>()) {
-            device->copy_bytes(m_src_addr, dst_addr, m_nbytes);
-        } else if (proc.is<HostResource>()) {
-            ::memcpy(dst_addr, m_src_addr, m_nbytes);
-        } else {
-            throw std::runtime_error("invalid execution context");
-        }
-    }
-
-  private:
-    const void* m_src_addr;
-    size_t m_nbytes;
-};
-
 RuntimeHandle::RuntimeHandle(std::shared_ptr<Runtime> rt) : m_worker(std::move(rt)) {
     KMM_ASSERT(m_worker != nullptr);
 }
@@ -41,26 +17,6 @@ MemoryId RuntimeHandle::memory_affinity_for_address(const void* address) const {
     } else {
         return MemoryId::host();
     }
-}
-
-BufferId RuntimeHandle::allocate_bytes(const void* data, BufferLayout layout, MemoryId memory_id)
-    const {
-    ProcessorId proc = info().affinity_processor(memory_id);
-    BufferId buffer_id = m_worker->create_buffer(layout);
-    EventId event_id;
-
-    m_worker->schedule([&](TaskGraphStage& graph) {
-        auto task = std::make_unique<CopyInTask>(data, layout.size_in_bytes);
-        auto req = BufferRequirement {
-            .buffer_id = buffer_id,  //
-            .memory_id = memory_id,
-            .access_mode = AccessMode::Exclusive};
-
-        event_id = graph.insert_compute_task(proc, std::move(task), {req});
-    });
-
-    wait(event_id);
-    return buffer_id;
 }
 
 bool RuntimeHandle::is_done(EventId id) const {

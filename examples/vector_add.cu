@@ -84,7 +84,7 @@ int main() {
 
     // Correctness check
     for (size_t i = 0; i < n; i++) {
-        if (result[i] != float(i + 1)) {
+        if (result[i] != float(i) + 1.0F) {
             std::cerr << "Wrong result at " << i << " : " << result[i] << " != " << float(i) + 1
                       << std::endl;
             return EXIT_FAILURE;

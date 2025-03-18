@@ -1,7 +1,7 @@
 #pragma once
 
 #include "kmm/core/reduction.hpp"
-#include "kmm/planner/array_instance.hpp"
+#include "kmm/planner/array_descriptor.hpp"
 
 namespace kmm {
 

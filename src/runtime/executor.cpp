@@ -156,14 +156,14 @@ class ExecuteHostJob: public HostJob {
 class CopyHostJob: public HostJob {
   public:
     CopyHostJob(
-        TaskHandle id,
+        TaskHandle task,
         BufferId src_buffer,
         BufferId dst_buffer,
         CopyDef definition,
         DeviceEventSet dependencies
     ) :
         HostJob(
-            id,
+            task,
             {BufferRequirement {src_buffer, MemoryId::host(), AccessMode::Read},
              BufferRequirement {dst_buffer, MemoryId::host(), AccessMode::ReadWrite}},
             std::move(dependencies)
@@ -187,14 +187,14 @@ class CopyHostJob: public HostJob {
 class ReductionHostJob: public HostJob {
   public:
     ReductionHostJob(
-        TaskHandle id,
+        TaskHandle task,
         BufferId src_buffer,
         BufferId dst_buffer,
         ReductionDef definition,
         DeviceEventSet dependencies
     ) :
         HostJob(
-            id,
+            task,
             {BufferRequirement {src_buffer, MemoryId::host(), AccessMode::Read},
              BufferRequirement {dst_buffer, MemoryId::host(), AccessMode::ReadWrite}},
             std::move(dependencies)
@@ -214,13 +214,13 @@ class ReductionHostJob: public HostJob {
 class FillHostJob: public HostJob {
   public:
     FillHostJob(
-        TaskHandle id,
+        TaskHandle task,
         BufferId dst_buffer,
         FillDef definition,
         DeviceEventSet dependencies
     ) :
         HostJob(
-            id,
+            task,
             {BufferRequirement {dst_buffer, MemoryId::host(), AccessMode::ReadWrite}},
             std::move(dependencies)
         ),

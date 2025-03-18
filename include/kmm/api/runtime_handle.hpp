@@ -107,7 +107,7 @@ class RuntimeHandle {
             DataType::of<T>()
         );
 
-        KMM_TODO();
+        handle->copy_bytes_from(data);
 
         return Array<T, N> {std::move(handle)};
     }
@@ -160,8 +160,6 @@ class RuntimeHandle {
     Array<T> allocate(std::initializer_list<T> v) const {
         return allocate(v.begin(), v.size());
     }
-
-    BufferId allocate_bytes(const void* data, BufferLayout layout, MemoryId memory_id) const;
 
     /**
      * Returns the memory affinity for a given address.
