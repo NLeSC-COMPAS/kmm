@@ -140,15 +140,17 @@ class ExecuteHostJob: public HostJob {
         m_task(compute_task) {}
 
     std::future<void> submit(Executor& executor, std::vector<BufferAccessor> accessors) override {
+        auto task = m_task;
+
         return std::async(std::launch::async, [=] {
             auto host = HostResource {};
             auto context = TaskContext {std::move(accessors)};
-            m_task->execute(host, context);
+            task->execute(host, context);
         });
     }
 
   private:
-    std::shared_ptr<ComputeTask> m_task;
+    ComputeTask* m_task;
 };
 
 class CopyHostJob: public HostJob {

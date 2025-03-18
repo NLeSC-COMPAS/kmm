@@ -132,7 +132,7 @@ std::optional<TaskHandle> Scheduler::pop_ready(DeviceEventSet* deps_out) {
     for (auto& q : m_queues) {
         if (q.pop_job(result)) {
             spdlog::debug(
-                "scheduling event {} (command={}, GPU deps={})",
+                "scheduling task {} (command={}, GPU deps={})",
                 result->id(),
                 result->command,
                 result->dependency_events
@@ -149,12 +149,7 @@ std::optional<TaskHandle> Scheduler::pop_ready(DeviceEventSet* deps_out) {
 }
 
 void Scheduler::mark_as_scheduled(TaskHandle task, DeviceEvent event) {
-    spdlog::debug(
-        "scheduled event {} (command={}, GPU event={})",
-        task->id(),
-        task->command,
-        event
-    );
+    spdlog::debug("scheduled task {} (command={}, GPU event={})", task->id(), task->command, event);
 
     KMM_ASSERT(task->status == Task::Status::Submitted);
     task->status = Task::Status::Executing;
@@ -170,7 +165,7 @@ void Scheduler::mark_as_scheduled(TaskHandle task, DeviceEvent event) {
 }
 
 void Scheduler::mark_as_completed(TaskHandle task) {
-    spdlog::debug("completed event {} (command={})", task->id(), task->command);
+    spdlog::debug("completed task {} (command={})", task->id(), task->command);
 
     if (task->status == Task::Status::Submitted) {
         for (const auto& succ : task->successors) {
