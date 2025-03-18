@@ -16,6 +16,7 @@ BufferId BufferRegistry::add(BufferLayout layout) {
 
     auto buffer = m_memory_manager->create_buffer(layout, std::to_string(buffer_id));
     m_buffers.emplace(buffer_id, BufferMeta {.buffer = buffer});
+    return buffer_id;
 }
 
 void BufferRegistry::remove(BufferId buffer_id) {
