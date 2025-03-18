@@ -25,7 +25,8 @@ struct DeviceResourceManager::Device {
 DeviceResourceManager::DeviceResourceManager(
     std::vector<GPUContextHandle> contexts,
     std::shared_ptr<DeviceStreamManager> stream_manager
-) {
+) :
+    m_stream_manager(stream_manager) {
     for (size_t i = 0; i < contexts.size(); i++) {
         auto stream = stream_manager->create_stream(contexts[i]);
 
