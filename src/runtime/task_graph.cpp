@@ -17,8 +17,7 @@ TaskGraphStage::TaskGraphStage(TaskGraph* state) : m_guard(state->m_mutex), m_st
 }
 
 EventId TaskGraphStage::commit() {
-    EventList deps = std::move(m_events_since_last_barrier);
-    auto barrier_id = join_events(std::move(deps));
+    auto barrier_id = insert_barrier();
 
     m_state->m_last_stage_id = barrier_id;
     m_state->m_next_event_id = m_next_event_id;
@@ -49,8 +48,12 @@ EventId TaskGraphStage::delete_buffer(BufferId id, EventList deps) {
 }
 
 EventId TaskGraphStage::insert_barrier() {
+    if (m_events_since_last_barrier.size() == 1) {
+        return m_events_since_last_barrier[0];
+    }
+
     EventList deps = std::move(m_events_since_last_barrier);
-    return join_events(std::move(deps));
+    return insert_node(CommandEmpty {}, std::move(deps));
 }
 
 EventId TaskGraphStage::insert_compute_task(
