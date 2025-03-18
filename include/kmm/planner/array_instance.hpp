@@ -56,7 +56,8 @@ class ArrayInstance:
     ArrayInstance(Runtime& rt, Distribution<N> dist, DataType dtype);
     ~ArrayInstance();
 
-    void copy_bytes(void* data) const;
+    void copy_bytes_into(void* data);
+    void copy_bytes_from(const void* data);
     void synchronize() const;
 
     const Runtime& runtime() const {

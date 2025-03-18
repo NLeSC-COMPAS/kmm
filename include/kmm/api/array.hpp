@@ -129,23 +129,22 @@ class Array: public ArrayBase {
     void copy_bytes_to(void* output, size_t num_bytes) const {
         KMM_ASSERT(num_bytes % sizeof(T) == 0);
         KMM_ASSERT(checked_equals(num_bytes / sizeof(T), size()));
-
-        instance().copy_bytes(output);
+        instance().copy_bytes_into(output);
     }
 
     void copy_to(T* output) const {
-        instance().copy_bytes(output);
+        instance().copy_bytes_into(output);
     }
 
     template<typename I>
     void copy_to(T* output, I num_elements) const {
         KMM_ASSERT(checked_equals(num_elements, size()));
-        instance().copy_bytes(output);
+        instance().copy_bytes_into(output);
     }
 
     void copy_to(std::vector<T>& output) const {
         output.resize(checked_cast<size_t>(size()));
-        instance().copy_bytes(output.data());
+        instance().copy_bytes_into(output.data());
     }
 
     std::vector<T> copy() const {
@@ -258,13 +257,13 @@ struct ArgumentHandler<Write<Array<T, N>>> {
             m_array = Array<T, N>(instance);
         }
 
-        m_planner = ArrayWritePlanner<N>(m_array.instance().shared_from_this());
+        m_planner = std::make_unique<ArrayWritePlanner<N>>(m_array.instance().shared_from_this());
     }
 
     type before_submit(TaskInstance& task) {
         auto access_region = Bounds<N>(m_array.shape());
         auto buffer_index = task.add_buffer_requirement(
-            m_planner.prepare_access(task.graph, task.memory_id, access_region, task.dependencies)
+            m_planner->prepare_access(task.graph, task.memory_id, access_region, task.dependencies)
         );
 
         auto domain = views::dynamic_domain<N> {access_region.sizes()};
@@ -272,16 +271,16 @@ struct ArgumentHandler<Write<Array<T, N>>> {
     }
 
     void after_submit(const TaskSubmissionResult& result) {
-        m_planner.finalize_access(result.graph, result.event_id);
+        m_planner->finalize_access(result.graph, result.event_id);
     }
 
     void commit(const TaskGroupCommit& commit) {
-        m_planner.commit(commit.graph);
+        m_planner->commit(commit.graph);
     }
 
   private:
     Array<T, N>& m_array;
-    ArrayWritePlanner<N> m_planner;
+    std::unique_ptr<ArrayWritePlanner<N>> m_planner;
 };
 
 template<typename T, size_t N, typename M>
@@ -302,20 +301,20 @@ struct ArgumentHandler<Write<Array<T, N>, M>> {
         if (!m_array.has_instance()) {
             auto instance = std::make_shared<ArrayInstance<N>>(  //
                 init.runtime,
-                map_domain_to_distribution(m_array.shape(), init.domain, All()),
+                map_domain_to_distribution(m_array.shape(), init.domain, m_access_mapper),
                 DataType::of<T>()
             );
 
             m_array = Array<T, N>(instance);
         }
 
-        m_planner = ArrayWritePlanner<N>(m_array.instance().shared_from_this());
+        m_planner = std::make_unique<ArrayWritePlanner<N>>(m_array.instance().shared_from_this());
     }
 
     type before_submit(TaskInstance& task) {
         auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_shape));
         auto buffer_index = task.add_buffer_requirement(
-            m_planner.prepare_access(task.graph, task.memory_id, access_region, task.dependencies)
+            m_planner->prepare_access(task.graph, task.memory_id, access_region, task.dependencies)
         );
 
         auto domain = views::dynamic_subdomain<N> {access_region.begin(), access_region.sizes()};
@@ -323,18 +322,18 @@ struct ArgumentHandler<Write<Array<T, N>, M>> {
     }
 
     void after_submit(const TaskSubmissionResult& result) {
-        m_planner.finalize_access(result.graph, result.event_id);
+        m_planner->finalize_access(result.graph, result.event_id);
     }
 
     void commit(const TaskGroupCommit& commit) {
-        m_planner.commit(commit.graph);
+        m_planner->commit(commit.graph);
     }
 
   private:
     Array<T, N>& m_array;
     Dim<N> m_shape;
     M m_access_mapper;
-    ArrayWritePlanner<N> m_planner;
+    std::unique_ptr<ArrayWritePlanner<N>> m_planner;
 };
 
 template<typename T, size_t N>
@@ -361,7 +360,7 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
             m_array = Array<T, N>(instance);
         }
 
-        m_planner = ArrayReductionPlanner<N>(
+        m_planner = std::make_unique<ArrayReductionPlanner<N>>(
             m_array.instance().shared_from_this(),
             DataType::of<T>(),
             m_operation
@@ -373,7 +372,7 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
 
         size_t buffer_index = task.add_buffer_requirement(
             m_planner
-                .prepare_access(task.graph, task.memory_id, access_region, 1, task.dependencies)
+                ->prepare_access(task.graph, task.memory_id, access_region, 1, task.dependencies)
         );
 
         views::dynamic_domain<N> domain = {access_region.begin(), access_region.sizes()};
@@ -382,17 +381,17 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
     }
 
     void after_submit(const TaskSubmissionResult& result) {
-        m_planner.finalize_access(result.graph, result.event_id);
+        m_planner->finalize_access(result.graph, result.event_id);
     }
 
     void commit(const TaskGroupCommit& commit) {
-        m_planner.commit(commit.graph);
+        m_planner->commit(commit.graph);
     }
 
   private:
     Array<T, N>& m_array;
     Reduction m_operation;
-    ArrayReductionPlanner<N> m_planner;
+    std::unique_ptr<ArrayReductionPlanner<N>> m_planner;
 };
 
 template<typename T, size_t N, typename M, typename P>
@@ -432,7 +431,10 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
             m_array = Array<T, N>(instance);
         }
 
-        m_planner = ArrayReductionPlanner<N>(m_array.instance().shared_from_this(), m_operation);
+        m_planner = std::make_unique<ArrayReductionPlanner<N>>(
+            m_array.instance().shared_from_this(),
+            m_operation
+        );
     }
 
     type before_submit(TaskInstance& task) {
@@ -442,7 +444,7 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
         auto rep = checked_cast<size_t>(private_region.size());
         size_t buffer_index = task.add_buffer_requirement(
             m_planner
-                .prepare_access(task.graph, task.memory_id, access_region, rep, task.dependencies)
+                ->prepare_access(task.graph, task.memory_id, access_region, rep, task.dependencies)
         );
 
         views::dynamic_subdomain<K + N> domain = {
@@ -453,17 +455,17 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
     }
 
     void after_submit(const TaskSubmissionResult& result) {
-        m_planner.finalize_access(result.graph, result.event_id);
+        m_planner->finalize_access(result.graph, result.event_id);
     }
 
     void commit(const TaskGroupCommit& commit) {
-        m_planner.commit(commit.graph);
+        m_planner->commit(commit.graph);
     }
 
   private:
     Array<T, N>& m_array;
     Reduction m_operation;
-    ArrayReductionPlanner<N> m_planner;
+    std::unique_ptr<ArrayReductionPlanner<N>> m_planner;
     M m_access_mapper;
     P m_private_mapper;
 };

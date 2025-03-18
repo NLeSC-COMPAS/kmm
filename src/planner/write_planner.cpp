@@ -4,22 +4,19 @@
 namespace kmm {
 
 template<size_t N>
-ArrayWritePlanner<N>::ArrayWritePlanner() {}
-
-template<size_t N>
 ArrayWritePlanner<N>::ArrayWritePlanner(std::shared_ptr<ArrayDescriptor<N>> instance) :
     m_instance(std::move(instance)) {
     KMM_ASSERT(m_instance);
     KMM_ASSERT(m_instance->m_num_writers == 0);
     KMM_ASSERT(m_instance->m_num_readers == 0);
     m_instance->m_num_writers++;
+    fprintf(stderr, "increment writers for %p\n", m_instance.get());
 }
 
 template<size_t N>
 ArrayWritePlanner<N>::~ArrayWritePlanner() {
-    if (m_instance) {
-        m_instance->m_num_writers--;
-    }
+    fprintf(stderr, "decrement writers for %p\n", m_instance.get());
+    m_instance->m_num_writers--;
 }
 
 template<size_t N>
@@ -29,7 +26,6 @@ BufferRequirement ArrayWritePlanner<N>::prepare_access(
     Bounds<N>& region,
     EventList& deps_out
 ) {
-    KMM_ASSERT(m_instance);
     size_t chunk_index = m_instance->m_distribution.region_to_chunk_index(region);
     auto chunk = m_instance->m_distribution.chunk(chunk_index);
     const auto& buffer = m_instance->m_buffers[chunk_index];
@@ -52,7 +48,6 @@ void ArrayWritePlanner<N>::finalize_access(TaskGraphStage& stage, EventId event_
 
 template<size_t N>
 void ArrayWritePlanner<N>::commit(TaskGraphStage& stage) {
-    KMM_ASSERT(m_instance);
     std::sort(m_write_events.begin(), m_write_events.end(), [&](const auto& a, const auto& b) {
         return a.first < b.first;
     });

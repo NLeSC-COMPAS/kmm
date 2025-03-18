@@ -6,9 +6,9 @@ namespace kmm {
 
 template<size_t N>
 class ArrayWritePlanner {
-  public:
-    ArrayWritePlanner();
+    KMM_NOT_COPYABLE_OR_MOVABLE(ArrayWritePlanner)
 
+  public:
     ArrayWritePlanner(std::shared_ptr<ArrayDescriptor<N>> instance);
     ~ArrayWritePlanner();
 

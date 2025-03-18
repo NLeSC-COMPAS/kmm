@@ -4,9 +4,6 @@
 namespace kmm {
 
 template<size_t N>
-ArrayReductionPlanner<N>::ArrayReductionPlanner() {}
-
-template<size_t N>
 ArrayReductionPlanner<N>::ArrayReductionPlanner(
     std::shared_ptr<ArrayDescriptor<N>> instance,
     Reduction op
@@ -21,9 +18,7 @@ ArrayReductionPlanner<N>::ArrayReductionPlanner(
 
 template<size_t N>
 ArrayReductionPlanner<N>::~ArrayReductionPlanner() {
-    if (m_instance) {
-        m_instance->m_num_writers--;
-    }
+    m_instance->m_num_writers--;
 }
 
 template<size_t N>
@@ -34,7 +29,6 @@ BufferRequirement ArrayReductionPlanner<N>::prepare_access(
     size_t replication_factor,
     EventList& deps_out
 ) {
-    KMM_ASSERT(m_instance);
     KMM_TODO();
 }
 
@@ -45,7 +39,6 @@ void ArrayReductionPlanner<N>::finalize_access(TaskGraphStage& stage, EventId ev
 
 template<size_t N>
 void ArrayReductionPlanner<N>::commit(TaskGraphStage& stage) {
-    KMM_ASSERT(m_instance);
     KMM_TODO();
 }
 

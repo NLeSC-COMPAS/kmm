@@ -43,9 +43,9 @@ __global__ void vector_add(
 
 int main() {
     using namespace kmm::placeholders;
-    spdlog::set_level(spdlog::level::trace);
 
     auto rt = kmm::make_runtime();
+    spdlog::set_level(spdlog::level::trace);
     long n = 2'000'000'000;
     long chunk_size = n / 10;
     dim3 block_size = 256;
@@ -53,18 +53,17 @@ int main() {
     auto A = kmm::Array<float> {n};
     auto B = kmm::Array<float> {n};
     auto C = kmm::Array<float> {n};
+    auto domain = kmm::TileDomain(n, chunk_size);
 
-    rt.parallel_submit(
-        {n},
-        {chunk_size},
+    rt.parallel_submit(  //
+        domain,
         kmm::GPUKernel(initialize_range, block_size),
         _x,
         write(A[_x])
     );
 
     rt.parallel_submit(
-        {n},
-        {chunk_size},
+        domain,
         kmm::GPUKernel(fill_range, block_size),
         _x,
         float(1.0),
@@ -72,8 +71,7 @@ int main() {
     );
 
     rt.parallel_submit(
-        {n},
-        {chunk_size},
+        domain,
         kmm::GPUKernel(vector_add, block_size),
         _x,
         write(C[_x]),
@@ -85,13 +83,13 @@ int main() {
     C.copy_to(result);
 
     // Correctness check
-    for (int i = 0; i < n; i++) {
+    for (size_t i = 0; i < n; i++) {
         if (result[i] != float(i + 1)) {
             std::cerr << "Wrong result at " << i << " : " << result[i] << " != " << float(i) + 1
                       << std::endl;
-            return 1;
+            return EXIT_FAILURE;
         }
     }
     std::cout << "Correctness check completed." << std::endl;
-    return 0;
+    return EXIT_SUCCESS;
 }

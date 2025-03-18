@@ -131,7 +131,7 @@ Distribution<N> Distribution<N>::from_chunks(
 
         if (chunk.offset != expected_offset || chunk.size != expected_size) {
             throw std::runtime_error(fmt::format(
-                "invalid write access pattern, the region {} is not aligned to the chunk size of {}",
+                "invalid write access pattern, region {} is not aligned to the chunk size of {}",
                 Bounds<N>::from_offset_size(chunk.offset, chunk.size),
                 chunk_size
             ));
@@ -140,7 +140,7 @@ Distribution<N> Distribution<N>::from_chunks(
         if (visited[linear_index]) {
             if (!allow_duplicates) {
                 throw std::runtime_error(fmt::format(
-                    "invalid write access pattern, the region {} is written to by more one task",
+                    "invalid write access pattern, region {} is written to by more than one task",
                     Bounds<N>::from_offset_size(expected_offset, expected_size)
                 ));
             }

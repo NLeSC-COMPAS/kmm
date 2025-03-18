@@ -7,8 +7,9 @@ namespace kmm {
 
 template<size_t N>
 class ArrayReductionPlanner {
+    KMM_NOT_COPYABLE_OR_MOVABLE(ArrayReductionPlanner)
+
   public:
-    ArrayReductionPlanner();
     ArrayReductionPlanner(std::shared_ptr<ArrayDescriptor<N>> instance, Reduction op);
     ~ArrayReductionPlanner();
 

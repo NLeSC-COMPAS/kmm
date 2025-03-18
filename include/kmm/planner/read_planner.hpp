@@ -9,7 +9,6 @@ class ArrayReadPlanner {
     KMM_NOT_COPYABLE_OR_MOVABLE(ArrayReadPlanner)
 
   public:
-    ArrayReadPlanner();
     ArrayReadPlanner(std::shared_ptr<ArrayDescriptor<N>> instance);
     ~ArrayReadPlanner();
 
