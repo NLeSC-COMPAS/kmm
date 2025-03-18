@@ -17,7 +17,12 @@ struct CompareCallback {
 };
 
 struct DeviceStreamManager::StreamState {
-    KMM_NOT_COPYABLE(StreamState)
+    // GCC 9.4 does not allow noexcept in move constructor when using a std::vector<StreamState>.
+    // This is why we explicitly define them as not being noexcept.
+    StreamState(const StreamState&) = delete;
+    StreamState& operator=(const StreamState&) = delete;
+    StreamState(StreamState&&) /*noexcept*/ = default;
+    StreamState& operator=(StreamState&&) /*noexcept*/ = default;
 
   public:
     StreamState(size_t pool_index, GPUContextHandle c, GPUstream_t s) :
