@@ -28,7 +28,7 @@ using packed_argument_t = typename ArgumentHandler<T>::type;
 
 template<typename T>
 packed_argument_t<T> pack_argument(TaskInstance& task, T&& arg) {
-    return ArgumentHandler<T>(std::forward<T>(arg)).process_chunk(task);
+    return ArgumentHandler<T>(std::forward<T>(arg)).before_submit(task);
 }
 
 template<ExecutionSpace, typename T>
