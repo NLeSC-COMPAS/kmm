@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "kmm/planner/write_planner.hpp"
 #include "kmm/runtime/task_graph.hpp"
 
