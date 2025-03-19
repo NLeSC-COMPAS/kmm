@@ -3,7 +3,7 @@
 
 #include "fmt/format.h"
 
-#include "kmm/memops/gpu_copy.hpp"
+#include "kmm/memops/types.hpp"
 #include "kmm/utils/checked_math.hpp"
 #include "kmm/utils/gpu_utils.hpp"
 

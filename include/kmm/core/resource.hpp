@@ -2,14 +2,14 @@
 
 #include "kmm/core/buffer.hpp"
 #include "kmm/core/system_info.hpp"
+#include "kmm/core/view.hpp"
 #include "kmm/utils/checked_math.hpp"
 #include "kmm/utils/gpu_utils.hpp"
-#include "kmm/utils/view.hpp"
 
 namespace kmm {
 
 class Resource;
-class InvalidResource;
+class InvalidResourceException;
 class ComputeTask;
 struct TaskContext;
 
@@ -28,9 +28,9 @@ class ComputeTask {
 /**
  * Exception throw if invalid resource is provided to task.
  */
-class InvalidResource: public std::exception {
+class InvalidResourceException: public std::exception {
   public:
-    InvalidResource(const std::type_info& expected, const std::type_info& gotten);
+    InvalidResourceException(const std::type_info& expected, const std::type_info& gotten);
     const char* what() const noexcept override;
 
   private:
@@ -57,7 +57,7 @@ class Resource {
             return *ptr;
         }
 
-        throw InvalidResource(typeid(T), typeid(*this));
+        throw InvalidResourceException(typeid(T), typeid(*this));
     }
 
     template<typename T>
@@ -66,7 +66,7 @@ class Resource {
             return *ptr;
         }
 
-        throw InvalidResource(typeid(T), typeid(*this));
+        throw InvalidResourceException(typeid(T), typeid(*this));
     }
 
     template<typename T>

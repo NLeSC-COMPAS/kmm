@@ -3,13 +3,13 @@
 #include "kmm/api/argument.hpp"
 #include "kmm/api/task_group.hpp"
 #include "kmm/core/buffer.hpp"
+#include "kmm/core/domain.hpp"
 #include "kmm/core/identifiers.hpp"
-#include "kmm/dag/domain.hpp"
-#include "kmm/worker/worker.hpp"
+#include "kmm/runtime/runtime.hpp"
 
 namespace kmm {
 
-class Worker;
+class Runtime;
 class TaskGraph;
 
 namespace detail {
@@ -46,36 +46,36 @@ class ComputeTaskImpl: public ComputeTask {
 template<size_t... Is, typename Launcher, typename... Args>
 EventId parallel_submit_impl(
     std::index_sequence<Is...>,
-    Worker& worker,
+    Runtime& runtime,
     const SystemInfo& system_info,
     const Domain& domain,
     Launcher launcher,
     Args&&... args
 ) {
-    std::tuple<ArgumentHandler<Args>...> handlers = {
-        ArgumentHandler<Args>(std::forward<Args>(args))...};
+    EventId result_event;
+    std::tuple<ArgumentHandler<Args>...> handlers = {std::forward<Args>(args)...};
 
-    auto init = TaskGroupInit {
-        .worker = worker,  //
-        .domain = domain};
-
-    (std::get<Is>(handlers).initialize(init), ...);
-
-    return worker.with_task_graph([&](TaskGraph& graph) {
+    runtime.schedule([&](TaskGraphStage& graph) {
         EventList events;
+
+        auto init = TaskGroupInit {
+            .runtime = runtime,  //
+            .domain = domain};
+
+        (std::get<Is>(handlers).initialize(init), ...);
 
         for (const DomainChunk& chunk : domain.chunks) {
             ProcessorId processor_id = chunk.owner_id;
 
             auto instance = TaskInstance {
-                .worker = worker,
+                .runtime = runtime,
                 .graph = graph,
                 .chunk = chunk,
                 .memory_id = system_info.affinity_memory(processor_id),
                 .buffers = {},
                 .dependencies = {}};
 
-            auto task = std::make_shared<ComputeTaskImpl<Launcher, packed_argument_t<Args>...>>(
+            auto task = std::make_unique<ComputeTaskImpl<Launcher, packed_argument_t<Args>...>>(
                 chunk,
                 launcher,
                 std::get<Is>(handlers).before_submit(instance)...
@@ -91,22 +91,27 @@ EventId parallel_submit_impl(
             events.push_back(event_id);
 
             auto result = TaskSubmissionResult {
-                .worker = worker,  //
+                .runtime = runtime,  //
                 .graph = graph,
-                .event_id = event_id,
-                .dependencies = events};
+                .event_id = event_id};
 
             (std::get<Is>(handlers).after_submit(result), ...);
         }
 
-        return graph.join_events(events);
+        auto commit = TaskGroupCommit {.runtime = runtime, .graph = graph};
+
+        (std::get<Is>(handlers).commit(commit), ...);
+
+        result_event = graph.join_events(events);
     });
+
+    return result_event;
 }
 }  // namespace detail
 
 template<typename Launcher, typename... Args>
 EventId parallel_submit(
-    Worker& worker,
+    Runtime& runtime,
     const SystemInfo& system_info,
     const Domain& partition,
     Launcher launcher,
@@ -114,7 +119,7 @@ EventId parallel_submit(
 ) {
     return detail::parallel_submit_impl(
         std::index_sequence_for<Args...> {},
-        worker,
+        runtime,
         system_info,
         partition,
         launcher,

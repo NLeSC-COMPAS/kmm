@@ -1,18 +1,18 @@
 #pragma once
 
+#include "kmm/core/domain.hpp"
 #include "kmm/core/identifiers.hpp"
-#include "kmm/dag/domain.hpp"
 
 namespace kmm {
 
-class Worker;
-class TaskGraph;
+class Runtime;
+class TaskGraphStage;
 
 struct TaskGroupInit {
     KMM_NOT_COPYABLE_OR_MOVABLE(TaskGroupInit)
 
   public:
-    Worker& worker;
+    Runtime& runtime;
     const Domain& domain;
 };
 
@@ -20,8 +20,8 @@ struct TaskInstance {
     KMM_NOT_COPYABLE_OR_MOVABLE(TaskInstance)
 
   public:
-    Worker& worker;
-    TaskGraph& graph;
+    Runtime& runtime;
+    TaskGraphStage& graph;
     DomainChunk chunk;
     MemoryId memory_id;
     std::vector<BufferRequirement> buffers;
@@ -38,10 +38,14 @@ struct TaskSubmissionResult {
     KMM_NOT_COPYABLE_OR_MOVABLE(TaskSubmissionResult)
 
   public:
-    Worker& worker;
-    TaskGraph& graph;
+    Runtime& runtime;
+    TaskGraphStage& graph;
     EventId event_id;
-    EventList& dependencies;
+};
+
+struct TaskGroupCommit {
+    Runtime& runtime;
+    TaskGraphStage& graph;
 };
 
 }  // namespace kmm

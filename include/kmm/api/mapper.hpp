@@ -3,8 +3,8 @@
 #include "spdlog/spdlog.h"
 
 #include "kmm/api/argument.hpp"
+#include "kmm/core/domain.hpp"
 #include "kmm/core/reduction.hpp"
-#include "kmm/dag/domain.hpp"
 #include "kmm/utils/geometry.hpp"
 #include "kmm/utils/integer_fun.hpp"
 
@@ -226,44 +226,24 @@ static constexpr All all;
 }  // namespace placeholders
 
 template<>
-struct ArgumentHandler<IndexMap> {
-    using type = Argument<Range<default_index_type>>;
-
-    ArgumentHandler(IndexMap mapper) : m_mapper(mapper) {}
-
-    void initialize(const TaskGroupInit& init) {}
-
-    type before_submit(TaskInstance& builder) {
-        return m_mapper(builder.chunk).get_or_default(0);
+struct Argument<IndexMap>: Argument<Range<default_index_type>> {
+    static Argument pack(TaskInstance& builder, IndexMap mapper) {
+        return {mapper(builder.chunk).get_or_default(0)};
     }
-
-    void after_submit(const TaskSubmissionResult& result) {}
-
-  private:
-    IndexMap m_mapper;
 };
 
 template<>
-struct ArgumentHandler<Axis>: ArgumentHandler<IndexMap> {
-    ArgumentHandler(Axis mapper) : ArgumentHandler<IndexMap>(mapper) {}
+struct Argument<Axis>: Argument<Range<default_index_type>> {
+    static Argument pack(TaskInstance& builder, Axis mapper) {
+        return {mapper(builder.chunk).get_or_default(0)};
+    }
 };
 
 template<size_t N>
-struct ArgumentHandler<MultiIndexMap<N>> {
-    using type = Argument<Bounds<N>>;
-
-    ArgumentHandler(MultiIndexMap<N> mapper) : m_mapper(mapper) {}
-
-    void initialize(const TaskGroupInit& init) {}
-
-    type before_submit(TaskInstance& builder) {
-        return m_mapper(builder.chunk);
+struct Argument<MultiIndexMap<N>>: Argument<Bounds<N>> {
+    static Argument pack(TaskInstance& builder, MultiIndexMap<N> mapper) {
+        return {mapper(builder.chunk)};
     }
-
-    void after_submit(const TaskSubmissionResult& result) {}
-
-  private:
-    MultiIndexMap<N> m_mapper;
 };
 
 namespace detail {

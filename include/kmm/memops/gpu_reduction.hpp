@@ -2,6 +2,7 @@
 
 #include "kmm/core/backends.hpp"
 #include "kmm/core/reduction.hpp"
+#include "kmm/memops/types.hpp"
 
 namespace kmm {
 

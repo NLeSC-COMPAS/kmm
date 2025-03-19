@@ -1,7 +1,7 @@
 #pragma once
 
 #include "kmm/api/task_group.hpp"
-#include "kmm/core/task.hpp"
+#include "kmm/core/resource.hpp"
 
 namespace kmm {
 
@@ -71,6 +71,10 @@ struct ArgumentHandler {
     }
 
     void after_submit(const TaskSubmissionResult& result) {
+        // Nothing to do
+    }
+
+    void commit(const TaskGroupCommit& commit) {
         // Nothing to do
     }
 
