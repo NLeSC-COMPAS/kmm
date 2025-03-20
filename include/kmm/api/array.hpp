@@ -25,6 +25,7 @@ class ArrayBase {
     virtual int64_t size(size_t axis) const = 0;
     virtual const Runtime& runtime() const = 0;
     virtual void synchronize() const = 0;
+    virtual void copy_bytes_to(void* output, size_t num_bytes) const = 0;
 };
 
 template<typename T, size_t N = 1>
