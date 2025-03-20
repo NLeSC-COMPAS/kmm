@@ -396,7 +396,7 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
                 ->prepare_access(task.graph, task.memory_id, access_region, 1, task.dependencies)
         );
 
-        views::dynamic_domain<N> domain = {access_region.begin(), access_region.sizes()};
+        views::dynamic_domain<N> domain = {access_region.sizes()};
 
         return {buffer_index, domain};
     }
