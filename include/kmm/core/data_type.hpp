@@ -11,6 +11,9 @@
 
 namespace kmm {
 
+using cfloat = std::complex<float>;
+using cdouble = std::complex<double>;
+
 enum struct ScalarType : uint8_t {
     Invalid = 0,
     Int8,
@@ -104,8 +107,8 @@ KMM_DEFINE_SCALAR_TYPE(Uint32, uint32_t)
 KMM_DEFINE_SCALAR_TYPE(Uint64, uint64_t)
 KMM_DEFINE_SCALAR_TYPE(Float32, float)
 KMM_DEFINE_SCALAR_TYPE(Float64, double)
-KMM_DEFINE_SCALAR_TYPE(Complex32, ::std::complex<float>)
-KMM_DEFINE_SCALAR_TYPE(Complex64, ::std::complex<double>)
+KMM_DEFINE_SCALAR_TYPE(Complex32, cfloat)
+KMM_DEFINE_SCALAR_TYPE(Complex64, cdouble)
 KMM_DEFINE_SCALAR_TYPE(KeyAndInt64, KeyValue<int64_t>)
 KMM_DEFINE_SCALAR_TYPE(KeyAndFloat64, KeyValue<double>)
 
