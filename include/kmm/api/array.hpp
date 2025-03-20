@@ -389,7 +389,7 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
     }
 
     type before_submit(TaskInstance& task) {
-        auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_array.shape()));
+        auto access_region = Bounds<N>(m_array.shape());
 
         size_t buffer_index = task.add_buffer_requirement(
             m_planner
