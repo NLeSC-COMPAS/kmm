@@ -11,9 +11,6 @@
 
 namespace kmm {
 
-using cfloat = std::complex<float>;
-using cdouble = std::complex<double>;
-
 enum struct ScalarType : uint8_t {
     Invalid = 0,
     Int8,
@@ -85,16 +82,21 @@ struct DataTypeOf {
         .type_id = typeid(T)};
 };
 
-#define KMM_DEFINE_SCALAR_TYPE(S, T)              \
-    template<>                                    \
-    struct DataTypeOf<T> {                        \
-        static constexpr DataType::Info value = { \
-            .size_in_bytes = sizeof(T),           \
-            .alignment = alignof(T),              \
-            .name = #S,                           \
-            .c_name = #T,                         \
-            .type_id = typeid(T),                 \
-            .scalar_type = ScalarType::S};        \
+std::ostream& operator<<(std::ostream& f, ScalarType p);
+std::ostream& operator<<(std::ostream& f, DataType p);
+
+}  // namespace kmm
+
+#define KMM_DEFINE_SCALAR_TYPE(S, T)                     \
+    template<>                                           \
+    struct kmm::DataTypeOf<T> {                          \
+        static constexpr ::kmm::DataType::Info value = { \
+            .size_in_bytes = sizeof(T),                  \
+            .alignment = alignof(T),                     \
+            .name = #S,                                  \
+            .c_name = #T,                                \
+            .type_id = typeid(T),                        \
+            .scalar_type = ::kmm::ScalarType::S};        \
     };
 
 KMM_DEFINE_SCALAR_TYPE(Int8, int8_t)
@@ -107,15 +109,10 @@ KMM_DEFINE_SCALAR_TYPE(Uint32, uint32_t)
 KMM_DEFINE_SCALAR_TYPE(Uint64, uint64_t)
 KMM_DEFINE_SCALAR_TYPE(Float32, float)
 KMM_DEFINE_SCALAR_TYPE(Float64, double)
-KMM_DEFINE_SCALAR_TYPE(Complex32, cfloat)
-KMM_DEFINE_SCALAR_TYPE(Complex64, cdouble)
-KMM_DEFINE_SCALAR_TYPE(KeyAndInt64, KeyValue<int64_t>)
-KMM_DEFINE_SCALAR_TYPE(KeyAndFloat64, KeyValue<double>)
-
-std::ostream& operator<<(std::ostream& f, ScalarType p);
-std::ostream& operator<<(std::ostream& f, DataType p);
-
-}  // namespace kmm
+KMM_DEFINE_SCALAR_TYPE(Complex32, ::std::complex<float>)
+KMM_DEFINE_SCALAR_TYPE(Complex64, ::std::complex<double>)
+KMM_DEFINE_SCALAR_TYPE(KeyAndInt64, ::kmm::KeyValue<int64_t>)
+KMM_DEFINE_SCALAR_TYPE(KeyAndFloat64, ::kmm::KeyValue<double>)
 
 template<>
 struct fmt::formatter<kmm::ScalarType>: fmt::ostream_formatter {};
