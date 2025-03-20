@@ -384,7 +384,6 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
 
         m_planner = std::make_unique<ArrayReductionPlanner<N>>(
             m_array.instance().shared_from_this(),
-            DataType::of<T>(),
             m_operation
         );
     }
