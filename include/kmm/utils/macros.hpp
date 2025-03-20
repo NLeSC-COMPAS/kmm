@@ -29,6 +29,9 @@
 #define KMM_UNLIKELY(expr) (__builtin_expect(!(expr), false))
 #define KMM_LIKELY(expr)   KMM_UNLIKELY(!(expr))
 
+#define KMM_CONCAT(A, B)      KMM_CONCAT_IMPL(A, B)
+#define KMM_CONCAT_IMPL(A, B) A##B
+
 #if defined(__CUDACC__)
     // CUDA
     #define KMM_HOST_DEVICE          __host__ __device__ __forceinline__

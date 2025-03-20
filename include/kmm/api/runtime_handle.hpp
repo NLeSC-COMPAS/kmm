@@ -6,6 +6,7 @@
 #include "kmm/api/array.hpp"
 #include "kmm/api/launcher.hpp"
 #include "kmm/api/parallel_submit.hpp"
+#include "kmm/api/struct_argument.hpp"
 #include "kmm/core/config.hpp"
 #include "kmm/core/system_info.hpp"
 #include "kmm/core/view.hpp"
