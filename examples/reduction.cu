@@ -152,20 +152,12 @@ int main() {
     int width = 500;
     int height = 500;
 
-    if (run(rt, width, height, width, height) != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
-    }
-
-    if (run(rt, width, height, width / 8, height) != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
-    }
-
-    if (run(rt, width, height, width, height / 8) != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
-    }
-
-    if (run(rt, width, height, width / 4, height / 4) != EXIT_SUCCESS) {
-        return EXIT_FAILURE;
+    for (int nx = 1; nx <= 8; nx++) {
+        for (int ny = 1; ny <= 8; ny++) {
+            if (run(rt, width, height, width / nx, height / ny) != EXIT_SUCCESS) {
+                return EXIT_FAILURE;
+            }
+        }
     }
 
     std::cout << "Correctness check completed." << std::endl;

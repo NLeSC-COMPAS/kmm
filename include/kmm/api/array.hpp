@@ -444,7 +444,7 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
                 map_domain_to_distribution(  //
                     m_array.shape(),
                     init.domain,
-                    All(),
+                    m_access_mapper,
                     true
                 ),
                 DataType::of<T>()

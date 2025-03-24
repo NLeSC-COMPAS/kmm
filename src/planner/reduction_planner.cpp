@@ -175,7 +175,7 @@ EventId ArrayReductionPlanner<N>::reduce_per_chunk(
         copy_definition.add_dimension(
             num_elements,  //
             0,
-            i,
+            i * num_elements,
             element_size,
             element_size
         );
