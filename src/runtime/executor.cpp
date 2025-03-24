@@ -651,7 +651,16 @@ void Executor::execute_task(
             std::move(dependencies)
         ));
     } else if (src_mem.is_device()) {
-        KMM_TODO();
+        insert_job(std::make_unique<CopyDeviceJob>(
+            id,
+            src_mem.as_device(),
+            command.src_buffer,
+            command.dst_buffer,
+            command.definition,
+            std::move(dependencies)
+        ));
+    } else {
+        KMM_PANIC("unsupported copy")
     }
 }
 

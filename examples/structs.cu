@@ -28,7 +28,7 @@ void example(kmm::Range<int64_t> range, ExampleView input) {
     KMM_ASSERT(input.y[0] == 1.0F);
     KMM_ASSERT(input.y[1] == 2.0F);
     KMM_ASSERT(input.y[2] == 3.0F);
-    std::cout << "structs work for range " << range << "!" << std::endl;
+    std::cout << "input is correct for range " << range << "!" << std::endl;
 }
 
 int main() {

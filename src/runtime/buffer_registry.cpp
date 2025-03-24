@@ -11,8 +11,17 @@ BufferRegistry::BufferRegistry(std::shared_ptr<MemoryManager> memory_manager) :
 }
 
 BufferId BufferRegistry::add(BufferId buffer_id, BufferLayout layout) {
+    auto [it, success] = m_buffers.emplace(buffer_id, BufferMeta {});
+
+    if (!success) {
+        throw std::runtime_error(
+            fmt::format("could not add buffer {}: buffer already exists", buffer_id)
+        );
+    }
+
     auto buffer = m_memory_manager->create_buffer(layout, std::to_string(buffer_id));
-    m_buffers.emplace(buffer_id, BufferMeta {.buffer = buffer});
+    it->second.buffer = buffer;
+
     return buffer_id;
 }
 
@@ -25,10 +34,8 @@ void BufferRegistry::remove(BufferId buffer_id) {
         );
     }
 
-    auto buffer = std::move(it->second.buffer);
+    m_memory_manager->delete_buffer(it->second.buffer);
     m_buffers.erase(it);
-
-    m_memory_manager->delete_buffer(buffer);
 }
 
 std::shared_ptr<MemoryManager::Buffer> BufferRegistry::get(BufferId id) {

@@ -46,7 +46,7 @@ int main() {
 
     auto rt = kmm::make_runtime();
     spdlog::set_level(spdlog::level::trace);
-    long n = 2'000'000'000;
+    long n = 200'000'000;
     long chunk_size = n / 10;
     dim3 block_size = 256;
 
@@ -90,6 +90,7 @@ int main() {
             return EXIT_FAILURE;
         }
     }
+
     std::cout << "Correctness check completed." << std::endl;
     return EXIT_SUCCESS;
 }

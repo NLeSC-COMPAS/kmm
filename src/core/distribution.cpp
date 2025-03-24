@@ -59,7 +59,16 @@ size_t region2index(
 }
 
 template<size_t N>
-Distribution<N>::Distribution() : Distribution(Dim<N>::zero(), Dim<N>::one(), {}) {}
+Distribution<N>::Distribution() : m_array_size(Dim<N>::zero()), m_chunk_size(Dim<N>::one()) {
+    for (size_t i = 0; checked_less(i, N); i++) {
+        m_chunks_count[i] = 0;
+    }
+
+    // If `N==0`, there is always one chunk. Just assign it to the host for now.
+    if constexpr (N == 0) {
+        m_memories.push_back(MemoryId::host());
+    }
+}
 
 template<size_t N>
 Distribution<N>::Distribution(
@@ -79,7 +88,7 @@ Distribution<N>::Distribution(
 
     if (total_chunk_count != m_memories.size()) {
         throw std::runtime_error(fmt::format(
-            "data distribution contains {} chunks, only {} memory locations provided",
+            "data distribution contains {} chunk(s), only {} memory location(s) provided",
             total_chunk_count,
             m_memories.size()
         ));

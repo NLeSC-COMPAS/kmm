@@ -55,14 +55,14 @@ EventId parallel_submit_impl(
     EventId result_event;
     std::tuple<ArgumentHandler<Args>...> handlers = {std::forward<Args>(args)...};
 
+    auto init = TaskGroupInit {
+        .runtime = runtime,  //
+        .domain = domain};
+
+    (std::get<Is>(handlers).initialize(init), ...);
+
     runtime.schedule([&](TaskGraphStage& graph) {
         EventList events;
-
-        auto init = TaskGroupInit {
-            .runtime = runtime,  //
-            .domain = domain};
-
-        (std::get<Is>(handlers).initialize(init), ...);
 
         for (const DomainChunk& chunk : domain.chunks) {
             ProcessorId processor_id = chunk.owner_id;

@@ -34,7 +34,6 @@ BufferRequirement ArrayReductionPlanner<N>::prepare_access(
 ) {
     size_t chunk_index = m_instance->m_distribution.region_to_chunk_index(region);
     auto chunk = m_instance->m_distribution.chunk(chunk_index);
-    const auto& buffer = m_instance->m_buffers[chunk_index];
 
     region = Bounds<N>::from_offset_size(chunk.offset, chunk.size);
 
@@ -42,7 +41,7 @@ BufferRequirement ArrayReductionPlanner<N>::prepare_access(
     auto num_elements = checked_mul(checked_cast<size_t>(region.size()), replication_factor);
     BufferLayout layout = BufferLayout::for_type(dtype, num_elements);
 
-    auto buffer_id = BufferId();
+    auto buffer_id = stage.create_buffer(layout);
 
     auto fill_event = stage.insert_node(CommandFill {
         .dst_buffer = buffer_id,
@@ -81,9 +80,10 @@ std::pair<BufferId, EventId> ArrayReductionPlanner<N>::reduce_per_chunk_and_memo
     PartialReductionBuffer** buffers,
     size_t num_buffers
 ) {
+    auto dtype = m_instance->data_type();
     auto chunk = m_instance->distribution().chunk(chunk_index);
-    auto num_elements = chunk.size.volume();
-    auto layout = BufferLayout::for_type(m_instance->data_type(), num_elements);
+    auto num_elements = checked_cast<size_t>(chunk.size.volume());
+    auto layout = BufferLayout::for_type(dtype, num_elements);
 
     auto scratch_buffer = stage.create_buffer(layout.repeat(num_buffers));
     auto scratch_writes = EventList {};
@@ -96,7 +96,7 @@ std::pair<BufferId, EventId> ArrayReductionPlanner<N>::reduce_per_chunk_and_memo
                 memory_id,
                 ReductionDef {
                     .operation = m_reduction,
-                    .data_type = m_instance->data_type(),
+                    .data_type = dtype,
                     .num_outputs = num_elements,
                     .num_inputs_per_output = buffers[i]->replication_factor,
                     .output_offset_elements = i * num_elements},
@@ -116,7 +116,7 @@ std::pair<BufferId, EventId> ArrayReductionPlanner<N>::reduce_per_chunk_and_memo
             memory_id,
             ReductionDef {
                 .operation = m_reduction,
-                .data_type = m_instance->data_type(),
+                .data_type = dtype,
                 .num_outputs = num_elements,
                 .num_inputs_per_output = num_buffers,
             },
@@ -135,6 +135,11 @@ EventId ArrayReductionPlanner<N>::reduce_per_chunk(
     PartialReductionBuffer** buffers,
     size_t num_buffers
 ) {
+    auto chunk = m_instance->distribution().chunk(chunk_index);
+    auto num_elements = checked_cast<size_t>(chunk.size.volume());
+    auto dtype = m_instance->data_type();
+    auto layout = BufferLayout::for_type(dtype, num_elements);
+
     std::sort(buffers, buffers + num_buffers, [&](const auto* a, const auto* b) {
         return a->memory_id < b->memory_id;
     });
@@ -158,11 +163,6 @@ EventId ArrayReductionPlanner<N>::reduce_per_chunk(
 
         intermediates.emplace_back(memory_id, buffer_id, event_id);
     }
-
-    auto chunk = m_instance->distribution().chunk(chunk_index);
-    auto num_elements = chunk.size.volume();
-    auto dtype = m_instance->data_type();
-    auto layout = BufferLayout::for_type(dtype, num_elements);
 
     auto collect_buffer = stage.create_buffer(layout.repeat(intermediates.size()));
     auto collect_events = EventList {};

@@ -20,6 +20,7 @@ std::vector<TaskNode> TaskGraph::flush_tasks() {
 
 TaskGraphStage::TaskGraphStage(TaskGraph* state) : m_guard(state->m_mutex), m_state(state) {
     m_next_event_id = state->m_next_event_id;
+    m_next_buffer_id = state->m_next_buffer_id;
     m_events_since_last_barrier = {state->m_last_stage_id};
 }
 
@@ -29,10 +30,17 @@ EventId TaskGraphStage::commit() {
     m_state->m_last_stage_id = barrier_id;
     m_state->m_next_event_id = m_next_event_id;
     m_state->m_next_buffer_id = m_next_buffer_id;
+
     m_state->m_nodes.insert(
         m_state->m_nodes.end(),
         std::make_move_iterator(m_staged_nodes.begin()),
         std::make_move_iterator(m_staged_nodes.end())
+    );
+
+    m_state->m_buffers.insert(
+        m_state->m_buffers.end(),
+        std::make_move_iterator(m_staged_buffers.begin()),
+        std::make_move_iterator(m_staged_buffers.end())
     );
 
     m_staged_nodes.clear();
