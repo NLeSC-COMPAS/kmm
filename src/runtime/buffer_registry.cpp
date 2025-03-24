@@ -10,10 +10,7 @@ BufferRegistry::BufferRegistry(std::shared_ptr<MemoryManager> memory_manager) :
     KMM_ASSERT(m_memory_manager);
 }
 
-BufferId BufferRegistry::add(BufferLayout layout) {
-    auto buffer_id = m_next_buffer_id;
-    m_next_buffer_id = BufferId(buffer_id + 1);
-
+BufferId BufferRegistry::add(BufferId buffer_id, BufferLayout layout) {
     auto buffer = m_memory_manager->create_buffer(layout, std::to_string(buffer_id));
     m_buffers.emplace(buffer_id, BufferMeta {.buffer = buffer});
     return buffer_id;

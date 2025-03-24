@@ -6,9 +6,16 @@
 
 namespace kmm {
 
-std::vector<TaskNode> TaskGraph::flush() {
+std::vector<std::pair<BufferId, BufferLayout>> TaskGraph::flush_buffers() {
     std::lock_guard guard {m_mutex};
-    return std::move(m_nodes);
+    auto temp = std::move(m_buffers);
+    return temp;
+}
+
+std::vector<TaskNode> TaskGraph::flush_tasks() {
+    std::lock_guard guard {m_mutex};
+    auto temp = std::move(m_nodes);
+    return temp;
 }
 
 TaskGraphStage::TaskGraphStage(TaskGraph* state) : m_guard(state->m_mutex), m_state(state) {
@@ -21,6 +28,7 @@ EventId TaskGraphStage::commit() {
 
     m_state->m_last_stage_id = barrier_id;
     m_state->m_next_event_id = m_next_event_id;
+    m_state->m_next_buffer_id = m_next_buffer_id;
     m_state->m_nodes.insert(
         m_state->m_nodes.end(),
         std::make_move_iterator(m_staged_nodes.begin()),
@@ -41,6 +49,13 @@ EventId TaskGraphStage::join_events(EventList deps) {
     }
 
     return insert_node(CommandEmpty {}, std::move(deps));
+}
+
+BufferId TaskGraphStage::create_buffer(BufferLayout layout) {
+    auto buffer_id = m_next_buffer_id;
+    m_next_buffer_id = BufferId(buffer_id + 1);
+    m_staged_buffers.emplace_back(buffer_id, layout);
+    return buffer_id;
 }
 
 EventId TaskGraphStage::delete_buffer(BufferId id, EventList deps) {

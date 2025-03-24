@@ -4,20 +4,20 @@ namespace kmm {
 
 template<size_t N>
 ArrayReadPlanner<N>::ArrayReadPlanner(std::shared_ptr<ArrayDescriptor<N>> instance) :
+    m_lock(instance->m_mutex, std::try_to_lock),
     m_instance(std::move(instance)) {
     KMM_ASSERT(m_instance);
-    KMM_ASSERT(m_instance->m_num_writers == 0);
-    m_instance->m_num_readers++;
-    fprintf(stderr, "increment readers for %p\n", m_instance.get());
+
+    if (!m_lock) {
+        throw std::runtime_error(
+            "array could not be locked for writing, which may happen if the "
+            "same array is also written to by the same kernel"
+        );
+    }
 }
 
 template<size_t N>
-ArrayReadPlanner<N>::~ArrayReadPlanner() {
-    if (m_instance) {
-        fprintf(stderr, "decrement readers for %p\n", m_instance.get());
-        m_instance->m_num_readers--;
-    }
-}
+ArrayReadPlanner<N>::~ArrayReadPlanner() {}
 
 template<size_t N>
 BufferRequirement ArrayReadPlanner<N>::prepare_access(

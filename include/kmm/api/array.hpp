@@ -271,7 +271,7 @@ struct ArgumentHandler<Write<Array<T, N>>> {
 
     void initialize(const TaskGroupInit& init) {
         if (!m_array.has_instance()) {
-            auto instance = std::make_shared<ArrayInstance<N>>(  //
+            auto instance = ArrayInstance<N>::create(  //
                 init.runtime,
                 map_domain_to_distribution(m_array.shape(), init.domain, All()),
                 DataType::of<T>()
@@ -322,7 +322,7 @@ struct ArgumentHandler<Write<Array<T, N>, M>> {
 
     void initialize(const TaskGroupInit& init) {
         if (!m_array.has_instance()) {
-            auto instance = std::make_shared<ArrayInstance<N>>(  //
+            auto instance = ArrayInstance<N>::create(  //
                 init.runtime,
                 map_domain_to_distribution(m_array.shape(), init.domain, m_access_mapper),
                 DataType::of<T>()
@@ -369,7 +369,7 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
 
     void initialize(const TaskGroupInit& init) {
         if (!m_array.has_instance()) {
-            auto instance = std::make_shared<ArrayInstance<N>>(  //
+            auto instance = ArrayInstance<N>::create(  //
                 init.runtime,
                 map_domain_to_distribution(  //
                     m_array.shape(),
@@ -439,7 +439,7 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
 
     void initialize(const TaskGroupInit& init) {
         if (!m_array.has_instance()) {
-            auto instance = std::make_shared<ArrayInstance<N>>(  //
+            auto instance = ArrayInstance<N>::create(  //
                 init.runtime,
                 map_domain_to_distribution(  //
                     m_array.shape(),

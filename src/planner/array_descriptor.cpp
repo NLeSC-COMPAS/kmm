@@ -8,13 +8,24 @@ namespace kmm {
 
 template<size_t N>
 ArrayDescriptor<N>::ArrayDescriptor(
+    TaskGraphStage& stage,
     Distribution<N> distribution,
-    DataType dtype,
-    std::vector<BufferDescriptor> buffers
+    DataType dtype
 ) :
     m_distribution(std::move(distribution)),
-    m_dtype(dtype),
-    m_buffers(std::move(buffers)) {}
+    m_dtype(dtype) {
+    size_t num_chunks = m_distribution.num_chunks();
+    m_buffers.resize(num_chunks);
+
+    for (size_t i = 0; i < num_chunks; i++) {
+        auto chunk = m_distribution.chunk(i);
+        auto num_elements = chunk.size.volume();
+        auto layout = BufferLayout::for_type(dtype, num_elements);
+        auto buffer_id = stage.create_buffer(layout);
+
+        m_buffers[i] = BufferDescriptor {.id = buffer_id, .layout = layout};
+    }
+}
 
 template<size_t N>
 class CopyIntoTask: public ComputeTask {
@@ -66,8 +77,8 @@ CopyDef build_copy_operation(
 ) {
     auto copy_def = CopyDef(element_size);
 
-    size_t src_stride = 1;
-    size_t dst_stride = 1;
+    size_t src_stride = element_size;
+    size_t dst_stride = element_size;
 
     for (size_t i = 0; i < N; i++) {
         copy_def.add_dimension(  //
@@ -88,6 +99,8 @@ CopyDef build_copy_operation(
 
 template<size_t N>
 EventId ArrayDescriptor<N>::copy_bytes_into_buffer(TaskGraphStage& stage, void* dst_data) {
+    std::unique_lock guard(m_mutex);
+
     auto& dist = this->distribution();
     auto data_type = this->data_type();
     auto num_chunks = dist.num_chunks();
@@ -129,11 +142,15 @@ EventId ArrayDescriptor<N>::copy_bytes_into_buffer(TaskGraphStage& stage, void* 
         m_buffers[i].last_access_events.push_back(new_read_events[i]);
     }
 
-    return stage.join_events(new_read_events);
+    auto result = stage.join_events(new_read_events);
+    stage.commit();
+    return result;
 }
 
 template<size_t N>
 EventId ArrayDescriptor<N>::copy_bytes_from_buffer(TaskGraphStage& stage, const void* src_data) {
+    std::shared_lock guard(m_mutex);
+
     auto& dist = this->distribution();
     auto data_type = this->data_type();
     auto num_chunks = dist.num_chunks();
@@ -177,11 +194,14 @@ EventId ArrayDescriptor<N>::copy_bytes_from_buffer(TaskGraphStage& stage, const 
         buffer.last_access_events = {new_write_events[i]};
     }
 
-    return stage.join_events(new_write_events);
+    auto result = stage.join_events(new_write_events);
+    stage.commit();
+    return result;
 }
 
 template<size_t N>
 EventId ArrayDescriptor<N>::join_events(TaskGraphStage& stage) const {
+    std::unique_lock guard(m_mutex);
     EventList deps;
 
     for (const auto& buffer : m_buffers) {
@@ -193,7 +213,7 @@ EventId ArrayDescriptor<N>::join_events(TaskGraphStage& stage) const {
 
 template<size_t N>
 void ArrayDescriptor<N>::destroy(TaskGraphStage& stage) {
-    KMM_ASSERT(m_num_readers == 0 && m_num_writers == 0);
+    std::unique_lock guard(m_mutex);
 
     for (BufferDescriptor& meta : m_buffers) {
         stage.delete_buffer(meta.id, std::move(meta.last_access_events));

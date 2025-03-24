@@ -24,6 +24,7 @@ class ArrayWritePlanner {
     void commit(TaskGraphStage& stage);
 
   private:
+    std::unique_lock<std::shared_mutex> m_lock;
     std::shared_ptr<ArrayDescriptor<N>> m_instance;
     std::vector<std::pair<size_t, EventId>> m_write_events;
 };

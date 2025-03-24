@@ -34,7 +34,7 @@ void example(kmm::Range<int64_t> range, ExampleView input) {
 int main() {
     using namespace kmm::placeholders;
     auto rt = kmm::make_runtime();
-    auto y = rt.allocate({1.0f, 2.0f, 3.0f});
+    auto y = rt.allocate({1.0F, 2.0F, 3.0F});
     auto structure = Example {.x = 123, .y = y};
 
     rt.parallel_submit(kmm::TileDomain({1000}, {200}), kmm::Host(example), _x, structure);

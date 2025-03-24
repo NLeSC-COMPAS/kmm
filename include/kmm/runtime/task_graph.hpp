@@ -27,13 +27,16 @@ class TaskGraph {
     friend TaskGraphStage;
 
     TaskGraph() = default;
-    std::vector<TaskNode> flush();
+    std::vector<std::pair<BufferId, BufferLayout>> flush_buffers();
+    std::vector<TaskNode> flush_tasks();
 
   private:
     std::mutex m_mutex;
+    BufferId m_next_buffer_id = BufferId(1);
     EventId m_next_event_id = EventId(1);
     EventId m_last_stage_id = EventId(1);
     std::vector<TaskNode> m_nodes;
+    std::vector<std::pair<BufferId, BufferLayout>> m_buffers;
 };
 
 class TaskGraphStage {
@@ -43,6 +46,7 @@ class TaskGraphStage {
     TaskGraphStage(TaskGraph* state);
     EventId commit();
 
+    BufferId create_buffer(BufferLayout layout);
     EventId delete_buffer(BufferId id, EventList deps = {});
 
     EventId insert_barrier();
@@ -61,9 +65,11 @@ class TaskGraphStage {
   private:
     std::lock_guard<std::mutex> m_guard;
     TaskGraph* m_state;
+    BufferId m_next_buffer_id;
     EventId m_next_event_id;
     EventList m_events_since_last_barrier;
     std::vector<TaskNode> m_staged_nodes;
+    std::vector<std::pair<BufferId, BufferLayout>> m_staged_buffers;
 };
 
 }  // namespace kmm

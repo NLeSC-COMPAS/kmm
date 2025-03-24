@@ -25,9 +25,30 @@ static std::vector<BufferDescriptor> allocate_buffers(
 }
 
 template<size_t N>
-ArrayInstance<N>::ArrayInstance(Runtime& rt, Distribution<N> dist, DataType dtype) :
-    ArrayDescriptor<N>(dist, dtype, allocate_buffers(rt, dist, dtype)),
+ArrayInstance<N>::ArrayInstance(
+    TaskGraphStage& stage,
+    Runtime& rt,
+    Distribution<N> dist,
+    DataType dtype
+) :
+    ArrayDescriptor<N>(stage, dist, dtype),
     m_rt(rt.shared_from_this()) {}
+
+template<size_t N>
+std::shared_ptr<ArrayInstance<N>> ArrayInstance<N>::create(
+    Runtime& rt,
+    Distribution<N> dist,
+    DataType dtype
+) {
+    std::shared_ptr<ArrayInstance<N>> result;
+    rt.schedule([&](auto& stage) {
+        result = std::shared_ptr<ArrayInstance<N>>(
+            new ArrayInstance<N>(stage, rt, std::move(dist), dtype)
+        );
+    });
+
+    return result;
+}
 
 template<size_t N>
 ArrayInstance<N>::~ArrayInstance() {

@@ -24,6 +24,7 @@ class ArrayReadPlanner {
     void commit(TaskGraphStage& stage);
 
   private:
+    std::shared_lock<std::shared_mutex> m_lock;
     std::shared_ptr<ArrayDescriptor<N>> m_instance;
     std::vector<std::pair<size_t, EventId>> m_read_events;
 };

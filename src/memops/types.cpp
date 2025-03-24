@@ -48,14 +48,24 @@ void CopyDef::add_dimension(
     size_t src_stride,
     size_t dst_stride
 ) {
-    for (size_t i = 0; i < MAX_DIMS; i++) {
-        if (counts[i] == 1) {
-            this->src_offset += src_offset * src_stride * element_size;
-            this->dst_offset += dst_offset * dst_stride * element_size;
+    this->src_offset += src_offset * src_stride;
+    this->dst_offset += dst_offset * dst_stride;
 
+    if (src_stride == element_size && dst_stride == element_size) {
+        element_size *= count;
+        return;
+    }
+
+    for (size_t i = 0; i < MAX_DIMS; i++) {
+        if (src_stride == counts[i] * src_strides[i] && dst_stride == counts[i] * dst_strides[i]) {
+            counts[i] *= count;
+            return;
+        }
+
+        if (counts[i] == 1) {
             counts[i] = count;
-            src_strides[i] = src_stride * element_size;
-            dst_strides[i] = dst_stride * element_size;
+            src_strides[i] = src_stride;
+            dst_strides[i] = dst_stride;
             return;
         }
     }

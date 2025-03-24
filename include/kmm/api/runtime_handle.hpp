@@ -81,9 +81,10 @@ class RuntimeHandle {
      * @return The event identifier for the submitted task.
      */
     template<size_t N = DOMAIN_DIMS, typename L, typename... Args>
-    EventId parallel_submit(Dim<N> domain_size, Dim<N> chunk, L&& launcher, Args&&... args) const {
+    EventId parallel_submit(Dim<N> domain_size, Dim<N> chunk_size, L&& launcher, Args&&... args)
+        const {
         return this->parallel_submit(
-            TileDomain(domain_size, chunk),
+            TileDomain(domain_size, chunk_size),
             std::forward<L>(launcher),
             std::forward<Args>(args)...
         );
@@ -102,14 +103,13 @@ class RuntimeHandle {
      */
     template<size_t N = 1, typename T>
     Array<T, N> allocate(const T* data, Dim<N> shape, MemoryId memory_id) const {
-        auto handle = std::make_shared<ArrayInstance<N>>(
+        auto handle = ArrayInstance<N>::create(
             *m_worker,
             Distribution<N> {shape, shape, {memory_id}},
             DataType::of<T>()
         );
 
         handle->copy_bytes_from(data);
-
         return Array<T, N> {std::move(handle)};
     }
 
@@ -139,7 +139,7 @@ class RuntimeHandle {
     }
 
     /**
-     * Alias for `allocate(data, dim<N>{sizes...})`
+     * Alias for `allocate(data, Dim<N>{sizes...})`
      */
     template<typename T, typename... Is>
     Array<T, sizeof...(Is)> allocate(const T* data, const Is&... num_elements) const {
@@ -183,7 +183,7 @@ class RuntimeHandle {
      *
      * @return `true` if the event with the provided id has finished, otherwise returns `false`.
      */
-    bool wait_until(EventId id, typename std::chrono::system_clock::time_point deadline) const;
+    bool wait_until(EventId id, std::chrono::system_clock::time_point deadline) const;
 
     /**
      * Block the current thread until the event with the provided id completes. Blocks until
@@ -191,7 +191,7 @@ class RuntimeHandle {
      *
      * @return `true` if the event with the provided id has finished, otherwise returns `false`.
      */
-    bool wait_for(EventId id, typename std::chrono::system_clock::duration duration) const;
+    bool wait_for(EventId id, std::chrono::system_clock::duration duration) const;
 
     /**
      * Submit a barrier the runtime system. The barrier completes once all the tasks submitted

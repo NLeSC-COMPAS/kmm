@@ -44,13 +44,13 @@ Runtime::~Runtime() {
 }
 
 BufferId Runtime::create_buffer(BufferLayout layout) {
-    std::unique_lock guard {m_mutex};
-    return m_buffer_registry->add(layout);
+    TaskGraphStage stage(&m_graph);
+    return stage.create_buffer(layout);
 }
 
 void Runtime::delete_buffer(BufferId id) {
-    std::unique_lock guard {m_mutex};
-    m_buffer_registry->remove(id);
+    TaskGraphStage stage(&m_graph);
+    stage.delete_buffer(id);
 }
 
 bool Runtime::query_event(EventId event_id, std::chrono::system_clock::time_point deadline) {
@@ -128,8 +128,12 @@ void Runtime::shutdown() {
 }
 
 void Runtime::flush_events_impl() {
+    for (auto&& [id, layout] : m_graph.flush_buffers()) {
+        m_buffer_registry->add(id, layout);
+    }
+
     // Flush all events from the DAG builder to the scheduler
-    for (auto&& e : m_graph.flush()) {
+    for (auto&& e : m_graph.flush_tasks()) {
         m_scheduler->submit(e.id, std::move(e.command), std::move(e.dependencies));
     }
 }

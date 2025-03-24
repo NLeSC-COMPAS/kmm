@@ -1,12 +1,13 @@
 #pragma once
 
+#include <shared_mutex>
+
 #include "kmm/core/distribution.hpp"
 #include "kmm/core/identifiers.hpp"
 #include "kmm/utils/geometry.hpp"
 
 namespace kmm {
 
-class Runtime;
 class TaskGraphStage;
 
 struct BufferDescriptor {
@@ -21,11 +22,7 @@ class ArrayDescriptor {
     KMM_NOT_COPYABLE_OR_MOVABLE(ArrayDescriptor)
 
   public:
-    ArrayDescriptor(
-        Distribution<N> distribution,
-        DataType dtype,
-        std::vector<BufferDescriptor> buffers
-    );
+    ArrayDescriptor(TaskGraphStage& stage, Distribution<N> distribution, DataType dtype);
 
     const Distribution<N>& distribution() const {
         return m_distribution;
@@ -42,11 +39,10 @@ class ArrayDescriptor {
     void destroy(TaskGraphStage& stage);
 
   public:
+    mutable std::shared_mutex m_mutex;
     Distribution<N> m_distribution;
     DataType m_dtype;
     std::vector<BufferDescriptor> m_buffers;
-    size_t m_num_readers = 0;
-    size_t m_num_writers = 0;
 };
 
 KMM_INSTANTIATE_ARRAY_IMPL(ArrayDescriptor)

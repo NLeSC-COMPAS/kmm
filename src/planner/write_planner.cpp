@@ -1,4 +1,5 @@
 #include <algorithm>
+
 #include "kmm/planner/write_planner.hpp"
 #include "kmm/runtime/task_graph.hpp"
 
@@ -6,19 +7,20 @@ namespace kmm {
 
 template<size_t N>
 ArrayWritePlanner<N>::ArrayWritePlanner(std::shared_ptr<ArrayDescriptor<N>> instance) :
+    m_lock(instance->m_mutex, std::try_to_lock),
     m_instance(std::move(instance)) {
     KMM_ASSERT(m_instance);
-    KMM_ASSERT(m_instance->m_num_writers == 0);
-    KMM_ASSERT(m_instance->m_num_readers == 0);
-    m_instance->m_num_writers++;
-    fprintf(stderr, "increment writers for %p\n", m_instance.get());
+
+    if (!m_lock) {
+        throw std::runtime_error(
+            "array could not be locked for writing, which may happen if the "
+            "same array is provided multiple times as an argument to a kernel"
+        );
+    }
 }
 
 template<size_t N>
-ArrayWritePlanner<N>::~ArrayWritePlanner() {
-    fprintf(stderr, "decrement writers for %p\n", m_instance.get());
-    m_instance->m_num_writers--;
-}
+ArrayWritePlanner<N>::~ArrayWritePlanner() {}
 
 template<size_t N>
 BufferRequirement ArrayWritePlanner<N>::prepare_access(
