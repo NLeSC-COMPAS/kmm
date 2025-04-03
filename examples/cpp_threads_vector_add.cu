@@ -42,7 +42,8 @@ __global__ void vector_add(
     output[i] = left[i] + right[i];
 }
 
-void main_loop(unsigned int id, kmm::RuntimeHandle rt, long n, long chunk_size, dim3 block_size) {
+void main_loop(unsigned int id, kmm::RuntimeHandle &rt, long n, long chunk_size, dim3 block_size) {
+    using namespace kmm::placeholders;
     auto A = kmm::Array<float> {n};
     auto B = kmm::Array<float> {n};
     auto C = kmm::Array<float> {n};
@@ -85,8 +86,6 @@ void main_loop(unsigned int id, kmm::RuntimeHandle rt, long n, long chunk_size, 
 }
 
 int main() {
-    using namespace kmm::placeholders;
-
     auto rt = kmm::make_runtime();
     spdlog::set_level(spdlog::level::trace);
     long n = 200'000'000;
