@@ -21,11 +21,12 @@ class Executor {
         KMM_NOT_COPYABLE_OR_MOVABLE(Job)
 
       public:
-        Job() = default;
+        Job(TaskHandle task) : m_task(task) {}
         virtual ~Job() = default;
         virtual Poll poll(Executor& executor) = 0;
 
         //      private:
+        TaskHandle m_task;
         std::unique_ptr<Job> next = nullptr;
     };
 

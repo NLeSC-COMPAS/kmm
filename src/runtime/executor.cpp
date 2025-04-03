@@ -20,10 +20,10 @@ static PoisonException make_poison_exception(TaskHandle task, const std::excepti
 
 class MergeJob: public Executor::Job {
   public:
-    MergeJob(TaskHandle task) : m_task(std::move(task)) {}
+    MergeJob(TaskHandle task) : Job(std::move(task)) {}
 
     MergeJob(TaskHandle task, DeviceEventSet dependencies) :
-        m_task(task),
+        Job(task),
         m_dependencies(std::move(dependencies)) {}
 
     Poll poll(Executor& executor) final {
@@ -36,14 +36,13 @@ class MergeJob: public Executor::Job {
     }
 
   private:
-    TaskHandle m_task;
     DeviceEventSet m_dependencies;
 };
 
 class HostJob: public Executor::Job {
   public:
     HostJob(TaskHandle task, std::vector<BufferRequirement> buffers, DeviceEventSet dependencies) :
-        m_task(task),
+        Job(task),
         m_buffers(std::move(buffers)),
         m_dependencies(std::move(dependencies)) {}
 
@@ -121,7 +120,6 @@ class HostJob: public Executor::Job {
     };
 
     Status m_status = Status::Init;
-    TaskHandle m_task;
     std::future<void> m_future;
     std::vector<BufferRequirement> m_buffers;
     BufferRequestList m_requests;
@@ -242,7 +240,7 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
         std::vector<BufferRequirement> buffers,
         DeviceEventSet dependencies
     ) :
-        m_task(task),
+        Job(task),
         m_device_id(device_id),
         m_buffers(std::move(buffers)),
         m_dependencies(std::move(dependencies)) {}
@@ -329,7 +327,6 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
     };
 
     Status m_status = Status::Init;
-    TaskHandle m_task;
     DeviceId m_device_id;
     std::vector<BufferRequirement> m_buffers;
     BufferRequestList m_requests;
@@ -464,7 +461,7 @@ class PrefetchJob: public Executor::Job {
         MemoryId memory_id,
         DeviceEventSet dependencies
     ) :
-        m_task(task),
+        Job(task),
         m_buffers {{buffer_id, memory_id, AccessMode::Read}},
         m_dependencies(std::move(dependencies)) {}
 
@@ -499,7 +496,6 @@ class PrefetchJob: public Executor::Job {
     enum struct Status { Init, Polling, Completing, Completed };
 
     Status m_status = Status::Init;
-    TaskHandle m_task;
     std::vector<BufferRequirement> m_buffers;
     BufferRequestList m_requests;
     DeviceEventSet m_dependencies;
