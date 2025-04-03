@@ -14,6 +14,21 @@ endif()
 target_compile_features(vector_add_example PRIVATE cxx_std_17)
 target_link_libraries(vector_add_example PRIVATE kmm)
 
+add_executable(cpp_threads_vector_add_example ${PROJECT_SOURCE_DIR}/examples/cpp_threads_vector_add.cu)
+if(KMM_USE_CUDA)
+    set_target_properties(
+            cpp_threads_vector_add_example
+            PROPERTIES
+            CUDA_ARCHITECTURES "80"
+            CUDA_SEPARABLE_COMPILATION ON
+            CUDA_RESOLVE_DEVICE_SYMBOLS ON
+    )
+endif()
+if(KMM_USE_HIP)
+    set_source_files_properties(${PROJECT_SOURCE_DIR}/examples/cpp_threads_vector_add.cu PROPERTIES LANGUAGE HIP)
+endif()
+target_compile_features(cpp_threads_vector_add_example PRIVATE cxx_std_17)
+target_link_libraries(cpp_threads_vector_add_example PRIVATE kmm)
 
 add_executable(point_in_poly_example ${PROJECT_SOURCE_DIR}/examples/point_in_poly.cu)
 if(KMM_USE_CUDA)
