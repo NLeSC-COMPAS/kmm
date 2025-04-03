@@ -54,6 +54,8 @@ class AsyncAllocator {
  * Abstract base class for all synchronous memory allocators.
  */
 class SyncAllocator: public AsyncAllocator {
+    KMM_NOT_COPYABLE_OR_MOVABLE(SyncAllocator)
+
   public:
     SyncAllocator(
         std::shared_ptr<DeviceStreamManager> streams,

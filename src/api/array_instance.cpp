@@ -4,27 +4,6 @@
 namespace kmm {
 
 template<size_t N>
-static std::vector<BufferDescriptor> allocate_buffers(
-    Runtime& rt,
-    const Distribution<N>& dist,
-    DataType dtype
-) {
-    size_t num_chunks = dist.num_chunks();
-    std::vector<BufferDescriptor> buffers(num_chunks);
-
-    for (size_t i = 0; i < num_chunks; i++) {
-        auto chunk = dist.chunk(i);
-        auto num_elements = chunk.size.volume();
-        auto layout = BufferLayout::for_type(dtype, num_elements);
-        auto buffer_id = rt.create_buffer(layout);
-
-        buffers[i] = BufferDescriptor {.id = buffer_id, .layout = layout};
-    }
-
-    return buffers;
-}
-
-template<size_t N>
 ArrayInstance<N>::ArrayInstance(
     TaskGraphStage& stage,
     Runtime& rt,

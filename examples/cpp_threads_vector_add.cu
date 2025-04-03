@@ -42,7 +42,7 @@ __global__ void vector_add(
     output[i] = left[i] + right[i];
 }
 
-void main_loop(unsigned int id, kmm::RuntimeHandle &rt, long n, long chunk_size, dim3 block_size) {
+void main_loop(unsigned int id, kmm::RuntimeHandle& rt, long n, long chunk_size, dim3 block_size) {
     using namespace kmm::placeholders;
     auto A = kmm::Array<float> {n};
     auto B = kmm::Array<float> {n};
@@ -79,8 +79,8 @@ void main_loop(unsigned int id, kmm::RuntimeHandle &rt, long n, long chunk_size,
     // Correctness check
     for (long i = 0; i < n; i++) {
         if (result[i] != float(i) + 1.0F) {
-            std::cerr << "[THREAD " << id << "] - wrong result at " << i << " : " << result[i] << " != " << float(i) + 1
-                      << std::endl;
+            std::cerr << "[THREAD " << id << "] - wrong result at " << i << " : " << result[i]
+                      << " != " << float(i) + 1 << std::endl;
         }
     }
 }

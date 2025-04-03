@@ -43,6 +43,8 @@ class DeviceMemoryAllocator: public SyncAllocator {
 enum struct DevicePoolKind { Default, Create };
 
 class DevicePoolAllocator: public AsyncAllocator {
+    KMM_NOT_COPYABLE_OR_MOVABLE(DevicePoolAllocator)
+
   public:
     DevicePoolAllocator(
         GPUContextHandle context,
