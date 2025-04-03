@@ -87,7 +87,7 @@ void main_loop(unsigned int id, kmm::RuntimeHandle &rt, long n, long chunk_size,
 
 int main() {
     auto rt = kmm::make_runtime();
-    spdlog::set_level(spdlog::level::trace);
+    spdlog::set_level(spdlog::level::warn);
     long n = 200'000'000;
     long chunk_size = n / 10;
     dim3 block_size = 256;
