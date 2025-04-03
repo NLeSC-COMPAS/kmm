@@ -60,6 +60,8 @@ BufferRequirement ArrayReductionPlanner<N>::prepare_access(
         .creation_event = fill_event,
         .write_events = {}});
 
+    deps_out.push_back(fill_event);
+
     return BufferRequirement {
         .buffer_id = buffer_id,
         .memory_id = memory_id,
