@@ -95,7 +95,7 @@ int main() {
     std::vector<std::thread> threads;
 
     for (unsigned int thread = 0; thread < num_threads; thread++) {
-        threads.emplace_back(main_loop, thread, rt, n, chunk_size, block_size);
+        threads.emplace_back(main_loop, thread, std::ref(rt), n, chunk_size, block_size);
     }
     for (unsigned int thread = 0; thread < num_threads; thread++) {
         threads.at(thread).join();
