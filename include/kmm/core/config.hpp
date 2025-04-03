@@ -37,6 +37,9 @@ struct RuntimeConfig {
     /// specified size, from which smaller allocations are subsequently sub-allocated.
     size_t device_memory_block_size = 0;
 
+    /// The number of concurrent streams on each device for execution of kernels.
+    size_t device_concurrent_streams = 8;
+
     /// Enable this run the system in debug mode. This will be significantly slower, but can be
     /// used to track down synchronization bugs.
     bool debug_mode = false;

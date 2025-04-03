@@ -27,8 +27,7 @@ class TaskGraph {
     friend TaskGraphStage;
 
     TaskGraph() = default;
-    std::vector<std::pair<BufferId, BufferLayout>> flush_buffers();
-    std::vector<TaskNode> flush_tasks();
+    std::pair<std::vector<std::pair<BufferId, BufferLayout>>, std::vector<TaskNode>> flush();
 
   private:
     std::mutex m_mutex;

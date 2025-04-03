@@ -20,6 +20,7 @@ class DeviceResourceManager {
   public:
     DeviceResourceManager(
         std::vector<GPUContextHandle> contexts,
+        size_t streams_per_context,
         std::shared_ptr<DeviceStreamManager> stream_manager
     );
 
@@ -35,10 +36,13 @@ class DeviceResourceManager {
     );
 
   private:
+    size_t select_stream_for_operation(DeviceId device_id, const DeviceEventSet& deps);
+
     struct Device;
 
     std::shared_ptr<DeviceStreamManager> m_stream_manager;
-    std::vector<std::unique_ptr<Device>> m_devices;
+    size_t m_streams_per_device;
+    std::vector<std::unique_ptr<Device>> m_streams;
 };
 
 }  // namespace kmm

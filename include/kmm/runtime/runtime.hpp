@@ -65,6 +65,7 @@ class Runtime: public std::enable_shared_from_this<Runtime> {
     Executor m_executor;
 
     TaskGraph m_graph;
+    std::chrono::system_clock::time_point m_next_updated_planned = std::chrono::system_clock::now();
 };
 
 std::shared_ptr<Runtime> make_worker(const RuntimeConfig& config);

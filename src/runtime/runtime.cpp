@@ -1,5 +1,7 @@
 #include <thread>
 
+#include "fmt/chrono.h"
+#include "fmt/std.h"
 #include "spdlog/spdlog.h"
 
 #include "kmm/runtime/allocators/block.hpp"
@@ -34,7 +36,7 @@ Runtime::Runtime(
     m_memory_manager(std::make_shared<MemoryManager>(memory_system)),
     m_buffer_registry(std::make_shared<BufferRegistry>(m_memory_manager)),
     m_stream_manager(stream_manager),
-    m_devices(std::make_shared<DeviceResourceManager>(contexts, m_stream_manager)),
+    m_devices(std::make_shared<DeviceResourceManager>(contexts, 1, m_stream_manager)),
     m_scheduler(std::make_shared<Scheduler>(contexts.size())),
     m_info(make_system_info(contexts)),
     m_executor(m_devices, stream_manager, m_buffer_registry, m_scheduler, config.debug_mode) {}
@@ -44,13 +46,17 @@ Runtime::~Runtime() {
 }
 
 BufferId Runtime::create_buffer(BufferLayout layout) {
-    TaskGraphStage stage(&m_graph);
-    return stage.create_buffer(layout);
+    TaskGraphStage stage = new_stage();
+    BufferId buffer_id = stage.create_buffer(layout);
+    stage.commit();
+
+    return buffer_id;
 }
 
 void Runtime::delete_buffer(BufferId id) {
-    TaskGraphStage stage(&m_graph);
+    TaskGraphStage stage = new_stage();
     stage.delete_buffer(id);
+    stage.commit();
 }
 
 bool Runtime::query_event(EventId event_id, std::chrono::system_clock::time_point deadline) {
@@ -58,35 +64,28 @@ bool Runtime::query_event(EventId event_id, std::chrono::system_clock::time_poin
 
     std::unique_lock guard {m_mutex};
     flush_events_impl();
+    make_progress_impl();
 
-    if (m_scheduler->is_completed(event_id)) {
-        return true;
-    }
-
-    auto next_update = std::chrono::system_clock::now();
-
-    while (true) {
-        make_progress_impl();
-
-        if (m_scheduler->is_completed(event_id)) {
-            return true;
-        }
-
+    while (!m_scheduler->is_completed(event_id)) {
+        KMM_ASSERT(!m_executor.is_idle());
         auto now = std::chrono::system_clock::now();
-        next_update += TIMEOUT;
+        auto next_update = m_next_updated_planned;
 
-        if (next_update < now) {
-            next_update = now;
-        }
-
-        if (next_update > deadline) {
+        if (now > deadline || next_update > deadline) {
             return false;
         }
 
-        guard.unlock();
-        std::this_thread::sleep_until(next_update);
-        guard.lock();
+        if (next_update <= now) {
+            make_progress_impl();
+            m_next_updated_planned = now + TIMEOUT;
+        } else {
+            guard.unlock();
+            std::this_thread::sleep_until(next_update);
+            guard.lock();
+        }
     }
+
+    return true;
 }
 
 bool Runtime::is_idle() {
@@ -128,12 +127,14 @@ void Runtime::shutdown() {
 }
 
 void Runtime::flush_events_impl() {
-    for (auto&& [id, layout] : m_graph.flush_buffers()) {
+    auto [buffers, nodes] = m_graph.flush();
+
+    for (auto&& [id, layout] : std::move(buffers)) {
         m_buffer_registry->add(id, layout);
     }
 
     // Flush all events from the DAG builder to the scheduler
-    for (auto&& e : m_graph.flush_tasks()) {
+    for (auto&& e : std::move(nodes)) {
         m_scheduler->submit(e.id, std::move(e.command), std::move(e.dependencies));
     }
 }

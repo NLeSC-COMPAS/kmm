@@ -6,16 +6,12 @@
 
 namespace kmm {
 
-std::vector<std::pair<BufferId, BufferLayout>> TaskGraph::flush_buffers() {
+std::pair<std::vector<std::pair<BufferId, BufferLayout>>, std::vector<TaskNode>> TaskGraph::flush(
+) {
     std::lock_guard guard {m_mutex};
-    auto temp = std::move(m_buffers);
-    return temp;
-}
-
-std::vector<TaskNode> TaskGraph::flush_tasks() {
-    std::lock_guard guard {m_mutex};
-    auto temp = std::move(m_nodes);
-    return temp;
+    auto buffers = std::move(m_buffers);
+    auto nodes = std::move(m_nodes);
+    return {std::move(buffers), std::move(nodes)};
 }
 
 TaskGraphStage::TaskGraphStage(TaskGraph* state) : m_guard(state->m_mutex), m_state(state) {
@@ -44,6 +40,7 @@ EventId TaskGraphStage::commit() {
     );
 
     m_staged_nodes.clear();
+    m_staged_buffers.clear();
     return barrier_id;
 }
 
