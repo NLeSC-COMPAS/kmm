@@ -24,7 +24,7 @@ ArrayWritePlanner<N>::~ArrayWritePlanner() {}
 
 template<size_t N>
 BufferRequirement ArrayWritePlanner<N>::prepare_access(
-    TaskGraphStage& stage,
+    TaskGraph& stage,
     MemoryId memory_id,
     Bounds<N>& region,
     EventList& deps_out
@@ -44,25 +44,22 @@ BufferRequirement ArrayWritePlanner<N>::prepare_access(
 }
 
 template<size_t N>
-void ArrayWritePlanner<N>::finalize_access(TaskGraphStage& stage, EventId event_id) {
+void ArrayWritePlanner<N>::finalize_access(TaskGraph& stage, EventId event_id) {
     KMM_ASSERT(m_write_events.size() > 0);
     m_write_events.back().second = event_id;
 }
 
 template<size_t N>
-void ArrayWritePlanner<N>::commit(TaskGraphStage& stage) {
+void ArrayWritePlanner<N>::commit(TaskGraph& stage) {
     std::sort(m_write_events.begin(), m_write_events.end(), [&](const auto& a, const auto& b) {
         return a.first < b.first;
     });
 
-    size_t begin = 0;
-    while (begin < m_write_events.size()) {
+    for (size_t begin = 0, end = 0; begin < m_write_events.size(); begin = end) {
         size_t chunk_index = m_write_events[begin].first;
         auto& buffer = m_instance->m_buffers[chunk_index];
 
         EventId write_event;
-        size_t end = begin;
-
         while (end < m_write_events.size() && chunk_index == m_write_events[end].first) {
             end++;
         }
@@ -81,8 +78,6 @@ void ArrayWritePlanner<N>::commit(TaskGraphStage& stage) {
 
         buffer.last_write_event = write_event;
         buffer.last_access_events = {write_event};
-
-        begin = end;
     }
 
     m_write_events.clear();

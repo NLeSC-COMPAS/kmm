@@ -12,7 +12,7 @@ class ArrayInstance:
     public std::enable_shared_from_this<ArrayInstance<N>> {
     KMM_NOT_COPYABLE_OR_MOVABLE(ArrayInstance)
 
-    ArrayInstance(TaskGraphStage& stage, Runtime& rt, Distribution<N> dist, DataType dtype);
+    ArrayInstance(TaskGraph& stage, Runtime& rt, Distribution<N> dist, DataType dtype);
 
   public:
     static std::shared_ptr<ArrayInstance> create(Runtime& rt, Distribution<N> dist, DataType dtype);

@@ -26,7 +26,7 @@ ArrayReductionPlanner<N>::~ArrayReductionPlanner() {}
 
 template<size_t N>
 BufferRequirement ArrayReductionPlanner<N>::prepare_access(
-    TaskGraphStage& stage,
+    TaskGraph& stage,
     MemoryId memory_id,
     Bounds<N>& region,
     size_t replication_factor,
@@ -69,14 +69,14 @@ BufferRequirement ArrayReductionPlanner<N>::prepare_access(
 }
 
 template<size_t N>
-void ArrayReductionPlanner<N>::finalize_access(TaskGraphStage& stage, EventId event_id) {
+void ArrayReductionPlanner<N>::finalize_access(TaskGraph& stage, EventId event_id) {
     KMM_ASSERT(!m_partial_buffers.empty());
     m_partial_buffers.back().write_events.push_back(event_id);
 }
 
 template<size_t N>
 std::pair<BufferId, EventId> ArrayReductionPlanner<N>::reduce_per_chunk_and_memory(
-    TaskGraphStage& stage,
+    TaskGraph& stage,
     size_t chunk_index,
     MemoryId memory_id,
     PartialReductionBuffer** buffers,
@@ -132,7 +132,7 @@ std::pair<BufferId, EventId> ArrayReductionPlanner<N>::reduce_per_chunk_and_memo
 
 template<size_t N>
 EventId ArrayReductionPlanner<N>::reduce_per_chunk(
-    TaskGraphStage& stage,
+    TaskGraph& stage,
     size_t chunk_index,
     PartialReductionBuffer** buffers,
     size_t num_buffers
@@ -221,7 +221,7 @@ EventId ArrayReductionPlanner<N>::reduce_per_chunk(
 }
 
 template<size_t N>
-void ArrayReductionPlanner<N>::commit(TaskGraphStage& stage) {
+void ArrayReductionPlanner<N>::commit(TaskGraph& stage) {
     auto buffers = std::vector<PartialReductionBuffer*>();
     for (size_t i = 0; i < m_partial_buffers.size(); i++) {
         buffers.push_back(&m_partial_buffers[i]);

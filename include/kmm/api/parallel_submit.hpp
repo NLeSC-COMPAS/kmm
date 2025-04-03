@@ -10,7 +10,7 @@
 namespace kmm {
 
 class Runtime;
-class TaskGraph;
+class TaskGraphState;
 
 namespace detail {
 
@@ -61,7 +61,7 @@ EventId parallel_submit_impl(
 
     (std::get<Is>(handlers).initialize(init), ...);
 
-    runtime.schedule([&](TaskGraphStage& graph) {
+    runtime.schedule([&](TaskGraph& graph) {
         EventList events;
 
         for (const DomainChunk& chunk : domain.chunks) {

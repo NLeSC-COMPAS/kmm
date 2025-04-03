@@ -36,7 +36,7 @@ Runtime::Runtime(
     m_memory_manager(std::make_shared<MemoryManager>(memory_system)),
     m_buffer_registry(std::make_shared<BufferRegistry>(m_memory_manager)),
     m_stream_manager(stream_manager),
-    m_devices(std::make_shared<DeviceResourceManager>(contexts, 1, m_stream_manager)),
+    m_devices(std::make_shared<DeviceResources>(contexts, 1, m_stream_manager)),
     m_scheduler(std::make_shared<Scheduler>(contexts.size())),
     m_info(make_system_info(contexts)),
     m_executor(m_devices, stream_manager, m_buffer_registry, m_scheduler, config.debug_mode) {}
@@ -46,26 +46,21 @@ Runtime::~Runtime() {
 }
 
 BufferId Runtime::create_buffer(BufferLayout layout) {
-    TaskGraphStage stage = new_stage();
-    BufferId buffer_id = stage.create_buffer(layout);
-    stage.commit();
+    BufferId buffer_id;
+
+    this->schedule([&](TaskGraph& g) { buffer_id = g.create_buffer(layout); });
 
     return buffer_id;
 }
 
-void Runtime::delete_buffer(BufferId id) {
-    TaskGraphStage stage = new_stage();
-    stage.delete_buffer(id);
-    stage.commit();
+void Runtime::delete_buffer(BufferId id, EventList deps) {
+    this->schedule([&](TaskGraph& g) { g.delete_buffer(id, std::move(deps)); });
 }
 
 bool Runtime::query_event(EventId event_id, std::chrono::system_clock::time_point deadline) {
     static constexpr auto TIMEOUT = std::chrono::microseconds {100};
 
     std::unique_lock guard {m_mutex};
-    flush_events_impl();
-    make_progress_impl();
-
     while (!m_scheduler->is_completed(event_id)) {
         KMM_ASSERT(!m_executor.is_idle());
         auto now = std::chrono::system_clock::now();
@@ -90,7 +85,6 @@ bool Runtime::query_event(EventId event_id, std::chrono::system_clock::time_poin
 
 bool Runtime::is_idle() {
     std::lock_guard guard {m_mutex};
-    flush_events_impl();
     return is_idle_impl();
 }
 
@@ -102,7 +96,6 @@ void Runtime::trim_memory() {
 
 void Runtime::make_progress() {
     std::lock_guard guard {m_mutex};
-    flush_events_impl();
     make_progress_impl();
 }
 
@@ -113,7 +106,6 @@ void Runtime::shutdown() {
     }
 
     m_has_shutdown = true;
-    flush_events_impl();
 
     while (!is_idle_impl()) {
         make_progress_impl();
@@ -126,17 +118,23 @@ void Runtime::shutdown() {
     m_stream_manager->wait_until_idle();
 }
 
-void Runtime::flush_events_impl() {
-    auto [buffers, nodes] = m_graph.flush();
+EventId Runtime::commit_impl(TaskGraph& g) {
+    std::vector<TaskNode> nodes_out;
+    std::vector<std::pair<BufferId, BufferLayout>> buffers_out;
 
-    for (auto&& [id, layout] : std::move(buffers)) {
+    auto barrier_id = m_graph_state.commit(g, nodes_out, buffers_out);
+
+    // Flush all staged buffers to the registry
+    for (auto&& [id, layout] : buffers_out) {
         m_buffer_registry->add(id, layout);
     }
 
     // Flush all events from the DAG builder to the scheduler
-    for (auto&& e : std::move(nodes)) {
+    for (auto&& e : nodes_out) {
         m_scheduler->submit(e.id, std::move(e.command), std::move(e.dependencies));
     }
+
+    return barrier_id;
 }
 
 void Runtime::make_progress_impl() {

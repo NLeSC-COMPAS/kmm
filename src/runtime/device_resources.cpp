@@ -1,8 +1,8 @@
-#include "kmm/runtime/resource_manager.hpp"
+#include "kmm/runtime/device_resources.hpp"
 
 namespace kmm {
 
-struct DeviceResourceManager::Device {
+struct DeviceResources::Device {
     KMM_NOT_COPYABLE_OR_MOVABLE(Device)
 
   public:
@@ -22,7 +22,7 @@ struct DeviceResourceManager::Device {
     DeviceEvent last_event;
 };
 
-DeviceResourceManager::DeviceResourceManager(
+DeviceResources::DeviceResources(
     std::vector<GPUContextHandle> contexts,
     size_t streams_per_context,
     std::shared_ptr<DeviceStreamManager> stream_manager
@@ -45,14 +45,18 @@ DeviceResourceManager::DeviceResourceManager(
     }
 }
 
-DeviceResourceManager::~DeviceResourceManager() {}
+DeviceResources::~DeviceResources() {
+    for (const auto& e : m_streams) {
+        m_stream_manager->wait_until_ready(e->stream);
+    }
+}
 
-GPUContextHandle DeviceResourceManager::context(DeviceId device_id) {
+GPUContextHandle DeviceResources::context(DeviceId device_id) {
     KMM_ASSERT(device_id * m_streams_per_device < m_streams.size());
     return m_streams[device_id * m_streams_per_device]->context;
 }
 
-size_t DeviceResourceManager::select_stream_for_operation(
+size_t DeviceResources::select_stream_for_operation(
     DeviceId device_id,
     const DeviceEventSet& deps
 ) {
@@ -77,7 +81,7 @@ size_t DeviceResourceManager::select_stream_for_operation(
     return offset;
 }
 
-DeviceEvent DeviceResourceManager::submit(
+DeviceEvent DeviceResources::submit(
     DeviceId device_id,
     DeviceEventSet deps,
     DeviceResourceOperation& op,

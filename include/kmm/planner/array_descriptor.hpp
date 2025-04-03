@@ -10,7 +10,7 @@
 
 namespace kmm {
 
-class TaskGraphStage;
+class TaskGraph;
 
 struct BufferDescriptor {
     BufferId id;
@@ -24,7 +24,7 @@ class ArrayDescriptor {
     KMM_NOT_COPYABLE_OR_MOVABLE(ArrayDescriptor)
 
   public:
-    ArrayDescriptor(TaskGraphStage& stage, Distribution<N> distribution, DataType dtype);
+    ArrayDescriptor(TaskGraph& stage, Distribution<N> distribution, DataType dtype);
 
     const Distribution<N>& distribution() const {
         return m_distribution;
@@ -34,11 +34,11 @@ class ArrayDescriptor {
         return m_dtype;
     }
 
-    EventId copy_bytes_into_buffer(TaskGraphStage& stage, void* dst_data);
-    EventId copy_bytes_from_buffer(TaskGraphStage& stage, const void* src_data);
+    EventId copy_bytes_into_buffer(TaskGraph& stage, void* dst_data);
+    EventId copy_bytes_from_buffer(TaskGraph& stage, const void* src_data);
 
-    EventId join_events(TaskGraphStage& stage) const;
-    void destroy(TaskGraphStage& stage);
+    EventId join_events(TaskGraph& stage) const;
+    void destroy(TaskGraph& stage);
 
   public:
     mutable std::shared_mutex m_mutex;

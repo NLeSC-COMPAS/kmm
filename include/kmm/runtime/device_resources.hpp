@@ -14,17 +14,17 @@ class DeviceResourceOperation {
     virtual void execute(DeviceResource& resource, std::vector<BufferAccessor> accessors) = 0;
 };
 
-class DeviceResourceManager {
-    KMM_NOT_COPYABLE_OR_MOVABLE(DeviceResourceManager)
+class DeviceResources {
+    KMM_NOT_COPYABLE_OR_MOVABLE(DeviceResources)
 
   public:
-    DeviceResourceManager(
+    DeviceResources(
         std::vector<GPUContextHandle> contexts,
         size_t streams_per_context,
         std::shared_ptr<DeviceStreamManager> stream_manager
     );
 
-    ~DeviceResourceManager();
+    ~DeviceResources();
 
     GPUContextHandle context(DeviceId device_id);
 

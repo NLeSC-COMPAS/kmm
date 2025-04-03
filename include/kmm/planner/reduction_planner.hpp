@@ -23,27 +23,27 @@ class ArrayReductionPlanner {
     ~ArrayReductionPlanner();
 
     BufferRequirement prepare_access(
-        TaskGraphStage& stage,
+        TaskGraph& stage,
         MemoryId memory_id,
         Bounds<N>& region,
         size_t replication_factor,
         EventList& deps_out
     );
 
-    void finalize_access(TaskGraphStage& stage, EventId event_id);
+    void finalize_access(TaskGraph& stage, EventId event_id);
 
-    void commit(TaskGraphStage& stage);
+    void commit(TaskGraph& stage);
 
   private:
     EventId reduce_per_chunk(
-        TaskGraphStage& stage,
+        TaskGraph& stage,
         size_t chunk_index,
         PartialReductionBuffer** buffers,
         size_t num_buffers
     );
 
     std::pair<BufferId, EventId> reduce_per_chunk_and_memory(
-        TaskGraphStage& stage,
+        TaskGraph& stage,
         size_t chunk_index,
         MemoryId memory_id,
         PartialReductionBuffer** buffers,

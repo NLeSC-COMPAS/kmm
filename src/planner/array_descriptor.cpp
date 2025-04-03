@@ -8,7 +8,7 @@ namespace kmm {
 
 template<size_t N>
 ArrayDescriptor<N>::ArrayDescriptor(
-    TaskGraphStage& stage,
+    TaskGraph& stage,
     Distribution<N> distribution,
     DataType dtype
 ) :
@@ -98,7 +98,7 @@ CopyDef build_copy_operation(
 }
 
 template<size_t N>
-EventId ArrayDescriptor<N>::copy_bytes_into_buffer(TaskGraphStage& stage, void* dst_data) {
+EventId ArrayDescriptor<N>::copy_bytes_into_buffer(TaskGraph& stage, void* dst_data) {
     std::unique_lock guard(m_mutex);
 
     auto& dist = this->distribution();
@@ -148,7 +148,7 @@ EventId ArrayDescriptor<N>::copy_bytes_into_buffer(TaskGraphStage& stage, void* 
 }
 
 template<size_t N>
-EventId ArrayDescriptor<N>::copy_bytes_from_buffer(TaskGraphStage& stage, const void* src_data) {
+EventId ArrayDescriptor<N>::copy_bytes_from_buffer(TaskGraph& stage, const void* src_data) {
     std::shared_lock guard(m_mutex);
 
     auto& dist = this->distribution();
@@ -200,7 +200,7 @@ EventId ArrayDescriptor<N>::copy_bytes_from_buffer(TaskGraphStage& stage, const 
 }
 
 template<size_t N>
-EventId ArrayDescriptor<N>::join_events(TaskGraphStage& stage) const {
+EventId ArrayDescriptor<N>::join_events(TaskGraph& stage) const {
     std::unique_lock guard(m_mutex);
     EventList deps;
 
@@ -212,7 +212,7 @@ EventId ArrayDescriptor<N>::join_events(TaskGraphStage& stage) const {
 }
 
 template<size_t N>
-void ArrayDescriptor<N>::destroy(TaskGraphStage& stage) {
+void ArrayDescriptor<N>::destroy(TaskGraph& stage) {
     std::unique_lock guard(m_mutex);
 
     for (BufferDescriptor& meta : m_buffers) {

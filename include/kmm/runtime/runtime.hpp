@@ -25,7 +25,7 @@ class Runtime: public std::enable_shared_from_this<Runtime> {
     ~Runtime();
 
     BufferId create_buffer(BufferLayout layout);
-    void delete_buffer(BufferId buffer_id);
+    void delete_buffer(BufferId buffer_id, EventList deps = {});
 
     bool query_event(EventId event_id, std::chrono::system_clock::time_point deadline);
     bool is_idle();
@@ -35,13 +35,9 @@ class Runtime: public std::enable_shared_from_this<Runtime> {
 
     template<typename F>
     EventId schedule(F fun) {
-        auto stage = TaskGraphStage(&m_graph);
+        auto stage = TaskGraph(&m_graph_state);
         fun(stage);
-        return stage.commit();
-    }
-
-    TaskGraphStage new_stage() {
-        return TaskGraphStage(&m_graph);
+        return this->commit_impl(stage);
     }
 
     const SystemInfo& system_info() const {
@@ -49,23 +45,22 @@ class Runtime: public std::enable_shared_from_this<Runtime> {
     }
 
   private:
-    void flush_events_impl();
+    EventId commit_impl(TaskGraph& g);
     void make_progress_impl();
     bool is_idle_impl();
 
     mutable std::mutex m_mutex;
+    std::chrono::system_clock::time_point m_next_updated_planned = std::chrono::system_clock::now();
     mutable bool m_has_shutdown = false;
     std::shared_ptr<MemorySystem> m_memory_system;
     std::shared_ptr<MemoryManager> m_memory_manager;
     std::shared_ptr<BufferRegistry> m_buffer_registry;
     std::shared_ptr<DeviceStreamManager> m_stream_manager;
-    std::shared_ptr<DeviceResourceManager> m_devices;
+    std::shared_ptr<DeviceResources> m_devices;
     std::shared_ptr<Scheduler> m_scheduler;
     SystemInfo m_info;
     Executor m_executor;
-
-    TaskGraph m_graph;
-    std::chrono::system_clock::time_point m_next_updated_planned = std::chrono::system_clock::now();
+    TaskGraphState m_graph_state;
 };
 
 std::shared_ptr<Runtime> make_worker(const RuntimeConfig& config);

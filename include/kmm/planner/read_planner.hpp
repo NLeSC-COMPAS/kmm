@@ -13,15 +13,15 @@ class ArrayReadPlanner {
     ~ArrayReadPlanner();
 
     BufferRequirement prepare_access(
-        TaskGraphStage& stage,
+        TaskGraph& stage,
         MemoryId memory_id,
         Bounds<N>& region,
         EventList& deps_out
     );
 
-    void finalize_access(TaskGraphStage& stage, EventId event_id);
+    void finalize_access(TaskGraph& stage, EventId event_id);
 
-    void commit(TaskGraphStage& stage);
+    void commit(TaskGraph& stage);
 
   private:
     std::shared_lock<std::shared_mutex> m_lock;

@@ -502,13 +502,13 @@ class PrefetchJob: public Executor::Job {
 };
 
 Executor::Executor(
-    std::shared_ptr<DeviceResourceManager> device_manager,
+    std::shared_ptr<DeviceResources> device_resources,
     std::shared_ptr<DeviceStreamManager> stream_manager,
     std::shared_ptr<BufferRegistry> buffer_registry,
     std::shared_ptr<Scheduler> scheduler,
     bool debug_mode
 ) :
-    m_device_manager(device_manager),
+    m_device_resources(device_resources),
     m_stream_manager(stream_manager),
     m_buffer_registry(buffer_registry),
     m_scheduler(scheduler),

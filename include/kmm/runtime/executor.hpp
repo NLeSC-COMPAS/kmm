@@ -5,8 +5,8 @@
 #include "kmm/core/commands.hpp"
 #include "kmm/core/resource.hpp"
 #include "kmm/runtime/buffer_registry.hpp"
+#include "kmm/runtime/device_resources.hpp"
 #include "kmm/runtime/memory_manager.hpp"
-#include "kmm/runtime/resource_manager.hpp"
 #include "kmm/runtime/scheduler.hpp"
 #include "kmm/runtime/stream_manager.hpp"
 #include "kmm/utils/poll.hpp"
@@ -31,7 +31,7 @@ class Executor {
     };
 
     Executor(
-        std::shared_ptr<DeviceResourceManager> m_device_manager,
+        std::shared_ptr<DeviceResources> m_device_manager,
         std::shared_ptr<DeviceStreamManager> stream_manager,
         std::shared_ptr<BufferRegistry> buffer_registry,
         std::shared_ptr<Scheduler> scheduler,
@@ -44,8 +44,8 @@ class Executor {
     bool is_idle() const;
     void make_progress();
 
-    DeviceResourceManager& devices() {
-        return *m_device_manager;
+    DeviceResources& devices() {
+        return *m_device_resources;
     }
 
     DeviceStreamManager& streams() {
@@ -76,7 +76,7 @@ class Executor {
 
     void execute_task(TaskHandle task, const CommandFill& command, DeviceEventSet dependencies);
 
-    std::shared_ptr<DeviceResourceManager> m_device_manager;
+    std::shared_ptr<DeviceResources> m_device_resources;
     std::shared_ptr<DeviceStreamManager> m_stream_manager;
     std::shared_ptr<BufferRegistry> m_buffer_registry;
     std::shared_ptr<Scheduler> m_scheduler;

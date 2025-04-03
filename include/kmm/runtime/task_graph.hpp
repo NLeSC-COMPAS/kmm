@@ -13,7 +13,7 @@
 namespace kmm {
 
 class TaskGraph;
-class TaskGraphStage;
+class TaskGraphState;
 
 struct TaskNode {
     EventId id;
@@ -23,27 +23,11 @@ struct TaskNode {
 
 class TaskGraph {
     KMM_NOT_COPYABLE_OR_MOVABLE(TaskGraph)
-  public:
-    friend TaskGraphStage;
-
-    TaskGraph() = default;
-    std::pair<std::vector<std::pair<BufferId, BufferLayout>>, std::vector<TaskNode>> flush();
-
-  private:
-    std::mutex m_mutex;
-    BufferId m_next_buffer_id = BufferId(1);
-    EventId m_next_event_id = EventId(1);
-    EventId m_last_stage_id = EventId(1);
-    std::vector<TaskNode> m_nodes;
-    std::vector<std::pair<BufferId, BufferLayout>> m_buffers;
-};
-
-class TaskGraphStage {
-    KMM_NOT_COPYABLE_OR_MOVABLE(TaskGraphStage)
 
   public:
-    TaskGraphStage(TaskGraph* state);
-    EventId commit();
+    friend class TaskGraphState;
+
+    TaskGraph(TaskGraphState* state);
 
     BufferId create_buffer(BufferLayout layout);
     EventId delete_buffer(BufferId id, EventList deps = {});
@@ -62,13 +46,28 @@ class TaskGraphStage {
     EventId insert_node(Command command, EventList deps = {});
 
   private:
-    std::lock_guard<std::mutex> m_guard;
-    TaskGraph* m_state;
-    BufferId m_next_buffer_id;
-    EventId m_next_event_id;
+    TaskGraphState* m_state;
     EventList m_events_since_last_barrier;
     std::vector<TaskNode> m_staged_nodes;
     std::vector<std::pair<BufferId, BufferLayout>> m_staged_buffers;
+};
+
+class TaskGraphState {
+    KMM_NOT_COPYABLE_OR_MOVABLE(TaskGraphState)
+  public:
+    friend class TaskGraph;
+
+    TaskGraphState() = default;
+    EventId commit(
+        TaskGraph& g,
+        std::vector<TaskNode>& staged_nodes,
+        std::vector<std::pair<BufferId, BufferLayout>>& staged_buffers
+    );
+
+  private:
+    BufferId m_next_buffer_id = BufferId(1);
+    EventId m_next_event_id = EventId(1);
+    EventId m_last_barrier_id = EventId(1);
 };
 
 }  // namespace kmm

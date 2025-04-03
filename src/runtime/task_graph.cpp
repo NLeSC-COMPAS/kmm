@@ -6,45 +6,21 @@
 
 namespace kmm {
 
-std::pair<std::vector<std::pair<BufferId, BufferLayout>>, std::vector<TaskNode>> TaskGraph::flush(
+EventId TaskGraphState::commit(
+    TaskGraph& g,
+    std::vector<TaskNode>& staged_nodes,
+    std::vector<std::pair<BufferId, BufferLayout>>& staged_buffers
 ) {
-    std::lock_guard guard {m_mutex};
-    auto buffers = std::move(m_buffers);
-    auto nodes = std::move(m_nodes);
-    return {std::move(buffers), std::move(nodes)};
+    KMM_ASSERT(g.m_state == this);
+    m_last_barrier_id = g.insert_barrier();
+    staged_nodes = std::move(g.m_staged_nodes);
+    staged_buffers = std::move(g.m_staged_buffers);
+    return m_last_barrier_id;
 }
 
-TaskGraphStage::TaskGraphStage(TaskGraph* state) : m_guard(state->m_mutex), m_state(state) {
-    m_next_event_id = state->m_next_event_id;
-    m_next_buffer_id = state->m_next_buffer_id;
-    m_events_since_last_barrier = {state->m_last_stage_id};
-}
+TaskGraph::TaskGraph(TaskGraphState* state) : m_state(state) {}
 
-EventId TaskGraphStage::commit() {
-    auto barrier_id = insert_barrier();
-
-    m_state->m_last_stage_id = barrier_id;
-    m_state->m_next_event_id = m_next_event_id;
-    m_state->m_next_buffer_id = m_next_buffer_id;
-
-    m_state->m_nodes.insert(
-        m_state->m_nodes.end(),
-        std::make_move_iterator(m_staged_nodes.begin()),
-        std::make_move_iterator(m_staged_nodes.end())
-    );
-
-    m_state->m_buffers.insert(
-        m_state->m_buffers.end(),
-        std::make_move_iterator(m_staged_buffers.begin()),
-        std::make_move_iterator(m_staged_buffers.end())
-    );
-
-    m_staged_nodes.clear();
-    m_staged_buffers.clear();
-    return barrier_id;
-}
-
-EventId TaskGraphStage::join_events(EventList deps) {
+EventId TaskGraph::join_events(EventList deps) {
     if (deps.size() == 0) {
         return EventId();
     }
@@ -56,27 +32,29 @@ EventId TaskGraphStage::join_events(EventList deps) {
     return insert_node(CommandEmpty {}, std::move(deps));
 }
 
-BufferId TaskGraphStage::create_buffer(BufferLayout layout) {
-    auto buffer_id = m_next_buffer_id;
-    m_next_buffer_id = BufferId(buffer_id + 1);
+BufferId TaskGraph::create_buffer(BufferLayout layout) {
+    auto buffer_id = m_state->m_next_buffer_id;
+    m_state->m_next_buffer_id = BufferId(buffer_id + 1);
     m_staged_buffers.emplace_back(buffer_id, layout);
     return buffer_id;
 }
 
-EventId TaskGraphStage::delete_buffer(BufferId id, EventList deps) {
+EventId TaskGraph::delete_buffer(BufferId id, EventList deps) {
     return insert_node(CommandBufferDelete {id}, std::move(deps));
 }
 
-EventId TaskGraphStage::insert_barrier() {
-    if (m_events_since_last_barrier.size() == 1) {
-        return m_events_since_last_barrier[0];
+EventId TaskGraph::insert_barrier() {
+    if (m_events_since_last_barrier.is_empty()) {
+        return m_state->m_last_barrier_id;
     }
 
     EventList deps = std::move(m_events_since_last_barrier);
-    return insert_node(CommandEmpty {}, std::move(deps));
+    deps.push_back(m_state->m_last_barrier_id);
+
+    return join_events(std::move(deps));
 }
 
-EventId TaskGraphStage::insert_compute_task(
+EventId TaskGraph::insert_compute_task(
     ProcessorId process_id,
     std::unique_ptr<ComputeTask> task,
     std::vector<BufferRequirement> buffers,
@@ -91,9 +69,9 @@ EventId TaskGraphStage::insert_compute_task(
     );
 }
 
-EventId TaskGraphStage::insert_node(Command command, EventList deps) {
-    auto id = EventId(m_next_event_id.get());
-    m_next_event_id = EventId(id.get() + 1);
+EventId TaskGraph::insert_node(Command command, EventList deps) {
+    auto id = EventId(m_state->m_next_event_id.get());
+    m_state->m_next_event_id = EventId(id.get() + 1);
 
     m_events_since_last_barrier.push_back(id);
     m_staged_nodes.push_back(
