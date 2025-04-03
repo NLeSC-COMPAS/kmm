@@ -1,5 +1,7 @@
 #pragma once
 
+#include <mutex>
+
 #include "kmm/planner/array_descriptor.hpp"
 
 namespace kmm {
