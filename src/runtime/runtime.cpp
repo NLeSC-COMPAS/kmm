@@ -63,26 +63,23 @@ void Runtime::check_buffer(BufferId id) {
 }
 
 bool Runtime::query_event(EventId event_id, std::chrono::system_clock::time_point deadline) {
-    static constexpr auto TIMEOUT = std::chrono::microseconds {100};
 
     std::unique_lock guard {m_mutex};
+    make_progress_impl();
+
     while (!m_scheduler->is_completed(event_id)) {
         KMM_ASSERT(!m_executor.is_idle());
-        auto now = std::chrono::system_clock::now();
         auto next_update = m_next_updated_planned;
 
-        if (now > deadline || next_update > deadline) {
+        if (next_update > deadline) {
             return false;
         }
 
-        if (next_update <= now) {
-            make_progress_impl();
-            m_next_updated_planned = now + TIMEOUT;
-        } else {
-            guard.unlock();
-            std::this_thread::sleep_until(next_update);
-            guard.lock();
-        }
+        guard.unlock();
+        std::this_thread::sleep_until(next_update);
+        guard.lock();
+
+        make_progress_impl();
     }
 
     return true;
@@ -139,10 +136,21 @@ EventId Runtime::commit_impl(TaskGraph& g) {
         m_scheduler->submit(e.id, std::move(e.command), std::move(e.dependencies));
     }
 
+    // Plan an update to happen now since we have added new tasks to the scheduler.
+    m_next_updated_planned = std::chrono::system_clock::time_point::min();
+
     return barrier_id;
 }
 
 void Runtime::make_progress_impl() {
+    static constexpr auto TIMEOUT = std::chrono::microseconds {100};
+    auto now = std::chrono::system_clock::now();
+
+    if (m_next_updated_planned > now) {
+        return;
+    }
+
+    m_next_updated_planned = now + TIMEOUT;
     m_stream_manager->make_progress();
     m_memory_system->make_progress();
     m_executor.make_progress();
