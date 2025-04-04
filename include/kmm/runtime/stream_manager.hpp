@@ -26,6 +26,7 @@ class DeviceStreamManager {
     bool make_progress_for_stream(DeviceStream stream_index);
 
     DeviceStream create_stream(GPUContextHandle context, bool high_priority = false);
+    DeviceStream get_or_add_stream(GPUContextHandle context, CUstream stream);
 
     void wait_until_idle() const;
     void wait_until_ready(DeviceStream stream) const;
@@ -65,10 +66,10 @@ class DeviceStreamManager {
     template<typename F>
     DeviceEvent with_stream(DeviceStream stream, F fun);
 
-  private:
     struct StreamState;
     struct EventPool;
 
+  private:
     std::vector<StreamState> m_streams;
     std::vector<EventPool> m_event_pools;
 };

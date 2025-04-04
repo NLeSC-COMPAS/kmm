@@ -25,14 +25,16 @@ struct DeviceStreamManager::StreamState {
     StreamState& operator=(StreamState&&) /*noexcept*/ = default;
 
   public:
-    StreamState(size_t pool_index, GPUContextHandle c, GPUstream_t s) :
+    StreamState(size_t pool_index, GPUContextHandle c, GPUstream_t s, bool delete_stream_on_exit) :
         pool_index(pool_index),
         context(c),
-        gpu_stream(s) {}
+        gpu_stream(s),
+        delete_stream_on_exit(delete_stream_on_exit) {}
 
     size_t pool_index;
     GPUContextHandle context;
     GPUstream_t gpu_stream;
+    bool delete_stream_on_exit = true;
     std::deque<GPUevent_t> pending_events;
     DeviceEvent::index_type first_pending_index = 1;
     std::priority_queue<Callback, std::vector<Callback>, CompareCallback> callbacks_heap;
@@ -53,9 +55,33 @@ struct DeviceStreamManager::EventPool {
 
 DeviceStreamManager::DeviceStreamManager() {}
 
-DeviceStream DeviceStreamManager::create_stream(GPUContextHandle context, bool high_priority) {
-    size_t pool_index;
+DeviceStreamManager::~DeviceStreamManager() {
+    for (auto& stream : m_streams) {
+        GPUContextGuard guard {stream.context};
+
+        for (const auto& gpu_event : stream.pending_events) {
+            KMM_GPU_CHECK(gpuEventSynchronize(gpu_event));
+            KMM_ASSERT(gpuEventSynchronize(gpu_event) == GPU_SUCCESS);
+
+            stream.first_pending_index += 1;
+            m_event_pools[stream.pool_index].push(gpu_event);
+        }
+
+        KMM_GPU_CHECK(gpuStreamSynchronize(stream.gpu_stream));
+        KMM_ASSERT(gpuStreamQuery(stream.gpu_stream) == GPU_SUCCESS);
+
+        if (stream.delete_stream_on_exit) {
+            KMM_GPU_CHECK(gpuStreamDestroy(stream.gpu_stream));
+        }
+    }
+}
+
+auto find_pool_for_context(
+    GPUContextHandle context,
+    std::vector<DeviceStreamManager::EventPool>& m_event_pools
+) {
     bool found_pool = false;
+    size_t pool_index;
 
     for (size_t i = 0; i < m_event_pools.size(); i++) {
         if (m_event_pools[i].m_context == context) {
@@ -66,9 +92,13 @@ DeviceStream DeviceStreamManager::create_stream(GPUContextHandle context, bool h
 
     if (!found_pool) {
         pool_index = m_event_pools.size();
-        m_event_pools.push_back(EventPool(context));
+        m_event_pools.push_back(context);
     }
 
+    return pool_index;
+}
+
+DeviceStream DeviceStreamManager::create_stream(GPUContextHandle context, bool high_priority) {
     GPUContextGuard guard {context};
 
     int least_priority;
@@ -79,27 +109,28 @@ DeviceStream DeviceStreamManager::create_stream(GPUContextHandle context, bool h
     size_t index = m_streams.size();
     GPUstream_t gpu_stream;
     KMM_GPU_CHECK(gpuStreamCreateWithPriority(&gpu_stream, GPU_STREAM_NON_BLOCKING, priority));
-    m_streams.emplace_back(pool_index, context, gpu_stream);
+
+    size_t pool_index = find_pool_for_context(context, m_event_pools);
+    m_streams.emplace_back(pool_index, context, gpu_stream, true);
 
     return checked_cast<DeviceStream::index_type>(index);
 }
 
-DeviceStreamManager::~DeviceStreamManager() {
-    for (auto& stream : m_streams) {
-        GPUContextGuard guard {stream.context};
+DeviceStream DeviceStreamManager::get_or_add_stream(GPUContextHandle context, CUstream gpu_stream) {
+    for (size_t i = 0; i < m_streams.size(); i++) {
+        auto& stream = m_streams[i];
 
-        KMM_GPU_CHECK(gpuStreamSynchronize(stream.gpu_stream));
-        KMM_ASSERT(gpuStreamQuery(stream.gpu_stream) == GPU_SUCCESS);
-        KMM_GPU_CHECK(gpuStreamDestroy(stream.gpu_stream));
-
-        for (const auto& gpu_event : stream.pending_events) {
-            KMM_GPU_CHECK(gpuEventSynchronize(gpu_event));
-            KMM_ASSERT(gpuEventSynchronize(gpu_event) == GPU_SUCCESS);
-
-            stream.first_pending_index += 1;
-            m_event_pools[stream.pool_index].push(gpu_event);
+        if (stream.gpu_stream == gpu_stream) {
+            KMM_ASSERT(stream.context == context);
+            return checked_cast<DeviceStream::index_type>(i);
         }
     }
+
+    size_t index = m_streams.size();
+    size_t pool_index = find_pool_for_context(context, m_event_pools);
+    m_streams.emplace_back(pool_index, context, gpu_stream, false);
+
+    return checked_cast<DeviceStream::index_type>(index);
 }
 
 void DeviceStreamManager::wait_until_idle() const {
