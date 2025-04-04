@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "kmm/runtime/device_resources.hpp"
 
 namespace kmm {
@@ -84,7 +86,7 @@ size_t DeviceResources::select_stream_for_operation(
         }
     }
 
-    // Go over the stream round-robin
+    // Go over the streams round-robin
     auto i = m_devices[device_id]->last_selected_stream++;
     return offset + (i % m_streams_per_device);
 }

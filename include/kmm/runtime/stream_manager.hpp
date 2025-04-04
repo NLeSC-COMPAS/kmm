@@ -26,7 +26,7 @@ class DeviceStreamManager {
     bool make_progress_for_stream(DeviceStream stream_index);
 
     DeviceStream create_stream(GPUContextHandle context, bool high_priority = false);
-    DeviceStream get_or_add_stream(GPUContextHandle context, CUstream stream);
+    DeviceStream get_or_add_stream(GPUContextHandle context, GPUstream_t stream);
 
     void wait_until_idle() const;
     void wait_until_ready(DeviceStream stream) const;

@@ -116,7 +116,10 @@ DeviceStream DeviceStreamManager::create_stream(GPUContextHandle context, bool h
     return checked_cast<DeviceStream::index_type>(index);
 }
 
-DeviceStream DeviceStreamManager::get_or_add_stream(GPUContextHandle context, CUstream gpu_stream) {
+DeviceStream DeviceStreamManager::get_or_add_stream(
+    GPUContextHandle context,
+    GPUstream_t gpu_stream
+) {
     for (size_t i = 0; i < m_streams.size(); i++) {
         auto& stream = m_streams[i];
 
