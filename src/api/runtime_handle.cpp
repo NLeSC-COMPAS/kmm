@@ -49,7 +49,9 @@ bool RuntimeHandle::wait_for(EventId id, typename std::chrono::system_clock::dur
 }
 
 EventId RuntimeHandle::barrier() const {
-    return worker().schedule([&](TaskGraph& g) { g.insert_barrier(); });
+    return worker().schedule([&](TaskGraph& g) {  //
+        return g.insert_barrier();
+    });
 }
 
 void RuntimeHandle::synchronize() const {

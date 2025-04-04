@@ -34,11 +34,20 @@ class Runtime: public std::enable_shared_from_this<Runtime> {
     void make_progress();
     void shutdown();
 
-    template<typename F>
-    EventId schedule(F fun) {
-        auto stage = TaskGraph(&m_graph_state);
-        fun(stage);
-        return this->commit_impl(stage);
+    template<typename F, typename R = std::invoke_result_t<F, TaskGraph&>>
+    R schedule(F fun) {
+        std::lock_guard guard {m_mutex};
+
+        if constexpr (std::is_void_v<R>) {
+            auto stage = TaskGraph(&m_graph_state);
+            fun(stage);
+            this->commit_impl(stage);
+        } else {
+            auto stage = TaskGraph(&m_graph_state);
+            auto result = fun(stage);
+            this->commit_impl(stage);
+            return result;
+        }
     }
 
     const SystemInfo& system_info() const {

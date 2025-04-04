@@ -46,13 +46,15 @@ Runtime::~Runtime() {
 }
 
 BufferId Runtime::create_buffer(BufferLayout layout) {
-    BufferId buffer_id;
-    this->schedule([&](TaskGraph& g) { buffer_id = g.create_buffer(layout); });
-    return buffer_id;
+    return this->schedule([&](TaskGraph& g) {  //
+        return g.create_buffer(layout);
+    });
 }
 
 void Runtime::delete_buffer(BufferId id, EventList deps) {
-    this->schedule([&](TaskGraph& g) { g.delete_buffer(id, std::move(deps)); });
+    this->schedule([&](TaskGraph& g) {  //
+        g.delete_buffer(id, std::move(deps));
+    });
 }
 
 void Runtime::check_buffer(BufferId id) {

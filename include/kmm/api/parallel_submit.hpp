@@ -52,7 +52,6 @@ EventId parallel_submit_impl(
     Launcher launcher,
     Args&&... args
 ) {
-    EventId result_event;
     std::tuple<ArgumentHandler<Args>...> handlers = {std::forward<Args>(args)...};
 
     auto init = TaskGroupInit {
@@ -61,7 +60,7 @@ EventId parallel_submit_impl(
 
     (std::get<Is>(handlers).initialize(init), ...);
 
-    runtime.schedule([&](TaskGraph& graph) {
+    return runtime.schedule([&](TaskGraph& graph) {
         EventList events;
 
         for (const DomainChunk& chunk : domain.chunks) {
@@ -102,10 +101,8 @@ EventId parallel_submit_impl(
 
         (std::get<Is>(handlers).commit(commit), ...);
 
-        result_event = graph.join_events(events);
+        return graph.join_events(events);
     });
-
-    return result_event;
 }
 }  // namespace detail
 
