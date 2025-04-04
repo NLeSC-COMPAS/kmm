@@ -76,17 +76,24 @@ class DeviceInfo {
      */
     int attribute(GPUdevice_attribute attrib) const;
 
+    size_t num_compute_streams() const {
+        return m_concurrent_stream;
+    }
+
   private:
     DeviceId m_id;
     std::string m_name;
     GPUdevice m_device_id;
     size_t m_memory_capacity;
+    size_t m_concurrent_stream = 1;
     std::array<int, NUM_ATTRIBUTES> m_attributes;
 };
 
 class SystemInfo {
   public:
-    SystemInfo(std::vector<DeviceInfo> devices = {});
+    SystemInfo() = default;
+    SystemInfo(std::vector<DeviceInfo> devices);
+    SystemInfo(SystemInfo info, std::vector<ResourceId> subresources);
 
     /**
      * Returns the number of GPUs in the system.
@@ -106,7 +113,7 @@ class SystemInfo {
     /**
      * Return a list of the available processors in the system.
      */
-    std::vector<ResourceId> processors() const;
+    std::vector<ResourceId> resources() const;
 
     /**
      * Return a list of the available memories in the system.
@@ -140,6 +147,7 @@ class SystemInfo {
 
   private:
     std::vector<DeviceInfo> m_devices;
+    std::vector<ResourceId> m_resources;
 };
 
 }  // namespace kmm

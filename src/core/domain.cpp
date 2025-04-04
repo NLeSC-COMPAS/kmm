@@ -9,15 +9,19 @@ Domain TileDomain::operator()(const SystemInfo& info, ExecutionSpace space) cons
     std::vector<ResourceId> devices;
 
     if (space == ExecutionSpace::Host) {
-        devices.push_back(ResourceId::host());
-    } else if (space == ExecutionSpace::Device) {
-        for (size_t i = 0; i < info.num_devices(); i++) {
-            devices.push_back(DeviceId(i));
+        for (const auto& resource : info.resources()) {
+            devices.push_back(ResourceId::host(resource.device_affinity()));
         }
 
         if (devices.empty()) {
-            throw std::runtime_error("no devices found, cannot partition work");
+            devices.push_back(ResourceId::host());
         }
+    } else if (space == ExecutionSpace::Device) {
+        devices = info.resources();
+    }
+
+    if (devices.empty()) {
+        throw std::runtime_error("cannot partition work, no devices found");
     }
 
     std::vector<DomainChunk> chunks;

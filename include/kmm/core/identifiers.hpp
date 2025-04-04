@@ -1,8 +1,8 @@
 #pragma once
 
 #include <iosfwd>
-#include <utility>
 #include <optional>
+#include <utility>
 
 #include "fmt/ostream.h"
 
@@ -195,6 +195,20 @@ class ResourceId {
 
     KMM_INLINE constexpr MemoryId as_memory() const {
         return is_host() ? MemoryId::host(m_device) : MemoryId(m_device);
+    }
+
+    KMM_INLINE constexpr bool operator==(const ResourceId& that) const {
+        if (m_type == Type::Host && that.m_type == Type::Host) {
+            return m_device == that.m_device;
+        } else if (m_type == Type::Device && that.m_type == Type::Device) {
+            return m_device == that.m_device && m_stream == that.m_stream;
+        } else {
+            return false;
+        }
+    }
+
+    KMM_INLINE constexpr bool operator!=(const ResourceId& that) const {
+        return !(*this == that);
     }
 
     friend std::ostream& operator<<(std::ostream&, const ResourceId&);

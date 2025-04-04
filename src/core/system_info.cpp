@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include "fmt/format.h"
 
 #include "kmm/core/system_info.hpp"
@@ -55,7 +57,32 @@ int DeviceInfo::attribute(GPUdevice_attribute attrib) const {
     throw std::runtime_error("unsupported attribute requested");
 }
 
-SystemInfo::SystemInfo(std::vector<DeviceInfo> devices) : m_devices(devices) {}
+SystemInfo::SystemInfo(std::vector<DeviceInfo> devices) : m_devices(devices) {
+    bool keep_going = true;
+
+    for (size_t stream_index = 0; keep_going; stream_index++) {
+        keep_going = false;
+
+        for (const auto& dev : devices) {
+            if (stream_index < dev.num_compute_streams()) {
+                m_resources.push_back(ResourceId(dev.device_id(), stream_index));
+                keep_going = true;
+            }
+        }
+    }
+}
+
+SystemInfo::SystemInfo(SystemInfo info, std::vector<ResourceId> subresources) :
+    m_devices(info.m_devices),
+    m_resources(std::move(subresources)) {
+    for (const auto& resource : m_resources) {
+        auto occurrences = std::count(info.m_resources.begin(), info.m_resources.end(), resource);
+
+        if (occurrences == 0) {
+            throw std::runtime_error(fmt::format("invalid resource: {}", resource));
+        }
+    }
+}
 
 size_t SystemInfo::num_devices() const {
     return m_devices.size();
@@ -75,13 +102,8 @@ const DeviceInfo& SystemInfo::device_by_ordinal(GPUdevice ordinal) const {
     throw std::runtime_error(fmt::format("cannot find device with ordinal {}", ordinal));
 }
 
-std::vector<ResourceId> SystemInfo::processors() const {
-    std::vector<ResourceId> result {ResourceId::host()};
-    for (const auto& device : m_devices) {
-        result.push_back(device.device_id());
-    }
-
-    return result;
+std::vector<ResourceId> SystemInfo::resources() const {
+    return m_resources;
 }
 
 std::vector<MemoryId> SystemInfo::memories() const {

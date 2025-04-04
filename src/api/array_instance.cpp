@@ -31,21 +31,25 @@ std::shared_ptr<ArrayInstance<N>> ArrayInstance<N>::create(
 
 template<size_t N>
 ArrayInstance<N>::~ArrayInstance() {
-    m_rt->schedule([&](TaskGraph& stage) { this->destroy(stage); });
+    m_rt->schedule([&](TaskGraph& stage) {  //
+        this->destroy(stage);
+    });
 }
 
 template<size_t N>
 void ArrayInstance<N>::copy_bytes_into(void* dst_data) {
-    auto event_id =
-        m_rt->schedule([&](TaskGraph& stage) { this->copy_bytes_into_buffer(stage, dst_data); });
+    auto event_id = m_rt->schedule([&](TaskGraph& stage) {  //
+        this->copy_bytes_into_buffer(stage, dst_data);
+    });
 
     m_rt->query_event(event_id, std::chrono::system_clock::time_point::max());
 }
 
 template<size_t N>
 void ArrayInstance<N>::copy_bytes_from(const void* src_data) {
-    auto event_id =
-        m_rt->schedule([&](TaskGraph& stage) { this->copy_bytes_from_buffer(stage, src_data); });
+    auto event_id = m_rt->schedule([&](TaskGraph& stage) {  //
+        this->copy_bytes_from_buffer(stage, src_data);
+    });
 
     m_rt->query_event(event_id, std::chrono::system_clock::time_point::max());
 }
@@ -53,7 +57,9 @@ void ArrayInstance<N>::copy_bytes_from(const void* src_data) {
 template<size_t N>
 void ArrayInstance<N>::synchronize() const {
     EventId event_id;
-    m_rt->schedule([&](TaskGraph& stage) { event_id = this->join_events(stage); });
+    m_rt->schedule([&](TaskGraph& stage) {  //
+        event_id = this->join_events(stage);
+    });
 
     m_rt->query_event(event_id, std::chrono::system_clock::time_point::max());
 }

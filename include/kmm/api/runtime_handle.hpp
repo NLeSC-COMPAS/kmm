@@ -19,6 +19,9 @@ namespace kmm {
 class Runtime;
 
 class RuntimeHandle {
+    struct Impl;
+    RuntimeHandle(std::shared_ptr<Impl> impl);
+
   public:
     RuntimeHandle(std::shared_ptr<Runtime> rt);
     RuntimeHandle(Runtime& rt);
@@ -40,7 +43,7 @@ class RuntimeHandle {
             .size = DomainDim::one()};
 
         return kmm::parallel_submit(
-            *m_worker,
+            worker(),
             info(),
             Domain {{chunk}},
             std::forward<L>(launcher),
@@ -59,7 +62,7 @@ class RuntimeHandle {
     template<typename D, typename L, typename... Args>
     EventId parallel_submit(D&& domain, L&& launcher, Args&&... args) const {
         return kmm::parallel_submit(
-            *m_worker,
+            worker(),
             info(),
             IntoDomain<std::decay_t<D>>::call(
                 std::forward<D>(domain),
@@ -104,7 +107,7 @@ class RuntimeHandle {
     template<size_t N = 1, typename T>
     Array<T, N> allocate(const T* data, Dim<N> shape, MemoryId memory_id) const {
         auto handle = ArrayInstance<N>::create(
-            *m_worker,
+            worker(),
             Distribution<N> {shape, shape, {memory_id}},
             DataType::of<T>()
         );
@@ -208,6 +211,24 @@ class RuntimeHandle {
     void synchronize() const;
 
     /**
+     * Return a new `RuntimeHandle` that is constrained to the given set of resources. In other
+     * words, it only can submit work onto those resources.
+     */
+    RuntimeHandle constrain_to(std::vector<ResourceId> resources) const;
+
+    /**
+     * Return a new `RuntimeHandle` that is constrained to the given device. In other
+     * words, it only can submit work onto that device.
+     */
+    RuntimeHandle constrain_to(DeviceId device) const;
+
+    /**
+     * Return a new `RuntimeHandle` that is constrained to the given resource. In other
+     * words, it only can submit work onto that resource.
+     */
+    RuntimeHandle constrain_to(ResourceId resource) const;
+
+    /**
      * Returns information about the current system.
      */
     const SystemInfo& info() const;
@@ -215,10 +236,10 @@ class RuntimeHandle {
     /**
      * Returns the inner `Worker`.
      */
-    const Runtime& worker() const;
+    Runtime& worker() const;
 
   private:
-    std::shared_ptr<Runtime> m_worker;
+    std::shared_ptr<Impl> m_data;
 };
 
 RuntimeHandle make_runtime(const RuntimeConfig& config = default_config_from_environment());
