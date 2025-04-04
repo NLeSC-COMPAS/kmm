@@ -80,7 +80,7 @@ int main() {
     auto bitmap = kmm::Array<int> {npoints};
 
     rt.submit(
-        kmm::ProcessorId::host(),
+        kmm::ResourceId::host(),
         kmm::Host(init_polygon),
         kmm::Range(nvertices),
         nvertices,

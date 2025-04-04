@@ -6,7 +6,17 @@ struct DeviceResources::Device {
     KMM_NOT_COPYABLE_OR_MOVABLE(Device)
 
   public:
-    Device(
+    Device(GPUContextHandle context) : context(context) {}
+
+    GPUContextHandle context;
+    size_t last_selected_stream = 0;
+};
+
+struct DeviceResources::Stream {
+    KMM_NOT_COPYABLE_OR_MOVABLE(Stream)
+
+  public:
+    Stream(
         DeviceId device_id,
         DeviceStream stream,
         GPUContextHandle context,
@@ -32,10 +42,12 @@ DeviceResources::DeviceResources(
     KMM_ASSERT(m_streams_per_device > 0);
 
     for (size_t i = 0; i < contexts.size(); i++) {
+        m_devices.emplace_back(std::make_unique<Device>(contexts[i]));
+
         for (size_t j = 0; j < m_streams_per_device; j++) {
             auto stream = stream_manager->create_stream(contexts[i]);
 
-            m_streams.emplace_back(std::make_unique<Device>(
+            m_streams.emplace_back(std::make_unique<Stream>(
                 DeviceId(i),
                 stream,
                 contexts[i],
@@ -52,8 +64,8 @@ DeviceResources::~DeviceResources() {
 }
 
 GPUContextHandle DeviceResources::context(DeviceId device_id) {
-    KMM_ASSERT(device_id * m_streams_per_device < m_streams.size());
-    return m_streams[device_id * m_streams_per_device]->context;
+    KMM_ASSERT(device_id < m_devices.size());
+    return m_devices[device_id]->context;
 }
 
 size_t DeviceResources::select_stream_for_operation(
@@ -62,11 +74,6 @@ size_t DeviceResources::select_stream_for_operation(
 ) {
     KMM_ASSERT(device_id * m_streams_per_device < m_streams.size());
     size_t offset = device_id * m_streams_per_device;
-
-    // Push the first stream down to the bottom
-    for (size_t i = 1; i < m_streams_per_device; i++) {
-        std::swap(m_streams[offset + i - 1], m_streams[offset + i]);
-    }
 
     // Find a stream that contains one of the dependencies
     for (size_t i = 0; i < m_streams_per_device; i++) {
@@ -77,17 +84,23 @@ size_t DeviceResources::select_stream_for_operation(
         }
     }
 
-    // Just return the first stream;
-    return offset;
+    // Go over the stream round-robin
+    auto i = m_devices[device_id]->last_selected_stream++;
+    return offset + (i % m_streams_per_device);
 }
 
 DeviceEvent DeviceResources::submit(
     DeviceId device_id,
+    std::optional<uint64_t> stream_index,
     DeviceEventSet deps,
     DeviceResourceOperation& op,
     std::vector<BufferAccessor> accessors
 ) {
-    auto& state = *m_streams[select_stream_for_operation(device_id, deps)];
+    if (!stream_index.has_value()) {
+        stream_index = select_stream_for_operation(device_id, deps);
+    }
+
+    auto& state = *m_streams[(*stream_index) % m_streams_per_device];
 
     try {
         GPUContextGuard guard {state.context};

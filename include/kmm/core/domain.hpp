@@ -31,7 +31,7 @@ using DomainDim = Dim<DOMAIN_DIMS>;
 using DomainBounds = Bounds<DOMAIN_DIMS>;
 
 struct DomainChunk {
-    ProcessorId owner_id;
+    ResourceId owner_id;
     DomainIndex offset;
     DomainDim size;
 };

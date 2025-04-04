@@ -23,7 +23,7 @@ std::ostream& operator<<(std::ostream& f, const MemoryId& v) {
     }
 }
 
-std::ostream& operator<<(std::ostream& f, const ProcessorId& v) {
+std::ostream& operator<<(std::ostream& f, const ResourceId& v) {
     if (v.is_host()) {
         return f << "CPU";
     } else {

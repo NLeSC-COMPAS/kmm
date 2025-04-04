@@ -236,12 +236,12 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
   public:
     DeviceJob(
         TaskHandle task,
-        DeviceId device_id,
+        ResourceId resource_id,
         std::vector<BufferRequirement> buffers,
         DeviceEventSet dependencies
     ) :
         Job(task),
-        m_device_id(device_id),
+        m_resource(resource_id),
         m_buffers(std::move(buffers)),
         m_dependencies(std::move(dependencies)) {}
 
@@ -267,7 +267,7 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
                 // as dependencies on the current device stream.
                 m_local_dependencies = m_dependencies.extract_events_for_context(
                     executor.streams(),
-                    executor.devices().context(m_device_id)
+                    executor.devices().context(m_resource.as_device())
                 );
 
                 m_status = Status::PollingDependencies;
@@ -284,7 +284,8 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
 
             try {
                 m_execution_event = executor.devices().submit(
-                    m_device_id,
+                    m_resource.as_device(),
+                    m_resource.stream_affinity(),
                     m_local_dependencies,
                     *this,
                     executor.buffers().access_requests(m_requests)
@@ -327,7 +328,7 @@ class DeviceJob: public Executor::Job, public DeviceResourceOperation {
     };
 
     Status m_status = Status::Init;
-    DeviceId m_device_id;
+    ResourceId m_resource;
     std::vector<BufferRequirement> m_buffers;
     BufferRequestList m_requests;
     DeviceEvent m_execution_event;
@@ -339,7 +340,7 @@ class ExecuteDeviceJob: public DeviceJob {
   public:
     ExecuteDeviceJob(
         TaskHandle task,
-        DeviceId device_id,
+        ResourceId device_id,
         ComputeTask* compute_task,
         std::vector<BufferRequirement> buffers,
         DeviceEventSet dependencies
@@ -606,7 +607,7 @@ void Executor::execute_task(
     if (proc.is_device()) {
         insert_job(std::make_unique<ExecuteDeviceJob>(
             task,
-            proc.as_device(),
+            proc,
             command.task.get(),
             command.buffers,
             std::move(dependencies)

@@ -20,7 +20,7 @@ class Scheduler {
     Scheduler(size_t num_devices);
     ~Scheduler();
 
-    void submit(EventId event_id, Command command, EventList dependencies);
+    void submit(EventId event_id, Command&& command, EventList dependencies);
     std::optional<TaskHandle> pop_ready(DeviceEventSet* deps_out);
 
     void mark_as_scheduled(TaskHandle task, DeviceEvent event);

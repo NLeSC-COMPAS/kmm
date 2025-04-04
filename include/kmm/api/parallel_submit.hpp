@@ -65,7 +65,7 @@ EventId parallel_submit_impl(
         EventList events;
 
         for (const DomainChunk& chunk : domain.chunks) {
-            ProcessorId processor_id = chunk.owner_id;
+            auto processor_id = chunk.owner_id;
 
             auto instance = TaskInstance {
                 .runtime = runtime,

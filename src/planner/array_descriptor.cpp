@@ -80,7 +80,7 @@ CopyDef build_copy_operation(
     size_t src_stride = element_size;
     size_t dst_stride = element_size;
 
-    for (size_t i = 0; i < N; i++) {
+    for (size_t i = 0; is_less(i, N); i++) {
         copy_def.add_dimension(  //
             checked_cast<size_t>(counts[i]),
             checked_cast<size_t>(src_offset[i]),
@@ -129,7 +129,7 @@ EventId ArrayDescriptor<N>::copy_bytes_into_buffer(TaskGraph& stage, void* dst_d
         auto task = std::make_unique<CopyIntoTask<N>>(dst_data, copy_def);
 
         auto event_id = stage.insert_compute_task(
-            ProcessorId::host(),
+            ResourceId::host(),
             std::move(task),
             {buffer_req},
             {buffer.last_write_event}
@@ -142,9 +142,7 @@ EventId ArrayDescriptor<N>::copy_bytes_into_buffer(TaskGraph& stage, void* dst_d
         m_buffers[i].last_access_events.push_back(new_read_events[i]);
     }
 
-    auto result = stage.join_events(new_read_events);
-    stage.commit();
-    return result;
+    return stage.join_events(new_read_events);
 }
 
 template<size_t N>
@@ -179,7 +177,7 @@ EventId ArrayDescriptor<N>::copy_bytes_from_buffer(TaskGraph& stage, const void*
         auto task = std::make_unique<CopyFromTask<N>>(src_data, copy_def);
 
         auto event_id = stage.insert_compute_task(
-            ProcessorId::host(),
+            ResourceId::host(),
             std::move(task),
             {buffer_req},
             buffer.last_access_events
@@ -194,9 +192,7 @@ EventId ArrayDescriptor<N>::copy_bytes_from_buffer(TaskGraph& stage, const void*
         buffer.last_access_events = {new_write_events[i]};
     }
 
-    auto result = stage.join_events(new_write_events);
-    stage.commit();
-    return result;
+    return stage.join_events(new_write_events);
 }
 
 template<size_t N>

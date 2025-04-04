@@ -75,8 +75,8 @@ const DeviceInfo& SystemInfo::device_by_ordinal(GPUdevice ordinal) const {
     throw std::runtime_error(fmt::format("cannot find device with ordinal {}", ordinal));
 }
 
-std::vector<ProcessorId> SystemInfo::processors() const {
-    std::vector<ProcessorId> result {ProcessorId::host()};
+std::vector<ResourceId> SystemInfo::processors() const {
+    std::vector<ResourceId> result {ResourceId::host()};
     for (const auto& device : m_devices) {
         result.push_back(device.device_id());
     }
@@ -97,7 +97,7 @@ MemoryId SystemInfo::affinity_memory(DeviceId device_id) const {
     return device(device_id).memory_id();
 }
 
-MemoryId SystemInfo::affinity_memory(ProcessorId proc_id) const {
+MemoryId SystemInfo::affinity_memory(ResourceId proc_id) const {
     if (proc_id.is_device()) {
         return affinity_memory(proc_id.as_device());
     } else {
@@ -105,15 +105,15 @@ MemoryId SystemInfo::affinity_memory(ProcessorId proc_id) const {
     }
 }
 
-ProcessorId SystemInfo::affinity_processor(MemoryId memory_id) const {
+ResourceId SystemInfo::affinity_processor(MemoryId memory_id) const {
     if (memory_id.is_device()) {
         return memory_id.as_device();
     } else {
-        return ProcessorId::host();
+        return ResourceId::host();
     }
 }
 
-bool SystemInfo::is_memory_accessible(MemoryId memory_id, ProcessorId proc_id) const {
+bool SystemInfo::is_memory_accessible(MemoryId memory_id, ResourceId proc_id) const {
     if (!memory_id.is_host() && proc_id.is_device()) {
         return affinity_memory(proc_id.as_device()) == memory_id;
     }
@@ -122,7 +122,7 @@ bool SystemInfo::is_memory_accessible(MemoryId memory_id, ProcessorId proc_id) c
 }
 
 bool SystemInfo::is_memory_accessible(MemoryId memory_id, DeviceId device_id) const {
-    return is_memory_accessible(memory_id, ProcessorId(device_id));
+    return is_memory_accessible(memory_id, ResourceId(device_id));
 }
 
 }  // namespace kmm

@@ -26,6 +26,7 @@ class Runtime: public std::enable_shared_from_this<Runtime> {
 
     BufferId create_buffer(BufferLayout layout);
     void delete_buffer(BufferId buffer_id, EventList deps = {});
+    void check_buffer(BufferId id);
 
     bool query_event(EventId event_id, std::chrono::system_clock::time_point deadline);
     bool is_idle();

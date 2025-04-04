@@ -2,6 +2,7 @@
 
 #include <iosfwd>
 #include <utility>
+#include <optional>
 
 #include "fmt/ostream.h"
 
@@ -149,16 +150,22 @@ struct MemoryId {
     uint8_t m_value;
 };
 
-class ProcessorId {
+class ResourceId {
   public:
+    static constexpr uint64_t UNASSIGNED_STREAM = ~uint64_t(0);
     enum struct Type : uint8_t { Host, Device };
 
-    KMM_INLINE constexpr ProcessorId(Type type, uint8_t id = 0) : m_type(type), m_value(id) {}
+    KMM_INLINE constexpr ResourceId() : m_type(Type::Host) {}
 
-    KMM_INLINE constexpr ProcessorId(DeviceId device) : ProcessorId(Type::Device, device.get()) {}
+    KMM_INLINE constexpr ResourceId(DeviceId device, uint64_t stream = UNASSIGNED_STREAM) :
+        m_type(Type::Device),
+        m_device(device),
+        m_stream(stream) {}
 
-    KMM_INLINE static constexpr ProcessorId host() {
-        return ProcessorId {Type::Host};
+    KMM_INLINE static constexpr ResourceId host(DeviceId affinity = DeviceId(0)) {
+        ResourceId result;
+        result.m_device = affinity;
+        return result;
     }
 
     KMM_INLINE constexpr bool is_host() const {
@@ -171,32 +178,31 @@ class ProcessorId {
 
     KMM_INLINE constexpr DeviceId as_device() const {
         KMM_ASSERT(is_device());
-        return DeviceId(m_value);
+        return m_device;
     }
 
-    KMM_INLINE constexpr MemoryId as_memory() const {
-        return is_host() ? MemoryId::host() : MemoryId(DeviceId(m_value));
+    KMM_INLINE constexpr DeviceId device_affinity() const {
+        return m_device;
     }
 
-    KMM_INLINE constexpr bool operator==(const ProcessorId& that) const {
-        return m_type == that.m_type && m_value == that.m_value;
-    }
-
-    KMM_INLINE constexpr bool operator<(const ProcessorId& that) const {
-        if (m_type != that.m_type) {
-            return m_type < that.m_type;
+    KMM_INLINE constexpr std::optional<uint64_t> stream_affinity() const {
+        if (m_type == Type::Device && m_stream != UNASSIGNED_STREAM) {
+            return m_stream;
         } else {
-            return m_value < that.m_value;
+            return std::nullopt;
         }
     }
 
-    KMM_IMPL_COMPARISON_OPS(ProcessorId)
+    KMM_INLINE constexpr MemoryId as_memory() const {
+        return is_host() ? MemoryId::host(m_device) : MemoryId(m_device);
+    }
 
-    friend std::ostream& operator<<(std::ostream&, const ProcessorId&);
+    friend std::ostream& operator<<(std::ostream&, const ResourceId&);
 
   private:
     Type m_type = Type::Host;
-    uint8_t m_value = 0;
+    DeviceId m_device = DeviceId(0);
+    uint64_t m_stream = UNASSIGNED_STREAM;  // only for Type::Device
 };
 
 struct BufferId {
@@ -278,6 +284,6 @@ struct fmt::formatter<kmm::EventId>: fmt::formatter<uint64_t> {};
 template<>
 struct fmt::formatter<kmm::MemoryId>: fmt::ostream_formatter {};
 template<>
-struct fmt::formatter<kmm::ProcessorId>: fmt::ostream_formatter {};
+struct fmt::formatter<kmm::ResourceId>: fmt::ostream_formatter {};
 template<>
 struct fmt::formatter<kmm::EventList>: fmt::ostream_formatter {};

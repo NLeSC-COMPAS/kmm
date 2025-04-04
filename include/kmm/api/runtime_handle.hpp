@@ -33,7 +33,7 @@ class RuntimeHandle {
      * @return The event identifier for the submitted task.
      */
     template<typename L, typename... Args>
-    EventId submit(ProcessorId target, L&& launcher, Args&&... args) const {
+    EventId submit(ResourceId target, L&& launcher, Args&&... args) const {
         DomainChunk chunk = {
             .owner_id = target,  //
             .offset = DomainIndex::zero(),

@@ -106,7 +106,7 @@ class SystemInfo {
     /**
      * Return a list of the available processors in the system.
      */
-    std::vector<ProcessorId> processors() const;
+    std::vector<ResourceId> processors() const;
 
     /**
      * Return a list of the available memories in the system.
@@ -116,7 +116,7 @@ class SystemInfo {
     /**
      * Returns the highest affinity memory for the given processor.
      */
-    MemoryId affinity_memory(ProcessorId proc_id) const;
+    MemoryId affinity_memory(ResourceId proc_id) const;
 
     /**
      * Returns the highest affinity memory for the given device.
@@ -126,12 +126,12 @@ class SystemInfo {
     /**
      * Returns the processor that has the highest affinity for accessing the given memory.
      */
-    ProcessorId affinity_processor(MemoryId memory_id) const;
+    ResourceId affinity_processor(MemoryId memory_id) const;
 
     /**
      * Checks if the given processor can access the given memory.
      */
-    bool is_memory_accessible(MemoryId memory_id, ProcessorId proc_id) const;
+    bool is_memory_accessible(MemoryId memory_id, ResourceId proc_id) const;
 
     /**
      * Checks if the given device can access the given memory.

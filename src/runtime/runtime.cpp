@@ -47,14 +47,17 @@ Runtime::~Runtime() {
 
 BufferId Runtime::create_buffer(BufferLayout layout) {
     BufferId buffer_id;
-
     this->schedule([&](TaskGraph& g) { buffer_id = g.create_buffer(layout); });
-
     return buffer_id;
 }
 
 void Runtime::delete_buffer(BufferId id, EventList deps) {
     this->schedule([&](TaskGraph& g) { g.delete_buffer(id, std::move(deps)); });
+}
+
+void Runtime::check_buffer(BufferId id) {
+    std::unique_lock guard {m_mutex};
+    m_buffer_registry->get(id);
 }
 
 bool Runtime::query_event(EventId event_id, std::chrono::system_clock::time_point deadline) {

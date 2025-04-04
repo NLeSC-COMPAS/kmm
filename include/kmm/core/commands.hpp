@@ -30,7 +30,7 @@ struct CommandCopy {
 };
 
 struct CommandExecute {
-    ProcessorId processor_id;
+    ResourceId processor_id;
     std::unique_ptr<ComputeTask> task;
     std::vector<BufferRequirement> buffers;
 };

@@ -55,7 +55,7 @@ EventId TaskGraph::insert_barrier() {
 }
 
 EventId TaskGraph::insert_compute_task(
-    ProcessorId process_id,
+    ResourceId process_id,
     std::unique_ptr<ComputeTask> task,
     std::vector<BufferRequirement> buffers,
     EventList deps

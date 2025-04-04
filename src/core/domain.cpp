@@ -6,10 +6,10 @@
 namespace kmm {
 
 Domain TileDomain::operator()(const SystemInfo& info, ExecutionSpace space) const {
-    std::vector<ProcessorId> devices;
+    std::vector<ResourceId> devices;
 
     if (space == ExecutionSpace::Host) {
-        devices.push_back(ProcessorId::host());
+        devices.push_back(ResourceId::host());
     } else if (space == ExecutionSpace::Device) {
         for (size_t i = 0; i < info.num_devices(); i++) {
             devices.push_back(DeviceId(i));

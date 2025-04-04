@@ -82,20 +82,20 @@ Scheduler::Scheduler(size_t num_devices) {
 
 Scheduler::~Scheduler() = default;
 
-void Scheduler::submit(EventId event_id, Command command, EventList dependencies) {
-    auto node = std::make_shared<Task>(event_id, std::move(command), std::move(dependencies));
+void Scheduler::submit(EventId event_id, Command&& command, EventList dependencies) {
+    auto task = std::make_shared<Task>(event_id, std::move(command), std::move(dependencies));
 
     spdlog::debug(
         "submit task {} (command={}, dependencies={})",
-        node->event_id,
-        node->command,
-        node->dependencies
+        task->event_id,
+        task->command,
+        task->dependencies
     );
 
-    size_t num_pending = node->dependencies.size();
+    size_t num_pending = task->dependencies.size();
     DeviceEventSet dependency_events;
 
-    for (EventId dep_id : node->dependencies) {
+    for (EventId dep_id : task->dependencies) {
         auto it = m_tasks.find(dep_id);
 
         if (it == m_tasks.end()) {
@@ -104,7 +104,7 @@ void Scheduler::submit(EventId event_id, Command command, EventList dependencies
         }
 
         auto& dep = it->second;
-        dep->successors.push_back(node);
+        dep->successors.push_back(task);
 
         if (dep->status == Task::Status::Executing) {
             num_pending--;
@@ -116,14 +116,14 @@ void Scheduler::submit(EventId event_id, Command command, EventList dependencies
         }
     }
 
-    KMM_ASSERT(node->status == Task::Status::Init);
-    node->status = Task::Status::AwaitingDependencies;
-    node->queue_id = determine_queue_id(node->command);
-    node->dependencies_pending = num_pending;
-    node->dependency_events = std::move(dependency_events);
-    enqueue_if_ready(nullptr, node);
+    KMM_ASSERT(task->status == Task::Status::Init);
+    task->status = Task::Status::AwaitingDependencies;
+    task->queue_id = determine_queue_id(task->command);
+    task->dependencies_pending = num_pending;
+    task->dependency_events = std::move(dependency_events);
+    enqueue_if_ready(nullptr, task);
 
-    m_tasks.emplace(event_id, std::move(node));
+    m_tasks.emplace(event_id, std::move(task));
 }
 
 std::optional<TaskHandle> Scheduler::pop_ready(DeviceEventSet* deps_out) {
