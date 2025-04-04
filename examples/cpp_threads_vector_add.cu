@@ -81,6 +81,7 @@ void main_loop(unsigned int id, kmm::RuntimeHandle& rt, long n, long chunk_size,
         if (result[i] != float(i) + 1.0F) {
             std::cerr << "[THREAD " << id << "] - wrong result at " << i << " : " << result[i]
                       << " != " << float(i) + 1 << std::endl;
+            return;
         }
     }
 }
