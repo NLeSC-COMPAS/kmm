@@ -30,6 +30,10 @@ MemoryId RuntimeHandle::memory_affinity_for_address(const void* address) const {
     }
 }
 
+EventId RuntimeHandle::join(EventList events) const {
+    return worker().schedule([&](TaskGraph& g) { return g.join_events(std::move(events)); });
+}
+
 bool RuntimeHandle::is_done(EventId id) const {
     return worker().query_event(id, std::chrono::system_clock::time_point::min());
 }

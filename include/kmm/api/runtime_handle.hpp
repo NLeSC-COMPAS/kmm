@@ -171,6 +171,20 @@ class RuntimeHandle {
     MemoryId memory_affinity_for_address(const void* address) const;
 
     /**
+     * Returns a new event that triggers when all the given events have triggered.
+     */
+    EventId join(EventList events) const;
+
+    /**
+     * Returns a new event that triggers when all the given events have triggered. Each argument
+     * must be convertible to an `EventId`.
+     */
+    template<typename... Es>
+    EventId join(Es... events) const {
+        return join(EventList(EventId(events)...));
+    }
+
+    /**
      * Returns `true` if the event with the provided identifier has finished, or `false` otherwise.
      */
     bool is_done(EventId) const;
