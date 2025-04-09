@@ -200,6 +200,7 @@ using bfloat16_type = __hip_bfloat16;
     #define gpuMemcpyDtoH                                 hipMemcpyDtoH
     #define gpuMemcpyDtoDAsync                            hipMemcpyDtoDAsync
     #define gpuMemcpyDtoD                                 hipMemcpyDtoD
+    #define gpuMemcpyPeerAsync                            hipMemcpyPeerAsync
     #define gpuGetErrorName                               hipDrvGetErrorName
     #define gpuGetErrorString                             hipDrvGetErrorString
     #define GPUrtGetErrorName                             hipGetErrorName
