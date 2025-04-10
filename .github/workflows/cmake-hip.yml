@@ -46,6 +46,7 @@ jobs:
         # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
         run: >
           cmake -B ${{ steps.strings.outputs.build-output-dir }}
+          -DCMAKE_PREFIX_PATH=/opt/rocm
           -DCMAKE_CXX_COMPILER:PATH=/opt/rocm/bin/amdclang++
           -DHIPCXX:PATH=/opt/rocm/bin/amdclang++
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
