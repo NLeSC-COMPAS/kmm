@@ -34,7 +34,6 @@ jobs:
           sudo apt update
           sudo apt install hip-dev
           ls /opt/rocm/bin
-          /opt/rocm/bin/hipconfig
 
       - name: Set reusable strings
         # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
