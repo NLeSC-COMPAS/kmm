@@ -47,8 +47,8 @@ jobs:
         # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
         run: >
           cmake -B ${{ steps.strings.outputs.build-output-dir }}
-          -DCMAKE_HIP_COMPILER=/opt/rocm/bin/clang++
-          -DCMAKE_CXX_COMPILER=/opt/rocm/bin/clang++
+          -DCMAKE_HIP_COMPILER=/opt/rocm/bin/amdclang++
+          -DCMAKE_CXX_COMPILER=/opt/rocm/bin/amdclang++
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
           -DSPDLOG_FMT_EXTERNAL:BOOL=ON
