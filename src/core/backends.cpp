@@ -304,6 +304,9 @@ GPUresult gpuMemcpyHtoD(GPUdeviceptr dstDevice, const void* srcHost, size_t Byte
 }
 
 GPUresult gpuMemcpyPeerAsync(GPUdeviceptr dstDevice, GPUcontext dstContext, GPUdeviceptr srcDevice, GPUcontext srcContext, size_t ByteCount, GPUstream_t hStream) {
+    // TODO WARNING
+    // the HIP interface uses device IDs that are not available in the CUDA interface
+    // the following code compiles but may not work
     return hipMemcpyPeerAsync(dstDevice, 0, srcDevice, 1, ByteCount, hStream);
 }
 
