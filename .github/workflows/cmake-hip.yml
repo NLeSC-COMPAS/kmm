@@ -52,7 +52,7 @@ jobs:
           -DCMAKE_HIP_COMPILER_ROCM_ROOT:PATH=/opt/rocm
           -DCMAKE_HIP_ARCHITECTURES=gfx90a
           -DCMAKE_HIP_COMPILER:PATH=/opt/rocm/bin/amdclang++
-          -DCMAKE_HIP_FLAGS=--rocm-path=/opt/rocm
+          -DCMAKE_HIP_FLAGS="-nogpulib"
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
           -DSPDLOG_FMT_EXTERNAL:BOOL=ON
