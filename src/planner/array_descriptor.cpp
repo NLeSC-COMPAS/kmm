@@ -219,4 +219,6 @@ void ArrayDescriptor<N>::destroy(TaskGraph& stage) {
     m_buffers.clear();
 }
 
+KMM_INSTANTIATE_ARRAY_IMPL(ArrayDescriptor)
+
 }  // namespace kmm

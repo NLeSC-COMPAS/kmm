@@ -58,4 +58,6 @@ void ArrayReadPlanner<N>::commit(TaskGraph& stage) {
     m_read_events.clear();
 }
 
+KMM_INSTANTIATE_ARRAY_IMPL(ArrayReadPlanner)
+
 }  // namespace kmm
