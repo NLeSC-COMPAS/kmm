@@ -33,7 +33,6 @@ jobs:
           rm ./amdgpu-install_6.3.60303-1_all.deb
           sudo apt update
           sudo apt install hip-dev
-          ls /opt/rocm/bin
 
       - name: Set reusable strings
         # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
@@ -47,8 +46,7 @@ jobs:
         # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
         run: >
           cmake -B ${{ steps.strings.outputs.build-output-dir }}
-          -DCMAKE_HIP_COMPILER=/opt/rocm/bin/amdclang++
-          -DCMAKE_CXX_COMPILER=/opt/rocm/bin/amdclang++
+          -D CMAKE_CXX_COMPILER:PATH=/opt/rocm/bin/amdclang++
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
           -DSPDLOG_FMT_EXTERNAL:BOOL=ON
