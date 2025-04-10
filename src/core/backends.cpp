@@ -304,7 +304,7 @@ GPUresult gpuMemcpyHtoD(GPUdeviceptr dstDevice, const void* srcHost, size_t Byte
 }
 
 GPUresult gpuMemcpyPeerAsync(GPUdeviceptr dstDevice, GPUcontext dstContext, GPUdeviceptr srcDevice, GPUcontext srcContext, size_t ByteCount, GPUstream_t hStream) {
-    return hipMemcpyPeerAsync(dstDevice, 0, srcDevice, 1, byteCount, hStream);
+    return hipMemcpyPeerAsync(dstDevice, 0, srcDevice, 1, ByteCount, hStream);
 }
 
 #endif
