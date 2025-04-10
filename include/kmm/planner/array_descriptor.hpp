@@ -47,6 +47,4 @@ class ArrayDescriptor {
     std::vector<BufferDescriptor> m_buffers;
 };
 
-KMM_INSTANTIATE_ARRAY_IMPL(ArrayDescriptor)
-
 }  // namespace kmm

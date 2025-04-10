@@ -83,4 +83,6 @@ void ArrayWritePlanner<N>::commit(TaskGraph& stage) {
     m_write_events.clear();
 }
 
+KMM_INSTANTIATE_ARRAY_IMPL(ArrayWritePlanner)
+
 }  // namespace kmm

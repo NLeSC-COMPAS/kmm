@@ -29,6 +29,4 @@ class ArrayReadPlanner {
     std::vector<std::pair<size_t, EventId>> m_read_events;
 };
 
-KMM_INSTANTIATE_ARRAY_IMPL(ArrayReadPlanner)
-
 }  // namespace kmm

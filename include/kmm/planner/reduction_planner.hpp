@@ -56,6 +56,4 @@ class ArrayReductionPlanner {
     Reduction m_reduction;
 };
 
-KMM_INSTANTIATE_ARRAY_IMPL(ArrayReductionPlanner)
-
 }  // namespace kmm

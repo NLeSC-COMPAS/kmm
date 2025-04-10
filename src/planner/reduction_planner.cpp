@@ -244,4 +244,6 @@ void ArrayReductionPlanner<N>::commit(TaskGraph& stage) {
     m_partial_buffers.clear();
 }
 
+KMM_INSTANTIATE_ARRAY_IMPL(ArrayReductionPlanner)
+
 }  // namespace kmm

@@ -30,8 +30,6 @@ class ArrayInstance:
     std::shared_ptr<Runtime> m_rt;
 };
 
-KMM_INSTANTIATE_ARRAY_IMPL(ArrayInstance)
-
 [[noreturn]] void throw_uninitialized_array_exception();
 
 }  // namespace kmm

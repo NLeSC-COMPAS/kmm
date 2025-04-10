@@ -28,6 +28,4 @@ class ArrayWritePlanner {
     std::shared_ptr<ArrayDescriptor<N>> m_instance;
     std::vector<std::pair<size_t, EventId>> m_write_events;
 };
-
-KMM_INSTANTIATE_ARRAY_IMPL(ArrayWritePlanner)
 }  // namespace kmm

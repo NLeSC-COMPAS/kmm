@@ -71,4 +71,6 @@ void ArrayInstance<N>::synchronize() const {
     );
 }
 
+KMM_INSTANTIATE_ARRAY_IMPL(ArrayInstance)
+
 }  // namespace kmm
