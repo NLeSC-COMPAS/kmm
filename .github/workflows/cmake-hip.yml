@@ -33,6 +33,7 @@ jobs:
           rm ./amdgpu-install_6.3.60303-1_all.deb
           sudo apt update
           sudo apt install hip-dev
+          hipconfig
 
       - name: Set reusable strings
         # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
@@ -49,6 +50,7 @@ jobs:
           -DCMAKE_PREFIX_PATH=/opt/rocm
           -DCMAKE_CXX_COMPILER:PATH=/opt/rocm/bin/amdclang++
           -DHIPCXX:PATH=/opt/rocm/bin/amdclang++
+          -DCMAKE_HIP_COMPILER_ROCM_ROOT:PATH=/opt/rocm
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
           -DSPDLOG_FMT_EXTERNAL:BOOL=ON
