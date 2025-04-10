@@ -34,6 +34,8 @@ jobs:
           rm ./amdgpu-install_6.3.60303-1_all.deb
           sudo apt update
           sudo apt install hip-dev
+          export ROCM_PATH=/opt/rocm-3.3
+          export PATH=${PATH}:${ROCM_PATH}/bin
 
       - name: Set reusable strings
         # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
