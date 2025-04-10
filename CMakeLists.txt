@@ -20,14 +20,6 @@ if(KMM_USE_CUDA AND KMM_USE_HIP)
   message(FATAL_ERROR "CUDA and HIP backend are mutually exclusive.")
 endif()
 
-if(KMM_USE_CUDA)
-  enable_language(CUDA)
-  SET(CUDA_SEPARABLE_COMPILATION ON)
-  set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
-elseif(KMM_USE_HIP)
-  enable_language(HIP)
-endif()
-
 # Enable C++17 support
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -45,6 +37,14 @@ else()
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC "${PROJECT_SOURCE_DIR}/include")
+
+if(KMM_USE_CUDA)
+  enable_language(CUDA)
+  SET(CUDA_SEPARABLE_COMPILATION ON)
+  set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+elseif(KMM_USE_HIP)
+  enable_language(HIP)
+endif()
 
 # CXX flags
 target_compile_options(${PROJECT_NAME}
