@@ -200,7 +200,6 @@ using bfloat16_type = __hip_bfloat16;
     #define gpuMemcpyDtoH                                 hipMemcpyDtoH
     #define gpuMemcpyDtoDAsync                            hipMemcpyDtoDAsync
     #define gpuMemcpyDtoD                                 hipMemcpyDtoD
-    #define gpuMemcpyPeerAsync                            hipMemcpyPeerAsync
     #define gpuGetErrorName                               hipDrvGetErrorName
     #define gpuGetErrorString                             hipDrvGetErrorString
     #define GPUrtGetErrorName                             hipGetErrorName
@@ -250,6 +249,7 @@ const char* blasGetStatusName(blasStatus_t);
 GPUresult gpuMemcpyAsync(GPUdeviceptr, GPUdeviceptr, size_t, GPUstream_t);
 GPUresult gpuMemcpyHtoDAsync(GPUdeviceptr, const void*, size_t, GPUstream_t);
 GPUresult gpuMemcpyHtoD(GPUdeviceptr, const void*, size_t);
+GPUresult gpuMemcpyPeerAsync(GPUdeviceptr, GPUcontext, GPUdeviceptr, GPUcontext, size_t, GPUstream_t);
 
 #else
     #define GPU_DEVICE_ATTRIBUTE_MAX   1
