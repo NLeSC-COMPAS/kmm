@@ -45,7 +45,7 @@ void execute_gpu_h2d_copy_impl(
         }
     } else if (dim == 1) {
         GPU_MEMCPY2D info;
-        ::bzero(&info, sizeof(GPU_MEMCPY2D));
+        ::memset(&info, 0, sizeof(GPU_MEMCPY2D));
 
         info.srcMemoryType = GPUmemorytype::GPU_MEMORYTYPE_HOST;
         info.srcHost = src_ptr;
@@ -95,7 +95,7 @@ void execute_gpu_d2h_copy_impl(
         }
     } else if (dim == 1) {
         GPU_MEMCPY2D info;
-        ::bzero(&info, sizeof(GPU_MEMCPY2D));
+        ::memset(&info, 0, sizeof(GPU_MEMCPY2D));
 
         info.srcMemoryType = GPUmemorytype::GPU_MEMORYTYPE_DEVICE;
         info.srcDevice = src_ptr;
@@ -145,7 +145,7 @@ void execute_gpu_d2d_copy_impl(
         }
     } else if (dim == 1) {
         GPU_MEMCPY2D info;
-        ::bzero(&info, sizeof(GPU_MEMCPY2D));
+        ::memset(&info, 0, sizeof(GPU_MEMCPY2D));
 
         info.srcMemoryType = GPUmemorytype::GPU_MEMORYTYPE_DEVICE;
         info.srcDevice = src_ptr;

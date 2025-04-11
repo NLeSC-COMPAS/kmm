@@ -30,8 +30,8 @@ class Scheduler {
     bool is_idle() const;
 
   private:
-    size_t determine_queue_id(const Command& cmd);
-    void enqueue_if_ready(const Task* predecessor, const TaskHandle& node);
+    static size_t determine_queue_id(const Command& cmd);
+    void enqueue_if_ready(const Task* predecessor, const TaskHandle& task);
 
     std::vector<SchedulerQueue> m_queues;
     std::unordered_map<EventId, TaskHandle> m_tasks;

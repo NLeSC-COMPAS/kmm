@@ -45,7 +45,7 @@ BufferRequirement ArrayWritePlanner<N>::prepare_access(
 
 template<size_t N>
 void ArrayWritePlanner<N>::finalize_access(TaskGraph& stage, EventId event_id) {
-    KMM_ASSERT(m_write_events.size() > 0);
+    KMM_ASSERT(!m_write_events.empty());
     m_write_events.back().second = event_id;
 }
 

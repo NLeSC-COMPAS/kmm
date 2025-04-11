@@ -138,7 +138,7 @@ class ExecuteHostJob: public HostJob {
         m_task(compute_task) {}
 
     std::future<void> submit(Executor& executor, std::vector<BufferAccessor> accessors) override {
-        auto task = m_task;
+        auto* task = m_task;
 
         return std::async(std::launch::async, [=] {
             auto host = HostResource {};
@@ -623,7 +623,7 @@ void Executor::execute_task(
 }
 
 void Executor::execute_task(
-    TaskHandle id,
+    TaskHandle task,
     const CommandCopy& command,
     DeviceEventSet dependencies
 ) {
@@ -632,7 +632,7 @@ void Executor::execute_task(
 
     if (src_mem.is_host() && dst_mem.is_host()) {
         insert_job(std::make_unique<CopyHostJob>(
-            id,
+            task,
             command.src_buffer,
             command.dst_buffer,
             command.definition,
@@ -640,7 +640,7 @@ void Executor::execute_task(
         ));
     } else if (dst_mem.is_device()) {
         insert_job(std::make_unique<CopyDeviceJob>(
-            id,
+            task,
             dst_mem.as_device(),
             command.src_buffer,
             command.dst_buffer,
@@ -649,7 +649,7 @@ void Executor::execute_task(
         ));
     } else if (src_mem.is_device()) {
         insert_job(std::make_unique<CopyDeviceJob>(
-            id,
+            task,
             src_mem.as_device(),
             command.src_buffer,
             command.dst_buffer,
@@ -662,7 +662,7 @@ void Executor::execute_task(
 }
 
 void Executor::execute_task(
-    TaskHandle id,
+    TaskHandle task,
     const CommandReduction& command,
     DeviceEventSet dependencies
 ) {
@@ -670,7 +670,7 @@ void Executor::execute_task(
 
     if (memory_id.is_device()) {
         insert_job(std::make_unique<ReductionDeviceJob>(
-            id,
+            task,
             memory_id.as_device(),
             command.src_buffer,
             command.dst_buffer,
@@ -679,7 +679,7 @@ void Executor::execute_task(
         ));
     } else {
         insert_job(std::make_unique<ReductionHostJob>(
-            id,
+            task,
             command.src_buffer,
             command.dst_buffer,
             std::move(command.definition),
@@ -689,7 +689,7 @@ void Executor::execute_task(
 }
 
 void Executor::execute_task(
-    TaskHandle id,
+    TaskHandle task,
     const CommandFill& command,
     DeviceEventSet dependencies
 ) {
@@ -697,7 +697,7 @@ void Executor::execute_task(
 
     if (memory_id.is_device()) {
         insert_job(std::make_unique<FillDeviceJob>(
-            id,
+            task,
             memory_id.as_device(),
             command.dst_buffer,
             std::move(command.definition),
@@ -705,7 +705,7 @@ void Executor::execute_task(
         ));
     } else {
         insert_job(std::make_unique<FillHostJob>(
-            id,
+            task,
             command.dst_buffer,
             std::move(command.definition),
             std::move(dependencies)

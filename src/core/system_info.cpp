@@ -41,7 +41,7 @@ dim3 DeviceInfo::max_grid_dim() const {
 }
 
 int DeviceInfo::compute_capability() const {
-    return attribute(GPU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR) * 10
+    return (attribute(GPU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR) * 10)
         + attribute(GPU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR);
 }
 
@@ -127,7 +127,7 @@ MemoryId SystemInfo::affinity_memory(ResourceId proc_id) const {
     }
 }
 
-ResourceId SystemInfo::affinity_processor(MemoryId memory_id) const {
+ResourceId SystemInfo::affinity_processor(MemoryId memory_id) {
     if (memory_id.is_device()) {
         return memory_id.as_device();
     } else {

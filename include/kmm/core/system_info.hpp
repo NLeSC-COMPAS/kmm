@@ -133,7 +133,7 @@ class SystemInfo {
     /**
      * Returns the processor that has the highest affinity for accessing the given memory.
      */
-    ResourceId affinity_processor(MemoryId memory_id) const;
+    static ResourceId affinity_processor(MemoryId memory_id);
 
     /**
      * Checks if the given processor can access the given memory.

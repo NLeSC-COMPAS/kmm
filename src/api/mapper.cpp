@@ -12,9 +12,7 @@ IndexMap::IndexMap(Axis variable, int64_t scale, int64_t offset, int64_t length,
     m_offset(offset),
     m_length(length),
     m_divisor(divisor) {
-    if (m_length < 0) {
-        m_length = 0;
-    }
+    m_length = std::max<int64_t>(m_length, 0);
 
     if (m_divisor < 0) {
         m_scale = -m_scale;

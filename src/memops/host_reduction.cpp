@@ -16,7 +16,7 @@ KMM_NOINLINE void execute_reduction_few_rows(
 
         for (size_t i = 1; i < NumRows; i++) {
             dst_buffer[j] =
-                ReductionOperator<T, Op>()(dst_buffer[j], src_buffer[i * row_stride + j]);
+                ReductionOperator<T, Op>()(dst_buffer[j], src_buffer[(i * row_stride) + j]);
         }
     }
 }
@@ -36,7 +36,7 @@ KMM_NOINLINE void execute_reduction_basic(
     for (size_t i = 1; i < num_rows; i++) {
         for (size_t j = 0; j < num_columns; j++) {
             dst_buffer[j] =
-                ReductionOperator<T, Op>()(dst_buffer[j], src_buffer[i * row_stride + j]);
+                ReductionOperator<T, Op>()(dst_buffer[j], src_buffer[(i * row_stride) + j]);
         }
     }
 }

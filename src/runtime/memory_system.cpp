@@ -92,7 +92,7 @@ AllocationResult MemorySystemImpl::allocate_host(
 
 void MemorySystemImpl::deallocate_host(void* ptr, size_t nbytes, DeviceEventSet deps) {
     deps.remove_ready(*m_streams);
-    return m_host->deallocate_async(ptr, nbytes, std::move(deps));
+    m_host->deallocate_async(ptr, nbytes, std::move(deps));
 }
 
 void MemorySystemImpl::trim_device(size_t bytes_remaining) {
@@ -137,7 +137,7 @@ void MemorySystemImpl::deallocate_device(
     auto& device = *m_devices[device_id];
 
     GPUContextGuard guard {device.context};
-    return device.allocator->deallocate_async((void*)ptr, nbytes, std::move(deps));
+    device.allocator->deallocate_async((void*)ptr, nbytes, std::move(deps));
 }
 
 // Copies smaller than this threshold are put onto a high priority stream. This can improve

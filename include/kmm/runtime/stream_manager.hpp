@@ -55,7 +55,7 @@ class DeviceStreamManager {
      * Check if the given `source` event must occur before the given `target` event. In other words,
      * if this function returns true, then `source` must be triggered before `target` can trigger.
      */
-    bool event_happens_before(DeviceEvent source, DeviceEvent target) const;
+    static bool event_happens_before(DeviceEvent source, DeviceEvent target);
 
     GPUContextHandle context(DeviceStream stream) const;
     GPUstream_t get(DeviceStream stream) const;

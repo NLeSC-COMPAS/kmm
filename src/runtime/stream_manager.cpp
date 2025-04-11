@@ -293,7 +293,7 @@ void DeviceStreamManager::wait_for_events(
     wait_for_events(stream, &*events.begin(), &*events.end());
 }
 
-bool DeviceStreamManager::event_happens_before(DeviceEvent source, DeviceEvent target) const {
+bool DeviceStreamManager::event_happens_before(DeviceEvent source, DeviceEvent target) {
     return source.stream() == target.stream() && source.index() < target.index();
 }
 
@@ -496,7 +496,7 @@ DeviceEventSet DeviceEventSet::extract_events_for_context(
     remove_ready(manager);
 
     // Push all events with a different context to the front of the list.
-    auto mid = std::partition(m_events.begin(), m_events.end(), [&](DeviceEvent e) {
+    auto* mid = std::partition(m_events.begin(), m_events.end(), [&](DeviceEvent e) {
         return manager.context(e.stream()) != context;
     });
 

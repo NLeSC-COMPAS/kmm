@@ -43,7 +43,7 @@ BufferRequirement ArrayReadPlanner<N>::prepare_access(
 
 template<size_t N>
 void ArrayReadPlanner<N>::finalize_access(TaskGraph& stage, EventId event_id) {
-    KMM_ASSERT(m_read_events.size() > 0);
+    KMM_ASSERT(!m_read_events.empty());
     m_read_events.back().second = event_id;
 }
 

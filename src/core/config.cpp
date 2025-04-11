@@ -47,7 +47,7 @@ static size_t parse_byte_size(const char* input) {
         throw std::runtime_error(fmt::format("invalid size in bytes: {}", input));
     }
 
-    if (result < 0 || result >= std::numeric_limits<size_t>::max()) {
+    if (result < 0 || (result - static_cast<long double>(std::numeric_limits<size_t>::max())) > 0) {
         throw std::runtime_error(fmt::format("invalid size in bytes: {}", input));
     }
 

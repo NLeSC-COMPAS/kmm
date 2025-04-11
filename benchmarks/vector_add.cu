@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) {
     bool status = false;
     int64_t n = 0;
     int64_t num_chunks = 0;
-    int num_threads = 0;
+    unsigned int num_threads = 0;
     double ops = max_iterations;
     double mem = 3.0 * sizeof(real_type) * max_iterations;
     std::chrono::duration<double> init_time, vector_add_time;
@@ -125,8 +125,8 @@ int main(int argc, char* argv[]) {
         std::cerr << "Usage: " << argv[0] << " <threads> <num_chunks> <size>" << std::endl;
         return 1;
     } else {
-        num_threads = std::stoi(argv[1]);
-        num_chunks = std::stoi(argv[2]);
+        num_threads = std::stoul(argv[1]);
+        num_chunks = std::stoll(argv[2]);
         n = std::stoll(argv[3]);
     }
     ops *= double(n);

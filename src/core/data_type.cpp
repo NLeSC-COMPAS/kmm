@@ -48,8 +48,8 @@ const char* scalar_name(ScalarType kind) {
     }
 }
 
-DataType DataType::of(ScalarType ty) {
-    switch (ty) {
+DataType DataType::of(ScalarType kind) {
+    switch (kind) {
         case ScalarType::Int8:
             return DataType::of<int8_t>();
         case ScalarType::Int16:
@@ -88,7 +88,7 @@ DataType DataType::of(ScalarType ty) {
             return DataType();
     }
 
-    throw std::runtime_error(fmt::format("unknown scalar type: {}", scalar_name(ty)));
+    throw std::runtime_error(fmt::format("unknown scalar type: {}", scalar_name(kind)));
 }
 
 const std::type_info& DataType::type_info() const {

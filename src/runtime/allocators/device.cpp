@@ -81,7 +81,7 @@ DevicePoolAllocator::DevicePoolAllocator(
 
         case DevicePoolKind::Create:
             GPUmemPoolProps props;
-            ::bzero(&props, sizeof(GPUmemPoolProps));
+            ::memset(&props, 0, sizeof(GPUmemPoolProps));
 
             props.allocType = GPUmemAllocationType::GPU_MEM_ALLOCATION_TYPE_PINNED;
             props.handleTypes = GPUmemAllocationHandleType::GPU_MEM_HANDLE_TYPE_NONE;

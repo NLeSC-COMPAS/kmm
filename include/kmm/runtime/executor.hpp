@@ -31,7 +31,7 @@ class Executor {
     };
 
     Executor(
-        std::shared_ptr<DeviceResources> m_device_manager,
+        std::shared_ptr<DeviceResources> device_resources,
         std::shared_ptr<DeviceStreamManager> stream_manager,
         std::shared_ptr<BufferRegistry> buffer_registry,
         std::shared_ptr<Scheduler> scheduler,
