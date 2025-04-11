@@ -303,11 +303,14 @@ GPUresult gpuMemcpyHtoD(GPUdeviceptr dstDevice, const void* srcHost, size_t Byte
     return hipMemcpyHtoD(dstDevice, const_cast<void*>(srcHost), ByteCount);
 }
 
-GPUresult gpuMemcpyPeerAsync(GPUdeviceptr dstDevice, GPUcontext dstContext, GPUdeviceptr srcDevice, GPUcontext srcContext, size_t ByteCount, GPUstream_t hStream) {
-    // TODO WARNING
-    // the HIP interface uses device IDs that are not available in the CUDA interface
-    // the following code compiles but may not work
-    return hipMemcpyPeerAsync(dstDevice, 0, srcDevice, 1, ByteCount, hStream);
+GPUresult gpuMemcpyPeerAsync(GPUdeviceptr dstDevicePtr, GPUcontext dstContext, GPUDevice dstDevice, GPUdeviceptr srcDevicePtr, GPUcontext srcContext, GPUDevice srcDevice, size_t ByteCount, GPUstream_t hStream) {
+    return hipMemcpyPeerAsync(dstDevicePtr, dstDevice, srcDevicePtr, srcDevice, ByteCount, hStream);
+}
+
+#elif defined(KMM_USE_CUDA)
+
+GPUresult gpuMemcpyPeerAsync(GPUdeviceptr dstDevicePtr, GPUcontext dstContext, GPUDevice dstDevice, GPUdeviceptr srcDevicePtr, GPUcontext srcContext, GPUDevice srcDevice, size_t ByteCount, GPUstream_t hStream) {
+    return cuMemcpyPeerAsync(dstDevicePtr, dstContext, srcDevicePtr, srcContext, ByteCount, hStream);
 }
 
 #endif

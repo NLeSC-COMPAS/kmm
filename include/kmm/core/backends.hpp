@@ -59,7 +59,6 @@ using bfloat16_type = __nv_bfloat16;
     #define gpuMemGetInfo                        cuMemGetInfo
     #define gpuMemcpyHtoDAsync                   cuMemcpyHtoDAsync
     #define gpuMemcpyDtoHAsync                   cuMemcpyDtoHAsync
-    #define gpuMemcpyPeerAsync                   cuMemcpyPeerAsync
     #define gpuStreamSynchronize                 cuStreamSynchronize
     #define gpuMemsetD8Async                     cuMemsetD8Async
     #define gpuMemsetD16Async                    cuMemsetD16Async
@@ -123,6 +122,8 @@ using GPUmemAllocationHandleType = CUmemAllocationHandleType;
 using GPUmemLocationType = CUmemLocationType;
 using GPUevent_t = CUevent;
 using GPU_MEMCPY2D = CUDA_MEMCPY2D;
+
+GPUresult gpuMemcpyPeerAsync(GPUdeviceptr, GPUcontext, GPUDevice, GPUdeviceptr, GPUcontext, GPUDevice, size_t, GPUstream_t);
 
     // cuBLAS
     #define blasCreate          cublasCreate
@@ -249,7 +250,7 @@ const char* blasGetStatusName(blasStatus_t);
 GPUresult gpuMemcpyAsync(GPUdeviceptr, GPUdeviceptr, size_t, GPUstream_t);
 GPUresult gpuMemcpyHtoDAsync(GPUdeviceptr, const void*, size_t, GPUstream_t);
 GPUresult gpuMemcpyHtoD(GPUdeviceptr, const void*, size_t);
-GPUresult gpuMemcpyPeerAsync(GPUdeviceptr, GPUcontext, GPUdeviceptr, GPUcontext, size_t, GPUstream_t);
+GPUresult gpuMemcpyPeerAsync(GPUdeviceptr, GPUcontext, GPUDevice, GPUdeviceptr, GPUcontext, GPUDevice, size_t, GPUstream_t);
 
 #else
     #define GPU_DEVICE_ATTRIBUTE_MAX   1
@@ -346,8 +347,10 @@ GPUresult gpuMemcpyDtoHAsync(void*, GPUdeviceptr, size_t, GPUstream_t);
 GPUresult gpuMemcpyPeerAsync(
     GPUdeviceptr,
     GPUcontext,
+    GPUdevice,
     GPUdeviceptr,
     GPUcontext,
+    GPUdevice,
     size_t,
     GPUstream_t
 );
