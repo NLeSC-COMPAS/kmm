@@ -198,10 +198,10 @@ DeviceEvent MemorySystemImpl::copy_device_to_device(
         KMM_GPU_CHECK(gpuMemcpyPeerAsync(
             dst_addr,
             dst_device.context,
-            dst_device,
+            dst_device_id,
             src_addr,
             src_device.context,
-            src_device,
+            src_device_id,
             nbytes,
             stream
         ));
