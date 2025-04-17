@@ -13,12 +13,12 @@ namespace kmm {
 using default_index_type = signed long int;  // int64_t
 
 namespace detail {
-template<bool>
+template<bool, typename = void>
 struct enable_if {};
 
-template<>
-struct enable_if<true> {
-    using type = void;
+template<typename T>
+struct enable_if<true, T> {
+    using type = T;
 };
 }  // namespace detail
 
@@ -315,6 +315,11 @@ class Bounds: public fixed_array<Range<T>, N> {
         }
 
         *this = Bounds::from(that);
+    }
+
+    template<typename U, typename = typename detail::enable_if<(N > 0), U>::type>
+    KMM_HOST_DEVICE Bounds(Range<U> range) : Bounds() {
+        (*this)[0] = range;
     }
 
     template<typename... Ts, typename = typename detail::enable_if<(sizeof...(Ts) < N)>::type>
