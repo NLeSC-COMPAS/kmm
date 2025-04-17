@@ -114,7 +114,7 @@ Bounds<1> IndexMap::apply(DomainChunk chunk) const {
         bn = (bn + remainder + m_divisor - 1) / m_divisor;
     }
 
-    return static_cast<Bounds<1>>(Range {b0, b0 + bn});
+    return Range {b0, b0 + bn};
 }
 
 static void write_mapping(std::ostream& f, Axis v, int64_t scale, int64_t offset, int64_t divisor) {

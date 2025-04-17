@@ -30,7 +30,7 @@ class DeviceResources {
 
     DeviceEvent submit(
         DeviceId device_id,
-        std::optional<uint64_t> stream_index,
+        std::optional<uint64_t> stream_hint,
         DeviceEventSet deps,
         DeviceResourceOperation& op,
         std::vector<BufferAccessor> accessors
