@@ -133,7 +133,7 @@ int main(int argc, char* argv[]) {
     mem *= double(n);
 
     // Warm-up run
-    status = inner_loop(rt, num_threads, n, n, init_time, vector_add_time);
+    status = inner_loop(rt, num_threads, n, kmm::div_ceil(n, num_chunks), init_time, vector_add_time);
     if (!status) {
         std::cerr << "Warm-up run failed." << std::endl;
         return 1;
