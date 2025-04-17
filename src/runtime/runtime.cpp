@@ -12,12 +12,15 @@
 
 namespace kmm {
 
-static SystemInfo make_system_info(const std::vector<GPUContextHandle>& contexts) {
+static SystemInfo make_system_info(
+    const std::vector<GPUContextHandle>& contexts,
+    const RuntimeConfig& config
+) {
     spdlog::info("detected {} GPU device(s):", contexts.size());
     std::vector<DeviceInfo> device_infos;
 
     for (size_t i = 0; i < contexts.size(); i++) {
-        auto info = DeviceInfo(DeviceId(i), contexts[i]);
+        auto info = DeviceInfo(DeviceId(i), contexts[i], config.device_concurrent_streams);
         auto memory_gb = static_cast<double>(info.total_memory_size()) / 1e9;
 
         spdlog::info(" - {} ({:.2} GB)", info.name(), memory_gb);
@@ -37,9 +40,13 @@ Runtime::Runtime(
     m_memory_manager(std::make_shared<MemoryManager>(memory_system)),
     m_buffer_registry(std::make_shared<BufferRegistry>(m_memory_manager)),
     m_stream_manager(stream_manager),
-    m_devices(std::make_shared<DeviceResources>(contexts, 1, m_stream_manager)),
+    m_devices(std::make_shared<DeviceResources>(
+        contexts,
+        config.device_concurrent_streams,
+        m_stream_manager
+    )),
     m_scheduler(std::make_shared<Scheduler>(contexts.size())),
-    m_info(make_system_info(contexts)),
+    m_info(make_system_info(contexts, config)),
     m_executor(m_devices, stream_manager, m_buffer_registry, m_scheduler, config.debug_mode) {}
 
 Runtime::~Runtime() {

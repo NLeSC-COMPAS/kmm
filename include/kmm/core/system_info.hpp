@@ -13,7 +13,7 @@ class DeviceInfo {
   public:
     static constexpr size_t NUM_ATTRIBUTES = GPU_DEVICE_ATTRIBUTE_MAX;
 
-    DeviceInfo(DeviceId id, GPUContextHandle context);
+    DeviceInfo(DeviceId id, GPUContextHandle context, size_t num_concurrent_streams = 1);
 
     /**
      * Returns the name of the device as provided by `gpuDeviceGetName`.

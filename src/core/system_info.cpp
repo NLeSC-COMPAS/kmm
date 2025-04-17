@@ -6,7 +6,9 @@
 
 namespace kmm {
 
-DeviceInfo::DeviceInfo(DeviceId id, GPUContextHandle context) : m_id(id) {
+DeviceInfo::DeviceInfo(DeviceId id, GPUContextHandle context, size_t num_concurrent_streams) :
+    m_id(id),
+    m_concurrent_stream(num_concurrent_streams) {
     GPUContextGuard guard {context};
 
     KMM_GPU_CHECK(gpuCtxGetDevice(&m_device_id));
