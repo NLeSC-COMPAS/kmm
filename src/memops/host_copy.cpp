@@ -16,11 +16,13 @@ inline void execute_copy_impl(
         for (size_t i1 = 0; i1 < copy_description.counts[1]; i1++) {
             for (size_t i0 = 0; i0 < copy_description.counts[0]; i0++) {
                 size_t src_offset = copy_description.src_offset
-                    + (i0 * copy_description.src_strides[0]) + (i1 * copy_description.src_strides[1])
+                    + (i0 * copy_description.src_strides[0])
+                    + (i1 * copy_description.src_strides[1])
                     + (i2 * copy_description.src_strides[2]);
 
                 size_t dst_offset = copy_description.dst_offset
-                    + (i0 * copy_description.dst_strides[0]) + (i1 * copy_description.dst_strides[1])
+                    + (i0 * copy_description.dst_strides[0])
+                    + (i1 * copy_description.dst_strides[1])
                     + (i2 * copy_description.dst_strides[2]);
 
                 ::memcpy(

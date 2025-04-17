@@ -1,7 +1,10 @@
 #pragma once
 
-#include "kmm/utils/checked_math.hpp"
 #include "kmm/utils/macros.hpp"
+
+#if !KMM_IS_RTC
+    #include "kmm/utils/checked_math.hpp"
+#endif
 
 namespace kmm {
 
@@ -25,7 +28,7 @@ class Range {
     constexpr Range(T begin, T end) : begin(begin), end(end) {}
 
     template<typename U>
-    constexpr Range(const Range<U>& that) {
+    KMM_HOST_DEVICE constexpr Range(const Range<U>& that) {
         if (!that.template is_convertible_to<T>()) {
             throw_overflow_exception();
         }
@@ -38,10 +41,12 @@ class Range {
         return {static_cast<T>(range.begin), static_cast<T>(range.end)};
     }
 
+#if !KMM_IS_RTC
     template<typename U>
     constexpr bool is_convertible_to() const {
         return in_range<U>(begin) && in_range<U>(end);
     }
+#endif
 
     /**
      * Checks if the range is empty (i.e., `begin == end`) or invalid (i.e., `begin > end`).
@@ -142,7 +147,8 @@ KMM_HOST_DEVICE bool operator!=(const Range<T>& lhs, const Range<T>& rhs) {
 
 }  // namespace kmm
 
-#include <iosfwd>
+#if !KMM_IS_RTC
+    #include <iosfwd>
 
 namespace kmm {
 
@@ -153,7 +159,7 @@ std::ostream& operator<<(std::ostream& stream, const Range<T>& p) {
 
 }  // namespace kmm
 
-#include "kmm/utils/hash_utils.hpp"
+    #include "kmm/utils/hash_utils.hpp"
 
 template<typename T>
 struct std::hash<kmm::Range<T>> {
@@ -164,3 +170,4 @@ struct std::hash<kmm::Range<T>> {
         return result;
     }
 };
+#endif

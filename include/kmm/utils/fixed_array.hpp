@@ -228,11 +228,12 @@ KMM_HOST_DEVICE fixed_array<T, N + M> concat(
 
 }  // namespace kmm
 
-#include <iostream>
+#if !KMM_IS_RTC
+    #include <iostream>
 
-#include "fmt/ostream.h"
+    #include "fmt/ostream.h"
 
-#include "kmm/utils/hash_utils.hpp"
+    #include "kmm/utils/hash_utils.hpp"
 
 namespace kmm {
 
@@ -271,3 +272,4 @@ struct std::hash<kmm::fixed_array<T, 0>> {
         return 0;
     }
 };
+#endif

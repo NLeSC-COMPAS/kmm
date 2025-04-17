@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "spdlog/spdlog.h"
 
 #include "kmm/kmm.hpp"

@@ -38,6 +38,9 @@
     #define KMM_DEVICE               __device__ __forceinline__
     #define KMM_HOST_DEVICE_NOINLINE __host__ __device__
     #define KMM_DEVICE_NOINLINE      __device__
+    #ifdef __CUDACC_RTC__
+        #define KMM_IS_RTC (1)
+    #endif
 #elif defined(__HIPCC__)
     // HIP
     // TODO: using __forceinline__ breaks compilation, it needs to be investigated
@@ -45,10 +48,14 @@
     #define KMM_DEVICE               __device__ __forceinline__
     #define KMM_HOST_DEVICE_NOINLINE __host__ __device__
     #define KMM_DEVICE_NOINLINE      __device__
+    #ifdef __HIPCC_RTC__
+        #define KMM_IS_RTC (1)
+    #endif
 #else
     // Dummy backend
     #define KMM_HOST_DEVICE KMM_INLINE
     #define KMM_DEVICE      KMM_INLINE
     #define KMM_HOST_DEVICE_NOINLINE
     #define KMM_DEVICE_NOINLINE
+    #define KMM_IS_RTC (0)
 #endif

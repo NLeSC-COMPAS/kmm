@@ -5,8 +5,8 @@
 namespace kmm {
 namespace views {
 
-using default_index_type = int64_t;
-using default_stride_type = int32_t;
+using default_index_type = signed long int;  // int64_t
+using default_stride_type = signed int;  // int32_t
 
 template<typename I, I... Dims>
 struct static_domain {

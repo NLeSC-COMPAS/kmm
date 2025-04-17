@@ -1,13 +1,26 @@
 #pragma once
 
-#include "range.hpp"
-
-#include "kmm/utils/checked_math.hpp"
 #include "kmm/utils/fixed_array.hpp"
+#include "kmm/utils/macros.hpp"
+#include "kmm/utils/range.hpp"
+
+#if !KMM_IS_RTC
+    #include "kmm/utils/checked_math.hpp"
+#endif
 
 namespace kmm {
 
-using default_index_type = int64_t;
+using default_index_type = signed long int;  // int64_t
+
+namespace detail {
+template<bool>
+struct enable_if {};
+
+template<>
+struct enable_if<true> {
+    using type = void;
+};
+}  // namespace detail
 
 template<size_t N, typename T = default_index_type>
 class Index: public fixed_array<T, N> {
@@ -24,7 +37,7 @@ class Index: public fixed_array<T, N> {
         }
     }
 
-    template<typename... Ts, typename = typename std::enable_if<(sizeof...(Ts) < N)>::type>
+    template<typename... Ts, typename = typename detail::enable_if<(sizeof...(Ts) < N)>::type>
     KMM_HOST_DEVICE Index(T first, Ts&&... args) : Index() {
         (*this)[0] = first;
 
@@ -37,6 +50,7 @@ class Index: public fixed_array<T, N> {
     Index& operator=(const Index&) = default;
     Index& operator=(Index&&) noexcept = default;
 
+#if !KMM_IS_RTC
     template<size_t M, typename U>
     constexpr Index(const Index<M, U>& that) {
         if (!that.template is_convertible_to<N, T>()) {
@@ -45,6 +59,7 @@ class Index: public fixed_array<T, N> {
 
         *this = Index::from(that);
     }
+#endif
 
     KMM_HOST_DEVICE
     static Index fill(T value) {
@@ -90,7 +105,7 @@ class Index: public fixed_array<T, N> {
     }
 
     template<size_t M = N, typename U = T>
-    bool is_convertible_to() const {
+    KMM_HOST_DEVICE bool is_convertible_to() const {
         bool result = true;
 
         for (size_t i = 0; is_less(i, N); i++) {
@@ -125,7 +140,7 @@ struct Dim: public fixed_array<T, N> {
     Dim& operator=(const Dim&) = default;
     Dim& operator=(Dim&&) noexcept = default;
 
-    template<typename... Ts, typename = typename std::enable_if<(sizeof...(Ts) < N)>::type>
+    template<typename... Ts, typename = typename detail::enable_if<(sizeof...(Ts) < N)>::type>
     KMM_HOST_DEVICE Dim(T first, Ts&&... args) : Dim() {
         (*this)[0] = first;
 
@@ -134,7 +149,7 @@ struct Dim: public fixed_array<T, N> {
     }
 
     template<size_t M, typename U>
-    constexpr Dim(const Dim<M, U>& that) {
+    KMM_HOST_DEVICE constexpr Dim(const Dim<M, U>& that) {
         if (!that.template is_convertible_to<N, T>()) {
             throw_overflow_exception();
         }
@@ -185,6 +200,7 @@ struct Dim: public fixed_array<T, N> {
         return default_value;
     }
 
+#if !KMM_IS_RTC
     template<size_t M = N, typename U = T>
     bool is_convertible_to() const {
         bool result = true;
@@ -199,7 +215,9 @@ struct Dim: public fixed_array<T, N> {
 
         return result;
     }
+#endif
 
+    KMM_HOST_DEVICE
     bool is_empty() const {
         bool result = false;
 
@@ -210,6 +228,7 @@ struct Dim: public fixed_array<T, N> {
         return result;
     }
 
+    KMM_HOST_DEVICE
     T volume() const {
         T result = static_cast<T>(1);
 
@@ -224,6 +243,7 @@ struct Dim: public fixed_array<T, N> {
         return is_empty() ? static_cast<T>(0) : result;
     }
 
+    KMM_HOST_DEVICE
     bool contains(const Index<N, T>& p) const {
         bool result = true;
 
@@ -234,6 +254,7 @@ struct Dim: public fixed_array<T, N> {
         return result;
     }
 
+    KMM_HOST_DEVICE
     bool contains(const Dim<N, T>& p) const {
         bool result = true;
 
@@ -288,7 +309,7 @@ class Bounds: public fixed_array<Range<T>, N> {
     Bounds& operator=(Bounds&&) noexcept = default;
 
     template<size_t M, typename U>
-    constexpr Bounds(const Bounds<M, U>& that) {
+    KMM_HOST_DEVICE constexpr Bounds(const Bounds<M, U>& that) {
         if (!that.template is_convertible_to<N, T>()) {
             throw_overflow_exception();
         }
@@ -296,7 +317,7 @@ class Bounds: public fixed_array<Range<T>, N> {
         *this = Bounds::from(that);
     }
 
-    template<typename... Ts, typename = typename std::enable_if<(sizeof...(Ts) < N)>::type>
+    template<typename... Ts, typename = typename detail::enable_if<(sizeof...(Ts) < N)>::type>
     KMM_HOST_DEVICE Bounds(Range<T> first, Ts&&... args) : Bounds() {
         (*this)[0] = first;
 
@@ -304,7 +325,7 @@ class Bounds: public fixed_array<Range<T>, N> {
         (((*this)[++index] = args), ...);
     }
 
-    template<size_t K, typename = typename std::enable_if<(K <= N)>::type>
+    template<size_t K, typename = typename detail::enable_if<(K <= N)>::type>
     KMM_HOST_DEVICE Bounds(const Dim<K, T>& shape) {
         *this = from_offset_size(Index<N, T>::zero(), Dim<N, T>::from(shape));
     }
@@ -346,6 +367,7 @@ class Bounds: public fixed_array<Range<T>, N> {
         return Bounds(result);
     }
 
+#if !KMM_IS_RTC
     template<size_t M = N, typename U = T>
     bool is_convertible_to() const {
         bool result = true;
@@ -360,6 +382,7 @@ class Bounds: public fixed_array<Range<T>, N> {
 
         return result;
     }
+#endif
 
     KMM_HOST_DEVICE
     Range<T> get_or_default(size_t i, Range<T> default_value = {}) const {
@@ -488,7 +511,7 @@ class Bounds: public fixed_array<Range<T>, N> {
         return result;
     }
 
-    template<typename... Ts, typename = typename std::enable_if<(sizeof...(Ts) + 1 == N)>::type>
+    template<typename... Ts, typename = typename detail::enable_if<(sizeof...(Ts) + 1 == N)>::type>
     KMM_HOST_DEVICE bool contains(const T& first, Ts&&... rest) {
         return contains(Index<N, T> {first, rest...});
     }
@@ -582,7 +605,8 @@ KMM_HOST_DEVICE Index<N, T> operator-(const Index<N, T>& lhs, const Index<N, T>&
 
 }  // namespace kmm
 
-#include <iosfwd>
+#if !KMM_IS_RTC
+    #include <iosfwd>
 
 namespace kmm {
 
@@ -611,7 +635,7 @@ std::ostream& operator<<(std::ostream& stream, const Bounds<N, T>& p) {
 }
 }  // namespace kmm
 
-#include "fmt/ostream.h"
+    #include "fmt/ostream.h"
 
 template<size_t N, typename T>
 struct fmt::formatter<kmm::Index<N, T>>: fmt::ostream_formatter {};
@@ -622,7 +646,7 @@ struct fmt::formatter<kmm::Dim<N, T>>: fmt::ostream_formatter {};
 template<size_t N, typename T>
 struct fmt::formatter<kmm::Bounds<N, T>>: fmt::ostream_formatter {};
 
-#include "kmm/utils/hash_utils.hpp"
+    #include "kmm/utils/hash_utils.hpp"
 
 template<size_t N, typename T>
 struct std::hash<kmm::Index<N, T>>: std::hash<kmm::fixed_array<T, N>> {};
@@ -637,3 +661,4 @@ struct std::hash<kmm::Bounds<N, T>> {
         return kmm::hash_range(v, v + 2);
     }
 };
+#endif
