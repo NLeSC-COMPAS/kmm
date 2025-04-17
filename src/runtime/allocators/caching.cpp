@@ -5,11 +5,14 @@ namespace kmm {
 
 CachingAllocator::CachingAllocator(
     std::unique_ptr<AsyncAllocator> allocator,
+    double max_fragmentation,
     size_t initial_watermark
 ) :
     m_allocator(std::move(allocator)),
-    m_bytes_watermark(initial_watermark) {
+    m_bytes_watermark(initial_watermark),
+    m_max_fragmentation(max_fragmentation){
     KMM_ASSERT(m_allocator != nullptr);
+    KMM_ASSERT(m_max_fragmentation >= 0.0 && m_max_fragmentation < 1.0)
 }
 
 CachingAllocator::~CachingAllocator() {
@@ -40,24 +43,43 @@ size_t round_up_allocation_size(size_t nbytes) {
     }
 }
 
+bool CachingAllocator::can_allocate_bytes(size_t nbytes) const {
+    // If `m_bytes_allocated + nbytes <= m_bytes_watermark` then allocating nbytes will not
+    // raise the watermark, so it is allowed
+    if (nbytes <= m_bytes_watermark - m_bytes_allocated) {
+        return true;
+    }
+
+
+    // If `m_bytes_allocated - m_bytes_in_use == 0` then there is no overhead at all, so we
+    // must allow the allocation.
+    auto overhead = m_bytes_allocated - m_bytes_in_use;
+    if (overhead == 0) {
+        return true;
+    }
+
+    // Otherwise, measure if the new overhead exceeds the maximum allowed fragmentation
+    auto new_watermark = m_bytes_allocated + nbytes;
+    return double(overhead) <= m_max_fragmentation * double(new_watermark);
+}
+
 AllocationResult CachingAllocator::allocate_async(
     size_t nbytes,
     void** addr_out,
     DeviceEventSet& deps_out
 ) {
     nbytes = round_up_allocation_size(nbytes);
-    auto& [head, _] = m_allocations[nbytes];
+    auto& bin = m_allocation_bins[nbytes];
 
-    if (head == nullptr) {
+    if (bin.head == nullptr) {
         while (true) {
-            if (nbytes < m_bytes_watermark - m_bytes_allocated
-                || m_bytes_in_use == m_bytes_allocated) {
+            if (can_allocate_bytes(nbytes)) {
                 auto result = m_allocator->allocate_async(nbytes, addr_out, deps_out);
 
                 if (result == AllocationResult::Success) {
                     m_bytes_allocated += nbytes;
                     m_bytes_in_use += nbytes;
-                    m_bytes_watermark = std::max(m_bytes_watermark, m_bytes_in_use);
+                    m_bytes_watermark = std::max(m_bytes_watermark, m_bytes_allocated);
                     return AllocationResult::Success;
                 }
             }
@@ -68,8 +90,13 @@ AllocationResult CachingAllocator::allocate_async(
         }
     }
 
-    auto slot = std::move(head);
-    head = std::move(slot->next);
+    auto slot = std::move(bin.head);
+
+    if (slot->next != nullptr) {
+        bin.head = std::move(slot->next);
+    } else {
+        bin.tail = nullptr;
+    }
 
     if (slot->lru_older != nullptr) {
         slot->lru_older->lru_newer = slot->lru_newer;
@@ -105,13 +132,13 @@ void CachingAllocator::deallocate_async(void* addr, size_t nbytes, DeviceEventSe
         m_lru_oldest = slot_addr;
     }
 
-    auto& [head, tail] = m_allocations[nbytes];
-    if (head == nullptr) {
-        head = std::move(slot);
-        tail = slot_addr;
+    auto& bin = m_allocation_bins[nbytes];
+    if (bin.head == nullptr) {
+        bin.head = std::move(slot);
+        bin.tail = slot_addr;
     } else {
-        tail->next = std::move(slot);
-        tail = slot_addr;
+        bin.tail->next = std::move(slot);
+        bin.tail = slot_addr;
     }
 }
 
@@ -135,15 +162,15 @@ size_t CachingAllocator::free_some_memory() {
     }
 
     auto nbytes = m_lru_oldest->nbytes;
-    auto& [head, tail] = m_allocations[nbytes];
+    auto& bin = m_allocation_bins[nbytes];
 
-    KMM_ASSERT(head.get() == m_lru_oldest);
-    auto slot = std::move(head);
+    KMM_ASSERT(bin.head.get() == m_lru_oldest);
+    auto slot = std::move(bin.head);
 
     if (slot->next != nullptr) {
-        head = std::move(slot->next);
+        bin.head = std::move(slot->next);
     } else {
-        m_allocations.erase(nbytes);
+        bin.tail = nullptr;
     }
 
     KMM_ASSERT(slot->lru_older == nullptr);

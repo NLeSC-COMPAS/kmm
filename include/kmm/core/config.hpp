@@ -5,6 +5,14 @@
 
 namespace kmm {
 
+enum struct HostMemoryKind {
+    /// Use a simple memory pool that caches the allocation for the host.
+    CachingPool,
+
+    /// No pool. Allocates directly using `cudaMallocHost`.
+    NoPool,
+};
+
 enum struct DeviceMemoryKind {
     /// Use the default memory pool for the device, as returned by `cudaDeviceGetDefaultMemPool`.
     DefaultPool,
@@ -12,11 +20,17 @@ enum struct DeviceMemoryKind {
     /// Use a newly created private pool for the device, created using `cudaMemPoolCreate`.
     PrivatePool,
 
+    /// Use a simple memory pool that caches the allocation for the device.
+    CachingPool,
+
     /// No pool. Allocates directly using `cudaMallocAsync` instead of `cudaMallocFromPoolAsync`.
     NoPool,
 };
 
 struct RuntimeConfig {
+    /// The type of memory pool to use for the host.
+    HostMemoryKind host_memory_kind = HostMemoryKind::NoPool;
+
     /// Maximum amount of memory that can be allocated on the host, in bytes.
     size_t host_memory_limit = std::numeric_limits<size_t>::max();
 

@@ -728,7 +728,6 @@ void MemoryManager::unlock_allocation_host(Buffer& buffer, Request& req) {
     auto& host_entry = buffer.host_entry;
 
     KMM_ASSERT(host_entry.is_allocated);
-    KMM_ASSERT(host_entry.is_valid);
     KMM_ASSERT(host_entry.num_allocation_locks > 0);
 
     host_entry.num_allocation_locks--;

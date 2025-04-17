@@ -5,6 +5,7 @@
 #include "spdlog/spdlog.h"
 
 #include "kmm/runtime/allocators/block.hpp"
+#include "kmm/runtime/allocators/caching.hpp"
 #include "kmm/runtime/allocators/device.hpp"
 #include "kmm/runtime/allocators/system.hpp"
 #include "kmm/runtime/runtime.hpp"
@@ -63,7 +64,6 @@ void Runtime::check_buffer(BufferId id) {
 }
 
 bool Runtime::query_event(EventId event_id, std::chrono::system_clock::time_point deadline) {
-
     std::unique_lock guard {m_mutex};
     make_progress_impl();
 
@@ -171,6 +171,8 @@ std::unique_ptr<AsyncAllocator> create_device_allocator(
     GPUContextHandle context,
     std::shared_ptr<DeviceStreamManager> stream_manager
 ) {
+    std::unique_ptr<AsyncAllocator> alloc;
+
     switch (config.device_memory_kind) {
         case DeviceMemoryKind::NoPool:
             return std::make_unique<DeviceMemoryAllocator>(
@@ -178,6 +180,16 @@ std::unique_ptr<AsyncAllocator> create_device_allocator(
                 stream_manager,
                 config.device_memory_limit
             );
+            ;
+
+        case DeviceMemoryKind::CachingPool:
+            alloc = std::make_unique<DeviceMemoryAllocator>(
+                context,
+                stream_manager,
+                config.device_memory_limit
+            );
+
+            return std::make_unique<CachingAllocator>(std::move(alloc));
 
         case DeviceMemoryKind::DefaultPool:
             return std::make_unique<DevicePoolAllocator>(
@@ -224,6 +236,10 @@ std::shared_ptr<Runtime> make_worker(const RuntimeConfig& config) {
             stream_manager,
             config.host_memory_limit
         );
+
+        if (config.host_memory_kind == HostMemoryKind::CachingPool) {
+            host_mem = std::make_unique<CachingAllocator>(std::move(host_mem));
+        }
     }
 
     if (config.host_memory_block_size > 0) {
