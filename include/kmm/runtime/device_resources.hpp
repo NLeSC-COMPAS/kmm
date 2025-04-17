@@ -37,15 +37,18 @@ class DeviceResources {
     );
 
   private:
-    size_t select_stream_for_operation(DeviceId device_id, const DeviceEventSet& deps);
-
     struct Device;
     struct Stream;
+
+    Stream* select_stream_for_operation(
+        DeviceId device_id,
+        std::optional<uint64_t> stream_hint,
+        const DeviceEventSet& deps
+    );
 
     std::shared_ptr<DeviceStreamManager> m_stream_manager;
     size_t m_streams_per_device;
     std::vector<std::unique_ptr<Device>> m_devices;
-    std::vector<std::unique_ptr<Stream>> m_streams;
 };
 
 }  // namespace kmm
