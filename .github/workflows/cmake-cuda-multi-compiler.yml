@@ -21,12 +21,11 @@ jobs:
         cpp_compiler: [g++, clang++]
 
     steps:
-      - uses: Jimver/cuda-toolkit@v0.2.14
+      - uses: Jimver/cuda-toolkit@v0.2.22
         id: cuda-toolkit
         with:
           method: 'network'
           sub-packages: '["toolkit"]'
-      - uses: Bacondish2023/setup-googletest@v1
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
@@ -49,7 +48,8 @@ jobs:
           -DSPDLOG_FMT_EXTERNAL:BOOL=ON
           -DKMM_USE_CUDA:BOOL=ON
           -DKMM_BUILD_TESTS:BOOL=ON
-          -DKMM_USE_LINTER:BOOL=ON
+          -DKMM_BUILD_EXAMPLES:BOOL=ON
+          -DKMM_BUILD_BENCHMARKS:BOOL=ON
           -S ${{ github.workspace }}
 
       - name: Build

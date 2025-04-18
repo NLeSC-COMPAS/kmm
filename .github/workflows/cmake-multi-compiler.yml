@@ -16,12 +16,11 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest]
         build_type: [Debug]
         cpp_compiler: [g++, clang++]
             
     steps:
-    - uses: Bacondish2023/setup-googletest@v1
     - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
@@ -43,7 +42,6 @@ jobs:
         -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
         -DSPDLOG_FMT_EXTERNAL:BOOL=ON
         -DKMM_BUILD_TESTS:BOOL=ON
-        -DKMM_USE_LINTER:BOOL=ON
         -S ${{ github.workspace }}
 
     - name: Build
@@ -52,4 +50,4 @@ jobs:
 
     - name: Test
       working-directory: ${{ steps.strings.outputs.build-output-dir }}
-      run: ./kmmTest
+      run: ./test/kmmTest
