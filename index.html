@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KMM &mdash; kmm 0.3 documentation</title>
+  <title>KMM: Kernel Memory Manager &mdash; kmm 0.3 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/my-styles.css?v=0155ed14" />
@@ -64,7 +64,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">KMM</li>
+      <li class="breadcrumb-item active">KMM: Kernel Memory Manager</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -76,107 +76,76 @@
              
   <div class="toctree-wrapper compound">
 </div>
-<section id="kmm">
-<h1>KMM<a class="headerlink" href="#kmm" title="Permalink to this heading"></a></h1>
-<p>KMM is a lightweight C++ middleware for accelerated computing, with native support for CUDA.</p>
+<section id="kmm-kernel-memory-manager">
+<h1>KMM: Kernel Memory Manager<a class="headerlink" href="#kmm-kernel-memory-manager" title="Permalink to this heading"></a></h1>
+<p>The <strong>Kernel Memory Manager</strong> (KMM) is a lightweight, high-performance framework designed for parallel dataflow execution and efficient memory management on multi-GPU platforms.</p>
+<p>KMM automatically manages GPU memory, partitions workloads across multiple GPUs, and schedules tasks efficiently.
+Unlike frameworks that require a specific programming model, KMM integrates existing GPU kernels or functions without the need to fully rewrite your code.</p>
 <p>Highlights of KMM:</p>
 <ul class="simple">
-<li><dl class="simple">
-<dt>KMM manages the application memory</dt><dd><ul>
-<li><p>Allocations of host and device memory is automated</p></li>
-<li><p>Data transfers to and from device are transparently performed when necessary</p></li>
-</ul>
-</dd>
-</dl>
-</li>
-<li><dl class="simple">
-<dt>No need to rewrite your kernels</dt><dd><ul>
-<li><p>KMM can schedule and execute native C++ and CUDA functions</p></li>
-</ul>
-</dd>
-</dl>
-</li>
+<li><p><strong>Efficient Memory Management</strong>:
+* Automatically allocates memory and transfers data between GPU and host only when neccessary.</p></li>
+<li><p><strong>Scalable Computing</strong>:
+* Seamlessly spills data from GPU to host memory, enabling huge datasets that exceed GPU memory.</p></li>
+<li><p><strong>Optimized Scheduling</strong>:
+* DAG scheduler automatically tracks dependencies and executes kernels in a sequentially consistent order.</p></li>
+<li><p><strong>Flexible Work Partitioning</strong>:
+* Split workloads and data according to user-defined distributions, ensuring utilization of available resources.</p></li>
+<li><p><strong>Portable Execution</strong>:
+* Supports existing CUDA, HIP, and CPU-based functions; seamless integration with minimal changes.</p></li>
+<li><p><strong>Multi-Dimensional Arrays</strong>:
+* Handles ND-arrays of any shape, dimensionality, and data type.</p></li>
 </ul>
 </section>
 <section id="basic-example">
 <h1>Basic Example<a class="headerlink" href="#basic-example" title="Permalink to this heading"></a></h1>
 <p>This example shows how to run a CUDA kernel implementing a vector add operation with KMM.</p>
-<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;deque&gt;</span>
-<span class="linenos"> 2</span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iostream&gt;</span>
-<span class="linenos"> 3</span>
-<span class="linenos"> 4</span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;spdlog/spdlog.h&quot;</span>
-<span class="linenos"> 5</span>
-<span class="linenos"> 6</span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;kmm/kmm.hpp&quot;</span>
-<span class="linenos"> 7</span>
-<span class="linenos"> 8</span><span class="cp">#define SIZE 65536000</span>
-<span class="linenos"> 9</span>
-<span class="linenos">10</span><span class="kr">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">vector_add</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">size</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="linenos">11</span><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="nb">blockDim</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nb">blockIdx</span><span class="p">.</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="p">;</span>
-<span class="linenos">12</span>
-<span class="linenos">13</span><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">item</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">size</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="linenos">14</span><span class="w">        </span><span class="n">C</span><span class="p">[</span><span class="n">item</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">A</span><span class="p">[</span><span class="n">item</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">B</span><span class="p">[</span><span class="n">item</span><span class="p">];</span>
-<span class="linenos">15</span><span class="w">    </span><span class="p">}</span>
-<span class="linenos">16</span><span class="p">}</span>
-<span class="linenos">17</span>
-<span class="linenos">18</span><span class="kt">void</span><span class="w"> </span><span class="n">initialize</span><span class="p">(</span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">B</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="linenos">19</span><span class="cp">#pragma omp parallel for</span>
-<span class="linenos">20</span><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">SIZE</span><span class="p">;</span><span class="w"> </span><span class="n">item</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="linenos">21</span><span class="w">        </span><span class="n">A</span><span class="p">[</span><span class="n">item</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.0</span><span class="p">;</span>
-<span class="linenos">22</span><span class="w">        </span><span class="n">B</span><span class="p">[</span><span class="n">item</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.0</span><span class="p">;</span>
-<span class="linenos">23</span><span class="w">    </span><span class="p">}</span>
-<span class="linenos">24</span>
-<span class="linenos">25</span><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;initialize</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
-<span class="linenos">26</span><span class="p">}</span>
-<span class="linenos">27</span>
-<span class="linenos">28</span><span class="kt">void</span><span class="w"> </span><span class="n">verify</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">float</span><span class="o">*</span><span class="w"> </span><span class="n">C</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="linenos">29</span><span class="cp">#pragma omp parallel for</span>
-<span class="linenos">30</span><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">item</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">SIZE</span><span class="p">;</span><span class="w"> </span><span class="n">item</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="linenos">31</span><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">fabsf</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">item</span><span class="p">]</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mf">3.0f</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mf">1.0e-9</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="linenos">32</span><span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;ERROR&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-<span class="linenos">33</span><span class="w">            </span><span class="k">break</span><span class="p">;</span>
-<span class="linenos">34</span><span class="w">        </span><span class="p">}</span>
-<span class="linenos">35</span><span class="w">    </span><span class="p">}</span>
-<span class="linenos">36</span>
-<span class="linenos">37</span><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;SUCCESS&quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
-<span class="linenos">38</span><span class="p">}</span>
-<span class="linenos">39</span>
-<span class="linenos">40</span><span class="kt">int</span><span class="w"> </span><span class="n">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="linenos">41</span><span class="w">    </span><span class="n">spdlog</span><span class="o">::</span><span class="n">set_level</span><span class="p">(</span><span class="n">spdlog</span><span class="o">::</span><span class="n">level</span><span class="o">::</span><span class="n">debug</span><span class="p">);</span>
-<span class="linenos">42</span>
-<span class="linenos">43</span><span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">threads_per_block</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">256</span><span class="p">;</span>
-<span class="linenos">44</span><span class="w">    </span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">n_blocks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ceil</span><span class="p">((</span><span class="mf">1.0</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">SIZE</span><span class="p">)</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">threads_per_block</span><span class="p">);</span>
-<span class="linenos">45</span><span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SIZE</span><span class="p">;</span>
-<span class="linenos">46</span>
-<span class="linenos">47</span><span class="w">    </span><span class="c1">// Create manager</span>
-<span class="linenos">48</span><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">manager</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kmm</span><span class="o">::</span><span class="n">build_runtime</span><span class="p">();</span>
-<span class="linenos">49</span><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">deque</span><span class="o">&lt;</span><span class="n">kmm</span><span class="o">::</span><span class="n">EventId</span><span class="o">&gt;</span><span class="w"> </span><span class="n">events</span><span class="p">;</span>
-<span class="linenos">50</span>
-<span class="linenos">51</span><span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="mi">20</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="linenos">52</span><span class="w">        </span><span class="c1">// Request 3 memory areas of a certain size</span>
-<span class="linenos">53</span><span class="w">        </span><span class="k">auto</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kmm</span><span class="o">::</span><span class="n">Array</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
-<span class="linenos">54</span><span class="w">        </span><span class="k">auto</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kmm</span><span class="o">::</span><span class="n">Array</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
-<span class="linenos">55</span><span class="w">        </span><span class="k">auto</span><span class="w"> </span><span class="n">C</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kmm</span><span class="o">::</span><span class="n">Array</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
-<span class="linenos">56</span>
-<span class="linenos">57</span><span class="w">        </span><span class="c1">// Initialize array A and B on the host</span>
-<span class="linenos">58</span><span class="w">        </span><span class="n">manager</span><span class="p">.</span><span class="n">submit</span><span class="p">(</span><span class="n">kmm</span><span class="o">::</span><span class="n">Host</span><span class="p">(),</span><span class="w"> </span><span class="n">initialize</span><span class="p">,</span><span class="w"> </span><span class="n">write</span><span class="p">(</span><span class="n">A</span><span class="p">),</span><span class="w"> </span><span class="n">write</span><span class="p">(</span><span class="n">B</span><span class="p">));</span>
-<span class="linenos">59</span>
-<span class="linenos">60</span><span class="w">        </span><span class="c1">// Execute the function on the device.</span>
-<span class="linenos">61</span><span class="w">        </span><span class="n">manager</span><span class="p">.</span><span class="n">submit</span><span class="p">(</span><span class="n">kmm</span><span class="o">::</span><span class="n">GPUKernel</span><span class="p">(</span><span class="n">n_blocks</span><span class="p">,</span><span class="w"> </span><span class="n">threads_per_block</span><span class="p">),</span><span class="w"> </span><span class="n">vector_add</span><span class="p">,</span><span class="w"> </span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="p">,</span><span class="w"> </span><span class="n">write</span><span class="p">(</span><span class="n">C</span><span class="p">),</span><span class="w"> </span><span class="n">n</span><span class="p">);</span>
-<span class="linenos">62</span>
-<span class="linenos">63</span><span class="w">        </span><span class="c1">// Verify the result on the host.</span>
-<span class="linenos">64</span><span class="w">        </span><span class="k">auto</span><span class="w"> </span><span class="n">verify_event</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">manager</span><span class="p">.</span><span class="n">submit</span><span class="p">(</span><span class="n">kmm</span><span class="o">::</span><span class="n">Host</span><span class="p">(),</span><span class="w"> </span><span class="n">verify</span><span class="p">,</span><span class="w"> </span><span class="n">C</span><span class="p">);</span>
-<span class="linenos">65</span>
-<span class="linenos">66</span><span class="w">        </span><span class="n">events</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">verify_event</span><span class="p">);</span>
-<span class="linenos">67</span><span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">events</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="linenos">68</span><span class="w">            </span><span class="n">manager</span><span class="p">.</span><span class="n">wait</span><span class="p">(</span><span class="n">events</span><span class="p">[</span><span class="n">events</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">5</span><span class="p">]);</span>
-<span class="linenos">69</span><span class="w">        </span><span class="p">}</span>
-<span class="linenos">70</span><span class="w">    </span><span class="p">}</span>
-<span class="linenos">71</span>
-<span class="linenos">72</span><span class="w">    </span><span class="n">manager</span><span class="p">.</span><span class="n">synchronize</span><span class="p">();</span>
-<span class="linenos">73</span><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;done</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">;</span>
-<span class="linenos">74</span>
-<span class="linenos">75</span><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
-<span class="linenos">76</span><span class="p">}</span>
+<div class="highlight-cuda notranslate"><div class="highlight"><pre><span></span><span class="linenos"> 1</span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&quot;kmm/kmm.hpp&quot;</span>
+<span class="linenos"> 2</span>
+<span class="linenos"> 3</span><span class="kr">__global__</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">vector_add</span><span class="p">(</span>
+<span class="linenos"> 4</span><span class="w">    </span><span class="n">kmm</span><span class="o">::</span><span class="n">Range</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">range</span><span class="p">,</span>
+<span class="linenos"> 5</span><span class="w">    </span><span class="n">kmm</span><span class="o">::</span><span class="n">GPUSubviewMut</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">output</span><span class="p">,</span>
+<span class="linenos"> 6</span><span class="w">    </span><span class="n">kmm</span><span class="o">::</span><span class="n">GPUSubview</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">left</span><span class="p">,</span>
+<span class="linenos"> 7</span><span class="w">    </span><span class="n">kmm</span><span class="o">::</span><span class="n">GPUSubview</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">right</span>
+<span class="linenos"> 8</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="linenos"> 9</span><span class="w">    </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">blockIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nb">blockDim</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">threadIdx</span><span class="p">.</span><span class="n">x</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">range</span><span class="p">.</span><span class="n">begin</span><span class="p">;</span>
+<span class="linenos">10</span><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">range</span><span class="p">.</span><span class="n">end</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="p">;</span>
+<span class="linenos">11</span>
+<span class="linenos">12</span><span class="w">    </span><span class="n">output</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">left</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">right</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+<span class="linenos">13</span><span class="p">}</span>
+<span class="linenos">14</span>
+<span class="linenos">15</span><span class="kt">int</span><span class="w"> </span><span class="n">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="linenos">16</span><span class="w">    </span><span class="c1">// 2B items, 10 chunks, 256 threads per block</span>
+<span class="linenos">17</span><span class="w">    </span><span class="kt">long</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2&#39;000&#39;000&#39;000</span><span class="p">;</span>
+<span class="linenos">18</span><span class="w">    </span><span class="kt">long</span><span class="w"> </span><span class="n">chunk_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span>
+<span class="linenos">19</span><span class="w">    </span><span class="kt">dim3</span><span class="w"> </span><span class="n">block_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">256</span><span class="p">;</span>
+<span class="linenos">20</span>
+<span class="linenos">21</span><span class="w">    </span><span class="c1">// Initialize runtime</span>
+<span class="linenos">22</span><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">rt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kmm</span><span class="o">::</span><span class="n">make_runtime</span><span class="p">();</span>
+<span class="linenos">23</span>
+<span class="linenos">24</span><span class="w">    </span><span class="c1">// Create arrays</span>
+<span class="linenos">25</span><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kmm</span><span class="o">::</span><span class="n">Array</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">n</span><span class="p">};</span>
+<span class="linenos">26</span><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">B</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kmm</span><span class="o">::</span><span class="n">Array</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">n</span><span class="p">};</span>
+<span class="linenos">27</span><span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">C</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">kmm</span><span class="o">::</span><span class="n">Array</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="n">n</span><span class="p">};</span>
+<span class="linenos">28</span>
+<span class="linenos">29</span><span class="w">    </span><span class="c1">// Initialize input arrays</span>
+<span class="linenos">30</span><span class="w">    </span><span class="n">initialize_inputs</span><span class="p">(</span><span class="n">A</span><span class="p">,</span><span class="w"> </span><span class="n">B</span><span class="p">);</span>
+<span class="linenos">31</span>
+<span class="linenos">32</span><span class="w">    </span><span class="c1">// Launch the kernel!</span>
+<span class="linenos">33</span><span class="w">    </span><span class="n">rt</span><span class="p">.</span><span class="n">parallel_submit</span><span class="p">(</span>
+<span class="linenos">34</span><span class="w">        </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">chunk_size</span><span class="p">,</span>
+<span class="linenos">35</span><span class="w">        </span><span class="n">kmm</span><span class="o">::</span><span class="n">GPUKernel</span><span class="p">(</span><span class="n">vector_add</span><span class="p">,</span><span class="w"> </span><span class="n">block_size</span><span class="p">),</span>
+<span class="linenos">36</span><span class="w">        </span><span class="n">_x</span><span class="p">,</span>
+<span class="linenos">37</span><span class="w">        </span><span class="n">write</span><span class="p">(</span><span class="n">C</span><span class="p">[</span><span class="n">_x</span><span class="p">]),</span>
+<span class="linenos">38</span><span class="w">        </span><span class="n">A</span><span class="p">[</span><span class="n">_x</span><span class="p">],</span>
+<span class="linenos">39</span><span class="w">        </span><span class="n">B</span><span class="p">[</span><span class="n">_x</span><span class="p">]</span>
+<span class="linenos">40</span><span class="w">    </span><span class="p">);</span>
+<span class="linenos">41</span>
+<span class="linenos">42</span><span class="w">    </span><span class="c1">// Wait for completion</span>
+<span class="linenos">43</span><span class="w">    </span><span class="n">rt</span><span class="p">.</span><span class="n">synchronize</span><span class="p">();</span>
+<span class="linenos">44</span>
+<span class="linenos">45</span><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="linenos">46</span><span class="p">}</span>
 </pre></div>
 </div>
 </section>

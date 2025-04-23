@@ -21,7 +21,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="API Reference" href="api.html" />
-    <link rel="prev" title="KMM" href="index.html" /> 
+    <link rel="prev" title="KMM: Kernel Memory Manager" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -87,20 +87,26 @@ cmake<span class="w"> </span>..
 make
 </pre></div>
 </div>
-<p>There are four CMake user options that it is possible to set:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">KMM_USE_CUDA</span></code>: to enable CUDA support in KMM</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">KMM_BUILD_TESTS</span></code>: to build the tests</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">KMM_BUILD_EXAMPLES</span></code>: to build the examples</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">KMM_STATIC</span></code>: to build KMM as a static library</p></li>
-</ul>
+<p>There are few CMake options that users can set. First, it is possible to control the backend used to run GPU code with:
+* <code class="docutils literal notranslate"><span class="pre">KMM_USE_CUDA</span></code>: to enable CUDA support in KMM
+* <code class="docutils literal notranslate"><span class="pre">KMM_USE_HIP</span></code>: to enable HIP support in KMM
+The two options are mutually exclusive; if neither is set, a dummy backend is used instead.
+The next option is used to control how the library is compiled:
+* <code class="docutils literal notranslate"><span class="pre">KMM_STATIC</span></code>: to build KMM as a static library
+The default behavior is to build KMM as a dynamic library.
+The remaining options are aimed at KMM developers:
+* <code class="docutils literal notranslate"><span class="pre">KMM_ENABLE_LINTER</span></code>: to run a linter on the C++ code
+* <code class="docutils literal notranslate"><span class="pre">KMM_BUILD_TESTS</span></code>: to build the tests
+* <code class="docutils literal notranslate"><span class="pre">KMM_BUILD_EXAMPLES</span></code>: to build the examples
+* <code class="docutils literal notranslate"><span class="pre">KMM_BUILD_BENCHMARKS</span></code>: to build the benchmarks
+If not specified, the linter is not used, and tests, examples, and benchmarks are not compiled.</p>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="index.html" class="btn btn-neutral float-left" title="KMM" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-left" title="KMM: Kernel Memory Manager" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="api.html" class="btn btn-neutral float-right" title="API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
