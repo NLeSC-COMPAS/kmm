@@ -13,18 +13,12 @@ Unlike frameworks that require a specific programming model, KMM integrates exis
 
 ## Features
 
-* **Efficient Memory Management**:
-  * Automatically allocates memory and transfers data between GPU and host only when neccessary.
-* **Scalable Computing**:
-  * Seamlessly spills data from GPU to host memory, enabling huge datasets that exceed GPU memory.
-* **Optimized Scheduling**:
-  * DAG scheduler automatically tracks dependencies and executes kernels in a sequentially consistent order.
-* **Flexible Work Partitioning**:
-  * Split workloads and data according to user-defined distributions, ensuring utilization of available resources.
-* **Portable Execution**:
-  * Supports existing CUDA, HIP, and CPU-based functions; seamless integration with minimal changes.
-* **Multi-Dimensional Arrays**:
-  * Handles ND-arrays of any shape, dimensionality, and data type.
+* **Efficient Memory Management**: automatically allocates memory and transfers data between GPU and host only when neccessary.
+* **Scalable Computing**: seamlessly spills data from GPU to host memory, enabling huge datasets that exceed GPU memory.
+* **Optimized Scheduling**: DAG scheduler automatically tracks dependencies and executes kernels in a sequentially consistent order.
+* **Flexible Work Partitioning**: Split workloads and data according to user-defined distributions, ensuring utilization of available resources.
+* **Portable Execution**: supports existing CUDA, HIP, and CPU-based functions; seamless integration with minimal changes.
+* **Multi-Dimensional Arrays**: handles ND-arrays of any shape, dimensionality, and data type.
 
 
 ## Resources
