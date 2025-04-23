@@ -83,18 +83,12 @@
 Unlike frameworks that require a specific programming model, KMM integrates existing GPU kernels or functions without the need to fully rewrite your code.</p>
 <p>Highlights of KMM:</p>
 <ul class="simple">
-<li><p><strong>Efficient Memory Management</strong>:
-* Automatically allocates memory and transfers data between GPU and host only when neccessary.</p></li>
-<li><p><strong>Scalable Computing</strong>:
-* Seamlessly spills data from GPU to host memory, enabling huge datasets that exceed GPU memory.</p></li>
-<li><p><strong>Optimized Scheduling</strong>:
-* DAG scheduler automatically tracks dependencies and executes kernels in a sequentially consistent order.</p></li>
-<li><p><strong>Flexible Work Partitioning</strong>:
-* Split workloads and data according to user-defined distributions, ensuring utilization of available resources.</p></li>
-<li><p><strong>Portable Execution</strong>:
-* Supports existing CUDA, HIP, and CPU-based functions; seamless integration with minimal changes.</p></li>
-<li><p><strong>Multi-Dimensional Arrays</strong>:
-* Handles ND-arrays of any shape, dimensionality, and data type.</p></li>
+<li><p><strong>Efficient Memory Management</strong>: automatically allocates memory and transfers data between GPU and host only when neccessary.</p></li>
+<li><p><strong>Scalable Computing</strong>: seamlessly spills data from GPU to host memory, enabling huge datasets that exceed GPU memory.</p></li>
+<li><p><strong>Optimized Scheduling</strong>: DAG scheduler automatically tracks dependencies and executes kernels in a sequentially consistent order.</p></li>
+<li><p><strong>Flexible Work Partitioning</strong>: split workloads and data according to user-defined distributions, ensuring utilization of available resources.</p></li>
+<li><p><strong>Portable Execution</strong>: supports existing CUDA, HIP, and CPU-based functions; seamless integration with minimal changes.</p></li>
+<li><p><strong>Multi-Dimensional Arrays</strong>: handles ND-arrays of any shape, dimensionality, and data type.</p></li>
 </ul>
 </section>
 <section id="basic-example">
