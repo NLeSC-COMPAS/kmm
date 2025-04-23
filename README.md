@@ -2,6 +2,7 @@
 
 [![CPU Build Status](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-multi-compiler.yml/badge.svg)](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-multi-compiler.yml)
 [![CUDA Build Status](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-cuda-multi-compiler.yml/badge.svg)](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-cuda-multi-compiler.yml)
+[![HIP Build Status](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-hip.yml/badge.svg)](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-hip.yml)
 
 The **Kernel Memory Manager** (KMM) is a lightweight, high-performance framework designed for parallel dataflow execution and efficient memory management on multi-GPU platforms.
 
