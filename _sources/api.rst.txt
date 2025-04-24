@@ -10,22 +10,43 @@ API Reference
    :hidden:
 
    api/Array.rst
+   api/DeviceId.rst
+   api/Dim.rst
    api/EventId.rst
+   api/MemoryId.rst
+   api/ResourceId.rst
+   api/Runtime.rst
+   api/RuntimeConfig.rst
    api/RuntimeHandle.rst
-   api/build_runtime.rst
+   api/SystemInfo.rst
+   api/View.rst
+   api/make_runtime.rst
 
 .. raw:: html
 
    <h2>Runtime</h2>
 
-* :doc:`build_runtime <api/build_runtime>`
+* :doc:`make_runtime <api/make_runtime>`
 * :doc:`RuntimeHandle <api/RuntimeHandle>`
+* :doc:`Runtime <api/Runtime>`
+* :doc:`RuntimeConfig <api/RuntimeConfig>`
 
 .. raw:: html
 
    <h2>Data</h2>
 
 * :doc:`Array <api/Array>`
+* :doc:`Dim <api/Dim>`
+* :doc:`View <api/View>`
+
+.. raw:: html
+
+   <h2>Resources</h2>
+
+* :doc:`ResourceId <api/ResourceId>`
+* :doc:`MemoryId <api/MemoryId>`
+* :doc:`DeviceId <api/DeviceId>`
+* :doc:`SystemInfo <api/SystemInfo>`
 
 .. raw:: html
 
