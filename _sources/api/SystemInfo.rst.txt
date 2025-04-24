@@ -7,4 +7,4 @@
 
 SystemInfo
 ==========
-.. doxygenclass:: kmm::SystemInfo
+.. doxygenpage:: kmm::SystemInfo

@@ -7,4 +7,4 @@
 
 GPUKernel
 =========
-.. doxygenclass:: kmm::GPUKernel
+.. doxygenpage:: kmm::GPUKernel

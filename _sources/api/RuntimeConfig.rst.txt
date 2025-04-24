@@ -7,4 +7,4 @@
 
 RuntimeConfig
 =============
-.. doxygenclass:: kmm::RuntimeConfig
+.. doxygenpage:: kmm::RuntimeConfig

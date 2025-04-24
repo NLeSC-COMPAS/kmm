@@ -7,4 +7,4 @@
 
 ResourceId
 ==========
-.. doxygenclass:: kmm::ResourceId
+.. doxygenpage:: kmm::ResourceId

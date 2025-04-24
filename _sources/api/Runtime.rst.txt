@@ -7,4 +7,4 @@
 
 Runtime
 =======
-.. doxygenclass:: kmm::Runtime
+.. doxygenpage:: kmm::Runtime

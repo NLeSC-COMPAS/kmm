@@ -7,4 +7,4 @@
 
 reduce
 ======
-.. doxygenfunction:: kmm::reduce
+.. doxygenpage:: kmm::reduce

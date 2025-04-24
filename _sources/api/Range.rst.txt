@@ -7,4 +7,4 @@
 
 Range
 =====
-.. doxygenclass:: kmm::Range
+.. doxygenpage:: kmm::Range

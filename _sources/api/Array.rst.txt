@@ -7,4 +7,4 @@
 
 Array
 =====
-.. doxygenclass:: kmm::Array
+.. doxygenpage:: kmm::Array
