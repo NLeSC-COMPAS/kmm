@@ -28,7 +28,7 @@ subprocess.call(f"{sys.executable} build_api.py", shell=True)
 # -- Project information -----------------------------------------------------
 
 project = "kmm"
-copyright = "2024-2025, COMPAS"
+copyright = "2024-2025, The COMPAS team"
 author = "The COMPAS team"
 
 # The full version, including alpha/beta/rc tags

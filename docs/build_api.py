@@ -67,8 +67,9 @@ def build_index_page(groups):
 
 
 groups = {
-    "Runtime": ["build_runtime", "RuntimeHandle"],
-    "Data": ["Array"],
+    "Runtime": ["make_runtime", "RuntimeHandle", "Runtime", "RuntimeConfig"],
+    "Data": ["Array", "Dim", "View"],
+    "Resources": ["ResourceId", "MemoryId", "DeviceId", "SystemInfo"],
     "Tasks and Events": ["EventId"],
 }
 
