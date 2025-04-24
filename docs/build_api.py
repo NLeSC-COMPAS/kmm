@@ -10,8 +10,9 @@ def build_doxygen_page(name, items):
     content += name + "\n" + "=" * len(name) + "\n"
 
     for item in items:
-        directive = "doxygenclass" if item[0].isupper() else "doxygenfunction"
-        content += f".. {directive}:: kmm::{item}\n"
+        # directive = "doxygenclass" if item[0].isupper() else "doxygenfunction"
+        # content += f".. {directive}:: kmm::{item}\n"
+        content += f".. doxygenpage:: kmm::{item}\n"
 
     filename = f"api/{name}.rst"
     print(f"writing to {filename}")
