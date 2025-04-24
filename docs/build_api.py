@@ -10,10 +10,9 @@ def build_doxygen_page(name, items):
     content += name + "\n" + "=" * len(name) + "\n"
 
     for item in items:
+        print(f"item : {item}")
         directive = "doxygenclass" if item[0].isupper() else "doxygenfunction"
         content += f".. {directive}:: kmm::{item}\n"
-    print(f"directive: {directive}")
-    print(f"content: {content}")
 
     filename = f"api/{name}.rst"
     print(f"writing to {filename}")
@@ -70,9 +69,11 @@ def build_index_page(groups):
 
 groups = {
     "Runtime": ["make_runtime", "RuntimeHandle", "Runtime", "RuntimeConfig"],
-    "Data": ["Array", "Dim", "View"],
+    "Data": ["Array", "Dim", "Range", "Bounds", "bounds" "Domain", "TileDomain", "write"],
+    "Views": ["View", "GPUSubview", "GPUSubviewMut"],
     "Resources": ["ResourceId", "MemoryId", "DeviceId", "SystemInfo"],
-    "Tasks and Events": ["EventId"],
+    "Events and Execution": ["EventId", "GPUKernel", "Host"],
+    "Reductions": ["reduce"],
 }
 
 
