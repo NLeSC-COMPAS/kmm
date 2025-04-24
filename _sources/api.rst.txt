@@ -10,17 +10,27 @@ API Reference
    :hidden:
 
    api/Array.rst
+   api/Bounds.rst
    api/DeviceId.rst
    api/Dim.rst
    api/EventId.rst
+   api/GPUKernel.rst
+   api/GPUSubview.rst
+   api/GPUSubviewMut.rst
+   api/Host.rst
    api/MemoryId.rst
+   api/Range.rst
    api/ResourceId.rst
    api/Runtime.rst
    api/RuntimeConfig.rst
    api/RuntimeHandle.rst
    api/SystemInfo.rst
+   api/TileDomain.rst
    api/View.rst
+   api/boundsDomain.rst
    api/make_runtime.rst
+   api/reduce.rst
+   api/write.rst
 
 .. raw:: html
 
@@ -37,7 +47,19 @@ API Reference
 
 * :doc:`Array <api/Array>`
 * :doc:`Dim <api/Dim>`
+* :doc:`Range <api/Range>`
+* :doc:`Bounds <api/Bounds>`
+* :doc:`boundsDomain <api/boundsDomain>`
+* :doc:`TileDomain <api/TileDomain>`
+* :doc:`write <api/write>`
+
+.. raw:: html
+
+   <h2>Views</h2>
+
 * :doc:`View <api/View>`
+* :doc:`GPUSubview <api/GPUSubview>`
+* :doc:`GPUSubviewMut <api/GPUSubviewMut>`
 
 .. raw:: html
 
@@ -50,8 +72,16 @@ API Reference
 
 .. raw:: html
 
-   <h2>Tasks and Events</h2>
+   <h2>Events and Execution</h2>
 
 * :doc:`EventId <api/EventId>`
+* :doc:`GPUKernel <api/GPUKernel>`
+* :doc:`Host <api/Host>`
+
+.. raw:: html
+
+   <h2>Reductions</h2>
+
+* :doc:`reduce <api/reduce>`
 
 
