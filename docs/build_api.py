@@ -10,7 +10,6 @@ def build_doxygen_page(name, items):
     content += name + "\n" + "=" * len(name) + "\n"
 
     for item in items:
-        print(f"item : {item}")
         directive = "doxygenclass" if item[0].isupper() else "doxygenfunction"
         content += f".. {directive}:: kmm::{item}\n"
 
@@ -73,7 +72,7 @@ groups = {
     "Views": ["View", "GPUSubview", "GPUSubviewMut"],
     "Resources": ["ResourceId", "MemoryId", "DeviceId", "SystemInfo"],
     "Events and Execution": ["EventId", "GPUKernel", "Host"],
-    "Reductions": ["reduce"],
+    "Reductions": ["reduce", "Reduction"],
 }
 
 
