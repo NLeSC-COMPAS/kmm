@@ -7,4 +7,4 @@
 
 GPUSubview
 ==========
-.. doxygenpage:: kmm::GPUSubview
+.. doxygenclass:: kmm::GPUSubview

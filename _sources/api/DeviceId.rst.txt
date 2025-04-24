@@ -7,4 +7,4 @@
 
 DeviceId
 ========
-.. doxygenpage:: kmm::DeviceId
+.. doxygenclass:: kmm::DeviceId

@@ -7,4 +7,4 @@
 
 EventId
 =======
-.. doxygenpage:: kmm::EventId
+.. doxygenclass:: kmm::EventId

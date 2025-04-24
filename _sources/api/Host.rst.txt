@@ -7,4 +7,4 @@
 
 Host
 ====
-.. doxygenpage:: kmm::Host
+.. doxygenclass:: kmm::Host

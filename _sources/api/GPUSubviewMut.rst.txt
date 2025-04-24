@@ -7,4 +7,4 @@
 
 GPUSubviewMut
 =============
-.. doxygenpage:: kmm::GPUSubviewMut
+.. doxygenclass:: kmm::GPUSubviewMut

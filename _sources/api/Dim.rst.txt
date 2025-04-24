@@ -7,4 +7,4 @@
 
 Dim
 ===
-.. doxygenpage:: kmm::Dim
+.. doxygenclass:: kmm::Dim

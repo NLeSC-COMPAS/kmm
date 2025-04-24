@@ -104,10 +104,62 @@
              
   <section id="range">
 <span id="id1"></span><h1>Range<a class="headerlink" href="#range" title="Permalink to this heading"></a></h1>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>doxygenpage: Cannot find page “kmm::Range” in doxygen xml output for project “KMM” from directory: ./_doxygen/xml</p>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN3kmm5RangeE">
+<span id="_CPPv3I0EN3kmm5RangeE"></span><span id="_CPPv2I0EN3kmm5RangeE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="classkmm_1_1Range"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Range</span></span></span><a class="headerlink" href="#_CPPv4I0EN3kmm5RangeE" title="Permalink to this definition"></a><br /></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp">
+<span class="target" id="classkmm_1_1Range_1ab684a586477e9699b6855baf8a7eaaf0"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">KMM_HOST_DEVICE</span> <span class="pre">constexpr</span> <span class="pre">bool</span> <span class="pre">is_empty</span> <span class="pre">()</span> <span class="pre">const</span></span></dt>
+<dd><p>Checks if the range is empty (i.e., <code class="docutils literal notranslate"><span class="pre">begin</span> <span class="pre">==</span> <span class="pre">end</span></code>) or invalid (i.e., <code class="docutils literal notranslate"><span class="pre">begin</span> <span class="pre">&gt;</span> <span class="pre">end</span></code>). </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp">
+<span class="target" id="classkmm_1_1Range_1a4d3ac9242fa0c44ab9becd0e93d6f9a8"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">KMM_HOST_DEVICE</span> <span class="pre">constexpr</span> <span class="pre">bool</span> <span class="pre">contains</span> <span class="pre">(const</span> <span class="pre">T</span> <span class="pre">&amp;index)</span> <span class="pre">const</span></span></dt>
+<dd><p>Checks if the given index <code class="docutils literal notranslate"><span class="pre">index</span></code> is within this range. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp">
+<span class="target" id="classkmm_1_1Range_1a42d09ff7b292f6d6201817b94c06e6ea"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">KMM_HOST_DEVICE</span> <span class="pre">constexpr</span> <span class="pre">bool</span> <span class="pre">contains</span> <span class="pre">(const</span> <span class="pre">Range</span> <span class="pre">&amp;that)</span> <span class="pre">const</span></span></dt>
+<dd><p>Checks if the given <code class="docutils literal notranslate"><span class="pre">that</span></code> range is fully contained within this range. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp">
+<span class="target" id="classkmm_1_1Range_1ad93446fb7b90496599bf7909070f4667"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">KMM_HOST_DEVICE</span> <span class="pre">constexpr</span> <span class="pre">bool</span> <span class="pre">overlaps</span> <span class="pre">(const</span> <span class="pre">Range</span> <span class="pre">&amp;that)</span> <span class="pre">const</span></span></dt>
+<dd><p>Checks if the given range <code class="docutils literal notranslate"><span class="pre">that</span></code> overlaps this range. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp">
+<span class="target" id="classkmm_1_1Range_1a8656deeb9805094a4299e8f6d9471425"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">KMM_HOST_DEVICE</span> <span class="pre">constexpr</span> <span class="pre">Range</span> <span class="pre">intersection</span> <span class="pre">(const</span> <span class="pre">Range</span> <span class="pre">&amp;that)</span> <span class="pre">const</span></span></dt>
+<dd><p>Checks if the given range <code class="docutils literal notranslate"><span class="pre">that</span></code> overlaps this range. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp">
+<span class="target" id="classkmm_1_1Range_1a33cf9c13c0287a09d82531f3ae840b3c"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">KMM_HOST_DEVICE</span> <span class="pre">constexpr</span> <span class="pre">T</span> <span class="pre">size</span> <span class="pre">()</span> <span class="pre">const</span></span></dt>
+<dd><p>Computes the size (or length) of the range. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp">
+<span class="target" id="classkmm_1_1Range_1a641b85cd81427c16e85e60c077799c39"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">KMM_HOST_DEVICE</span> <span class="pre">constexpr</span> <span class="pre">Range</span> <span class="pre">split_off</span> <span class="pre">(T</span> <span class="pre">mid)</span></span></dt>
+<dd><p>Returns the range <code class="docutils literal notranslate"><span class="pre">mid...end</span></code> and modifies the current range such it becomes <code class="docutils literal notranslate"><span class="pre">begin...mid</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp">
+<span class="target" id="classkmm_1_1Range_1a39687fd91938e54ec39452a3f98ba38b"></span><span class="sig-name descname"><span class="pre">inline</span> <span class="pre">KMM_HOST_DEVICE</span> <span class="pre">constexpr</span> <span class="pre">Range</span> <span class="pre">shift_by</span> <span class="pre">(T</span> <span class="pre">shift)</span> <span class="pre">const</span></span></dt>
+<dd><p>Returns a new range that has been shifted by the given amount. </p>
+</dd></dl>
+
 </div>
+</dd></dl>
+
 </section>
 
 

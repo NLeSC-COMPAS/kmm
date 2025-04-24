@@ -7,4 +7,4 @@
 
 TileDomain
 ==========
-.. doxygenpage:: kmm::TileDomain
+.. doxygenclass:: kmm::TileDomain

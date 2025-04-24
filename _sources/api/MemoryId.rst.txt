@@ -7,4 +7,4 @@
 
 MemoryId
 ========
-.. doxygenpage:: kmm::MemoryId
+.. doxygenclass:: kmm::MemoryId

@@ -7,4 +7,4 @@
 
 bounds
 ======
-.. doxygenpage:: kmm::bounds
+.. doxygenfunction:: kmm::bounds

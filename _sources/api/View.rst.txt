@@ -7,4 +7,4 @@
 
 View
 ====
-.. doxygenpage:: kmm::View
+.. doxygenclass:: kmm::View
