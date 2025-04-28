@@ -1,3 +1,5 @@
+![KMM Logo](docs/_static/kmm-logo.png)
+
 # KMM: Kernel Memory Manager
 
 [![CPU Build Status](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-multi-compiler.yml/badge.svg)](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-multi-compiler.yml)
