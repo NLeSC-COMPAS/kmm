@@ -1,4 +1,5 @@
-![KMM Logo](https://github.com/NLeSC-COMPAS/kmmdocs/_static/kmm-logo.png)
+
+![KMM Logo](https://raw.githubusercontent.com/NLeSC-COMPAS/kmm/refs/heads/main/docs/_static/kmm-logo.png)
 
 # KMM: Kernel Memory Manager
 
