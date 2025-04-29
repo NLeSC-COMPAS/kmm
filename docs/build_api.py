@@ -65,7 +65,7 @@ groups = {
     #"Views": [["View", "struct"], ["GPUSubview", "struct"], ["GPUSubviewMut", "struct"]],
     "Resources": [["ResourceId", "class"], ["MemoryId", "struct"], ["DeviceId", "struct"], ["SystemInfo", "class"]],
     "Events and Execution": [["EventId", "struct"], ["GPUKernel", "struct"], ["Host", "struct"]],
-    "Reductions": [["reduce", "function"], ["Reduction", "enum"]],
+    "Reductions": [["reduce", "function"]],
 }
 
 
