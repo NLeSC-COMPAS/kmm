@@ -5,15 +5,12 @@ def rst_comment():
 
 
 def build_doxygen_page(name, items):
-    print(f"name : {name}")
-    print(f"items : {items}")
     content = rst_comment()
     content += f".. _{name}:\n\n"
     content += name + "\n" + "=" * len(name) + "\n"
 
     for item in items:
-        directive = "doxygenclass" if item[0].isupper() else "doxygenfunction"
-        content += f".. {directive}:: kmm::{item}\n"
+        content += f".. doxygen{item[1]}:: kmm::{item[0]}\n"
 
     filename = f"api/{name}.rst"
     print(f"writing to {filename}")
@@ -69,12 +66,12 @@ def build_index_page(groups):
 
 
 groups = {
-    "Runtime": ["make_runtime", "RuntimeHandle", "Runtime", "RuntimeConfig"],
-    "Data": ["Array", "Dim", "Range", "Bounds", "bounds", "Domain", "TileDomain", "write"],
-    "Views": ["View", "GPUSubview", "GPUSubviewMut"],
-    "Resources": ["ResourceId", "MemoryId", "DeviceId", "SystemInfo"],
-    "Events and Execution": ["EventId", "GPUKernel", "Host"],
-    "Reductions": ["reduce", "Reduction"],
+    "Runtime": [["make_runtime", "function"], ["RuntimeHandle", "class"], ["Runtime", "class"], ["RuntimeConfig", "struct"]],
+    "Data": [["Array", "class"], ["Dim", "struct"], ["Range", "class"], ["Bounds", "class"], ["bounds", "function"], ["Domain", "struct"], ["TileDomain", "struct"], ["write", "function"]],
+    "Views": [["View", "struct"], ["GPUSubview", "struct"], ["GPUSubviewMut", "struct"]],
+    "Resources": [["ResourceId", "class"], ["MemoryId", "struct"], ["DeviceId", "struct"], ["SystemInfo", "class"]],
+    "Events and Execution": [["EventId", "struct"], ["GPUKernel", "struct"], ["Host", "struct"]],
+    "Reductions": [["reduce", "function"], ["Reduction", "struct"]],
 }
 
 
