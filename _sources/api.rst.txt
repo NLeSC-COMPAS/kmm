@@ -1,0 +1,91 @@
+..
+  ============================================================
+  This file has been auto-generated. DO NOT MODIFY ITS CONTENT
+  ============================================================
+
+API Reference
+=============
+.. toctree::
+   :titlesonly:
+   :hidden:
+
+   api/Array.rst
+   api/Bounds.rst
+   api/DeviceId.rst
+   api/Dim.rst
+   api/Domain.rst
+   api/EventId.rst
+   api/GPUKernel.rst
+   api/GPUSubview.rst
+   api/GPUSubviewMut.rst
+   api/Host.rst
+   api/MemoryId.rst
+   api/Range.rst
+   api/Reduction.rst
+   api/ResourceId.rst
+   api/Runtime.rst
+   api/RuntimeConfig.rst
+   api/RuntimeHandle.rst
+   api/SystemInfo.rst
+   api/TileDomain.rst
+   api/View.rst
+   api/bounds.rst
+   api/make_runtime.rst
+   api/reduce.rst
+   api/write.rst
+
+.. raw:: html
+
+   <h2>Runtime</h2>
+
+* :doc:`make_runtime <api/make_runtime>`
+* :doc:`RuntimeHandle <api/RuntimeHandle>`
+* :doc:`Runtime <api/Runtime>`
+* :doc:`RuntimeConfig <api/RuntimeConfig>`
+
+.. raw:: html
+
+   <h2>Data</h2>
+
+* :doc:`Array <api/Array>`
+* :doc:`Dim <api/Dim>`
+* :doc:`Range <api/Range>`
+* :doc:`Bounds <api/Bounds>`
+* :doc:`bounds <api/bounds>`
+* :doc:`Domain <api/Domain>`
+* :doc:`TileDomain <api/TileDomain>`
+* :doc:`write <api/write>`
+
+.. raw:: html
+
+   <h2>Views</h2>
+
+* :doc:`View <api/View>`
+* :doc:`GPUSubview <api/GPUSubview>`
+* :doc:`GPUSubviewMut <api/GPUSubviewMut>`
+
+.. raw:: html
+
+   <h2>Resources</h2>
+
+* :doc:`ResourceId <api/ResourceId>`
+* :doc:`MemoryId <api/MemoryId>`
+* :doc:`DeviceId <api/DeviceId>`
+* :doc:`SystemInfo <api/SystemInfo>`
+
+.. raw:: html
+
+   <h2>Events and Execution</h2>
+
+* :doc:`EventId <api/EventId>`
+* :doc:`GPUKernel <api/GPUKernel>`
+* :doc:`Host <api/Host>`
+
+.. raw:: html
+
+   <h2>Reductions</h2>
+
+* :doc:`reduce <api/reduce>`
+* :doc:`Reduction <api/Reduction>`
+
+
