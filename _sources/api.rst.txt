@@ -19,7 +19,6 @@ API Reference
    api/Host.rst
    api/MemoryId.rst
    api/Range.rst
-   api/Reduction.rst
    api/ResourceId.rst
    api/Runtime.rst
    api/RuntimeConfig.rst
@@ -75,6 +74,5 @@ API Reference
    <h2>Reductions</h2>
 
 * :doc:`reduce <api/reduce>`
-* :doc:`Reduction <api/Reduction>`
 
 
