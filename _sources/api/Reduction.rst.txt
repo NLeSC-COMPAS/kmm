@@ -7,4 +7,4 @@
 
 Reduction
 =========
-.. doxygenstruct:: kmm::Reduction
+.. doxygenenum:: kmm::Reduction

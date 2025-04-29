@@ -16,8 +16,6 @@ API Reference
    api/Domain.rst
    api/EventId.rst
    api/GPUKernel.rst
-   api/GPUSubview.rst
-   api/GPUSubviewMut.rst
    api/Host.rst
    api/MemoryId.rst
    api/Range.rst
@@ -28,7 +26,6 @@ API Reference
    api/RuntimeHandle.rst
    api/SystemInfo.rst
    api/TileDomain.rst
-   api/View.rst
    api/bounds.rst
    api/make_runtime.rst
    api/reduce.rst
@@ -55,14 +52,6 @@ API Reference
 * :doc:`Domain <api/Domain>`
 * :doc:`TileDomain <api/TileDomain>`
 * :doc:`write <api/write>`
-
-.. raw:: html
-
-   <h2>Views</h2>
-
-* :doc:`View <api/View>`
-* :doc:`GPUSubview <api/GPUSubview>`
-* :doc:`GPUSubviewMut <api/GPUSubviewMut>`
 
 .. raw:: html
 

@@ -55,8 +55,6 @@
 <li class="toctree-l2"><a class="reference internal" href="Domain.html">Domain</a></li>
 <li class="toctree-l2"><a class="reference internal" href="EventId.html">EventId</a></li>
 <li class="toctree-l2"><a class="reference internal" href="GPUKernel.html">GPUKernel</a></li>
-<li class="toctree-l2"><a class="reference internal" href="GPUSubview.html">GPUSubview</a></li>
-<li class="toctree-l2"><a class="reference internal" href="GPUSubviewMut.html">GPUSubviewMut</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Host.html">Host</a></li>
 <li class="toctree-l2"><a class="reference internal" href="MemoryId.html">MemoryId</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Range.html">Range</a></li>
@@ -67,7 +65,6 @@
 <li class="toctree-l2"><a class="reference internal" href="RuntimeHandle.html">RuntimeHandle</a></li>
 <li class="toctree-l2"><a class="reference internal" href="SystemInfo.html">SystemInfo</a></li>
 <li class="toctree-l2"><a class="reference internal" href="TileDomain.html">TileDomain</a></li>
-<li class="toctree-l2"><a class="reference internal" href="View.html">View</a></li>
 <li class="toctree-l2"><a class="reference internal" href="bounds.html">bounds</a></li>
 <li class="toctree-l2"><a class="reference internal" href="make_runtime.html">make_runtime</a></li>
 <li class="toctree-l2"><a class="reference internal" href="reduce.html">reduce</a></li>
@@ -104,10 +101,47 @@
              
   <section id="reduction">
 <span id="id1"></span><h1>Reduction<a class="headerlink" href="#reduction" title="Permalink to this heading"></a></h1>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>doxygenstruct: Cannot find class “kmm::Reduction” in doxygen xml output for project “KMM” from directory: ./_doxygen/xml</p>
-</div>
+<dl class="cpp enum-class">
+<dt class="sig sig-object cpp" id="_CPPv4N3kmm9ReductionE">
+<span id="_CPPv3N3kmm9ReductionE"></span><span id="_CPPv2N3kmm9ReductionE"></span><span class="target" id="reduction_8hpp_1af5bba56249ba972f8c0f1b0081400ef6"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-prename descclassname"><span class="n"><span class="pre">kmm</span></span><span class="p"><span class="pre">::</span></span></span><span class="sig-name descname"><span class="n"><span class="pre">Reduction</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">uint8_t</span></span><a class="headerlink" href="#_CPPv4N3kmm9ReductionE" title="Permalink to this definition"></a><br /></dt>
+<dd><p><em>Values:</em></p>
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N3kmm9Reduction7InvalidE">
+<span id="_CPPv3N3kmm9Reduction7InvalidE"></span><span id="_CPPv2N3kmm9Reduction7InvalidE"></span><span class="target" id="reduction_8hpp_1af5bba56249ba972f8c0f1b0081400ef6a4bbb8f967da6d1a610596d7257179c2b"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Invalid</span></span></span><a class="headerlink" href="#_CPPv4N3kmm9Reduction7InvalidE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N3kmm9Reduction3SumE">
+<span id="_CPPv3N3kmm9Reduction3SumE"></span><span id="_CPPv2N3kmm9Reduction3SumE"></span><span class="target" id="reduction_8hpp_1af5bba56249ba972f8c0f1b0081400ef6aa0ec87054b5e5b7847d0d8780a01a3d5"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Sum</span></span></span><a class="headerlink" href="#_CPPv4N3kmm9Reduction3SumE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N3kmm9Reduction7ProductE">
+<span id="_CPPv3N3kmm9Reduction7ProductE"></span><span id="_CPPv2N3kmm9Reduction7ProductE"></span><span class="target" id="reduction_8hpp_1af5bba56249ba972f8c0f1b0081400ef6adeb10517653c255364175796ace3553f"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Product</span></span></span><a class="headerlink" href="#_CPPv4N3kmm9Reduction7ProductE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N3kmm9Reduction3MinE">
+<span id="_CPPv3N3kmm9Reduction3MinE"></span><span id="_CPPv2N3kmm9Reduction3MinE"></span><span class="target" id="reduction_8hpp_1af5bba56249ba972f8c0f1b0081400ef6a78d811e98514cd165dda532286610fd2"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Min</span></span></span><a class="headerlink" href="#_CPPv4N3kmm9Reduction3MinE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N3kmm9Reduction3MaxE">
+<span id="_CPPv3N3kmm9Reduction3MaxE"></span><span id="_CPPv2N3kmm9Reduction3MaxE"></span><span class="target" id="reduction_8hpp_1af5bba56249ba972f8c0f1b0081400ef6a6a061313d22e51e0f25b7cd4dc065233"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Max</span></span></span><a class="headerlink" href="#_CPPv4N3kmm9Reduction3MaxE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N3kmm9Reduction6BitAndE">
+<span id="_CPPv3N3kmm9Reduction6BitAndE"></span><span id="_CPPv2N3kmm9Reduction6BitAndE"></span><span class="target" id="reduction_8hpp_1af5bba56249ba972f8c0f1b0081400ef6ae5c7b3dc6fa17e0c1d0586d1a169c77d"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BitAnd</span></span></span><a class="headerlink" href="#_CPPv4N3kmm9Reduction6BitAndE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N3kmm9Reduction5BitOrE">
+<span id="_CPPv3N3kmm9Reduction5BitOrE"></span><span id="_CPPv2N3kmm9Reduction5BitOrE"></span><span class="target" id="reduction_8hpp_1af5bba56249ba972f8c0f1b0081400ef6a04306ca0b4b3ed9a5cedc16d4acbc2b8"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BitOr</span></span></span><a class="headerlink" href="#_CPPv4N3kmm9Reduction5BitOrE" title="Permalink to this definition"></a><br /></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
 </section>
 
 
