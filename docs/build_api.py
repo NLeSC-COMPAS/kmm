@@ -4,13 +4,13 @@ def rst_comment():
     return f"..\n  {bars}\n  {text}\n  {bars}\n\n"
 
 
-def build_doxygen_page(name, items):
+def build_doxygen_page(symbol):
+    name = symbol[0]
+    kind = symbol[1]
     content = rst_comment()
     content += f".. _{name}:\n\n"
     content += name + "\n" + "=" * len(name) + "\n"
-
-    for item in items:
-        content += f".. doxygen{item[1]}:: kmm::{item[0]}\n"
+    content += f".. doxygen{kind}:: kmm::{name}\n"
 
     filename = f"api/{name}.rst"
     print(f"writing to {filename}")
@@ -29,17 +29,11 @@ def build_index_page(groups):
         body += f".. raw:: html\n\n   <h2>{groupname}</h2>\n\n"
 
         for symbol in symbols:
-            if isinstance(symbol, str):
-                name = symbol
-                items = [symbol]
-            else:
-                name, items = symbol
-
-            filename = build_doxygen_page(name, items)
+            filename = build_doxygen_page(symbol)
             children.append(filename)
 
             filename = filename.replace(".rst", "")
-            body += f"* :doc:`{name} <{filename}>`\n"
+            body += f"* :doc:`{symbol[0]} <{filename}>`\n"
 
         body += "\n"
 
