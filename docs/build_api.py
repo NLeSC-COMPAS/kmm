@@ -62,10 +62,10 @@ def build_index_page(groups):
 groups = {
     "Runtime": [["make_runtime", "function"], ["RuntimeHandle", "class"], ["Runtime", "class"], ["RuntimeConfig", "struct"]],
     "Data": [["Array", "class"], ["Dim", "struct"], ["Range", "class"], ["Bounds", "class"], ["bounds", "function"], ["Domain", "struct"], ["TileDomain", "struct"], ["write", "function"]],
-    "Views": [["View", "struct"], ["GPUSubview", "struct"], ["GPUSubviewMut", "struct"]],
+    #"Views": [["View", "struct"], ["GPUSubview", "struct"], ["GPUSubviewMut", "struct"]],
     "Resources": [["ResourceId", "class"], ["MemoryId", "struct"], ["DeviceId", "struct"], ["SystemInfo", "class"]],
     "Events and Execution": [["EventId", "struct"], ["GPUKernel", "struct"], ["Host", "struct"]],
-    "Reductions": [["reduce", "function"], ["Reduction", "struct"]],
+    "Reductions": [["reduce", "function"], ["Reduction", "enum"]],
 }
 
 
