@@ -4,7 +4,6 @@ name: CPU build and test
 
 on:
   push:
-    branches: [ "dev" ]
   pull_request:
     branches: [ "main" ]
 
@@ -16,10 +15,10 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest, "ghcr.io/cirruslabs/ubuntu-runner-amd64-gpu:24.04"]
         build_type: [Debug]
         cpp_compiler: [g++, clang++]
-            
+
     steps:
     - uses: actions/checkout@v4
       with:
