@@ -68,7 +68,7 @@ jobs:
 
   run_benchmark:
     needs: build # Ensures build job completes first
-    runs-on: ubicloud-gpu
+    runs-on: ubicloud-gpu-ubuntu-2404
 
     strategy:
       fail-fast: false
