@@ -13,14 +13,14 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     strategy:
-      fail-fast: false
+      fail-fast: true
 
       matrix:
         os: [ubuntu-latest]
         build_type: [Debug]
 
     steps:
-      - uses: loostrum/rocm-installer@main
+      - uses: loostrum/rocm-installer@0.1
         with:
           version: 6.2.2
 
