@@ -20,7 +20,9 @@ jobs:
         build_type: [Debug]
 
     steps:
-      - uses: loostrum/rocm-installer@main
+      - uses: loostrum/rocm-installer@v0.1
+        with:
+          version: 6.2.2
 
       - uses: actions/checkout@v4
         with:
