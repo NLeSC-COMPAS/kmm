@@ -4,9 +4,12 @@ name: CUDA build
 
 on:
   push:
-    branches: [ "dev" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ 
+      # "dev"
+      "ubicloud"
+     ]
+  # pull_request:
+  #   branches: [ "main" ]
 
 jobs:
   build:
@@ -16,7 +19,7 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [ubuntu-latest]
+        os: ["ubicloud-gpu"]
         build_type: [Debug]
         cpp_compiler: [g++, clang++]
 
@@ -55,3 +58,6 @@ jobs:
       - name: Build
         # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
         run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+
+      - name: Run benchmark
+        run: build/benchmarks/vector_add_bench 256 8 4000000
