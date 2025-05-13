@@ -61,7 +61,7 @@ jobs:
 
       - name: Build
         # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-          run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} -- -j 6
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} -- -j 6
 
       - name: Run benchmark
         run: build/benchmarks/vector_add_bench 256 8 1000000000
