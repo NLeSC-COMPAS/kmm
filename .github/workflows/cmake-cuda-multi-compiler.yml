@@ -1,6 +1,6 @@
 # This starter workflow is for a CMake project running on multiple platforms. There is a different starter workflow if you just want a single platform.
 # See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-single-platform.yml
-name: CUDA build
+name: CUDA build and benchmark
 
 on:
   push:
@@ -13,40 +13,37 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest # Or any other suitable runner for building
 
     strategy:
       fail-fast: false
-
       matrix:
-        os: ["ubicloud-gpu"]
-        build_type: [Debug]
-        cpp_compiler: [g++, clang++]
+        build_type: [Debug] # Keep matrix for build types if needed
+        cpp_compiler: [g++, 
+        # clang++
+        ]
 
     steps:
-      # - uses: Jimver/cuda-toolkit@v0.2.22
-      #   id: cuda-toolkit
-      #   with:
-      #     method: 'network'
-      #     sub-packages: '["toolkit"]'
-      - name: Install cmake and clang
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake clang
+      - uses: Jimver/cuda-toolkit@v0.2.22
+        id: cuda-toolkit
+        with:
+          method: 'network'
+          sub-packages: '["toolkit"]'
+      # - name: Install cmake and clang
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y cmake clang
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
 
       - name: Set reusable strings
-        # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
         id: strings
         shell: bash
         run: |
           echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
 
       - name: Configure CMake
-        # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-        # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
         run: >
           cmake -B ${{ steps.strings.outputs.build-output-dir }}
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }}
@@ -60,8 +57,37 @@ jobs:
           -S ${{ github.workspace }}
 
       - name: Build
-        # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
         run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} -- -j 6
 
+      - name: Upload benchmark artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-executable-${{ matrix.cpp_compiler }}-${{ matrix.build_type }}
+          path: ${{ steps.strings.outputs.build-output-dir }}/benchmarks/vector_add_bench
+
+  run_benchmark:
+    needs: build # Ensures build job completes first
+    runs-on: ubicloud-gpu
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # This matrix should ideally match the one in the build job
+        # or be a subset if you only want to run benchmarks for specific builds.
+        build_type: [Debug]
+        cpp_compiler: [g++, 
+        #clang++
+        ]
+
+    steps:
+      - name: Download benchmark artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark-executable-${{ matrix.cpp_compiler }}-${{ matrix.build_type }}
+          path: ./benchmark_artifact # Download to a specific directory
+
+      - name: Make benchmark executable
+        run: chmod +x ./benchmark_artifact/vector_add_bench
+
       - name: Run benchmark
-        run: build/benchmarks/vector_add_bench 256 8 1000000000
+        run: ./benchmark_artifact/vector_add_bench 256 8 1000000000
