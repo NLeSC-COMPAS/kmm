@@ -42,11 +42,9 @@ jobs:
         run: >
           cmake -B ${{ steps.strings.outputs.build-output-dir }}
           -DCMAKE_PREFIX_PATH=/opt/rocm
-          -DCMAKE_CXX_COMPILER:PATH=/opt/rocm/bin/amdclang++
           -DCMAKE_HIP_COMPILER_ROCM_ROOT:PATH=/opt/rocm
           -DCMAKE_HIP_ARCHITECTURES=gfx90a
           -DAMDGPU_TARGETS=gfx90a
-          -DCMAKE_HIP_COMPILER:PATH=/opt/rocm/bin/amdclang++
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
           -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON
           -DSPDLOG_FMT_EXTERNAL:BOOL=ON
