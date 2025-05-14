@@ -20,7 +20,7 @@ jobs:
         build_type: [Debug]
 
     steps:
-      - uses: loostrum/rocm-installer@expert-mode
+      - uses: loostrum/rocm-installer@main
         with:
           version: 6.2.2
           packages: hip-dev hipcc rocm-device-libs rocblas rocm-hip-runtime-dev rocrand
