@@ -59,7 +59,7 @@ DeviceResources::DeviceResources(
             );
 
             m_devices[i]->streams.emplace_back(std::move(s));
-            m_devices[i]->last_used_streams.push_back(i);
+            m_devices[i]->last_used_streams.push_back(j);
         }
     }
 }
