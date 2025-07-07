@@ -45,7 +45,7 @@ class Array: public ArrayBase {
         return N;
     }
 
-    Dim<N> shape() const {
+    Dim<N> size() const {
         return m_shape;
     }
 
@@ -53,7 +53,7 @@ class Array: public ArrayBase {
         return m_shape.get_or_default(axis);
     }
 
-    int64_t size() const {
+    int64_t volume() const {
         return m_shape.volume();
     }
 
@@ -131,7 +131,7 @@ class Array: public ArrayBase {
 
     void copy_bytes_to(void* output, size_t num_bytes) const {
         KMM_ASSERT(num_bytes % sizeof(T) == 0);
-        KMM_ASSERT(is_equal(num_bytes / sizeof(T), size()));
+        KMM_ASSERT(is_equal(num_bytes / sizeof(T), volume()));
         instance().copy_bytes_into(output);
     }
 
@@ -141,12 +141,12 @@ class Array: public ArrayBase {
 
     template<typename I>
     void copy_to(T* output, I num_elements) const {
-        KMM_ASSERT(is_equal(num_elements, size()));
+        KMM_ASSERT(is_equal(num_elements, volume()));
         instance().copy_bytes_into(output);
     }
 
     void copy_to(std::vector<T>& output) const {
-        output.resize(checked_cast<size_t>(size()));
+        output.resize(checked_cast<size_t>(volume()));
         instance().copy_bytes_into(output.data());
     }
 
@@ -158,7 +158,7 @@ class Array: public ArrayBase {
 
     void copy_bytes_from(const void* input, size_t num_bytes) const {
         KMM_ASSERT(num_bytes % sizeof(T) == 0);
-        KMM_ASSERT(is_equal(num_bytes / sizeof(T), size()));
+        KMM_ASSERT(is_equal(num_bytes / sizeof(T), volume()));
         instance().copy_bytes_from(input);
     }
 
@@ -168,7 +168,7 @@ class Array: public ArrayBase {
 
     template<typename I>
     void copy_from(T* input, I num_elements) const {
-        KMM_ASSERT(is_equal(num_elements, size()));
+        KMM_ASSERT(is_equal(num_elements, volume()));
         instance().copy_bytes_from(input);
     }
 
@@ -191,7 +191,7 @@ struct ArgumentHandler<Read<const Array<T, N>>> {
 
     ArgumentHandler(Read<const Array<T, N>> access) :
         m_planner(access.argument.instance().shared_from_this()),
-        m_array_shape(access.argument.shape()) {}
+        m_array_shape(access.argument.size()) {}
 
     void initialize(const TaskGroupInit& init) {}
 
@@ -234,7 +234,7 @@ struct ArgumentHandler<Read<const Array<T, N>, M>> {
 
     ArgumentHandler(Read<const Array<T, N>, M> access) :
         m_planner(access.argument.instance().shared_from_this()),
-        m_array_shape(access.argument.shape()),
+        m_array_shape(access.argument.size()),
         m_access_mapper(access.access_mapper) {}
 
     void initialize(const TaskGroupInit& init) {}
@@ -273,7 +273,7 @@ struct ArgumentHandler<Write<Array<T, N>>> {
         if (!m_array.has_instance()) {
             auto instance = ArrayInstance<N>::create(  //
                 init.runtime,
-                map_domain_to_distribution(m_array.shape(), init.domain, All()),
+                map_domain_to_distribution(m_array.size(), init.domain, All()),
                 DataType::of<T>()
             );
 
@@ -284,7 +284,7 @@ struct ArgumentHandler<Write<Array<T, N>>> {
     }
 
     type before_submit(TaskInstance& task) {
-        auto access_region = Bounds<N>(m_array.shape());
+        auto access_region = Bounds<N>(m_array.size());
         auto buffer_index = task.add_buffer_requirement(
             m_planner->prepare_access(task.graph, task.memory_id, access_region, task.dependencies)
         );
@@ -317,14 +317,14 @@ struct ArgumentHandler<Write<Array<T, N>, M>> {
 
     ArgumentHandler(Write<Array<T, N>, M> access) :
         m_array(access.argument),
-        m_shape(m_array.shape()),
+        m_shape(m_array.size()),
         m_access_mapper(access.access_mapper) {}
 
     void initialize(const TaskGroupInit& init) {
         if (!m_array.has_instance()) {
             auto instance = ArrayInstance<N>::create(  //
                 init.runtime,
-                map_domain_to_distribution(m_array.shape(), init.domain, m_access_mapper),
+                map_domain_to_distribution(m_array.size(), init.domain, m_access_mapper),
                 DataType::of<T>()
             );
 
@@ -372,7 +372,7 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
             auto instance = ArrayInstance<N>::create(  //
                 init.runtime,
                 map_domain_to_distribution(  //
-                    m_array.shape(),
+                    m_array.size(),
                     init.domain,
                     All(),
                     true
@@ -390,7 +390,7 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
     }
 
     type before_submit(TaskInstance& task) {
-        auto access_region = Bounds<N>(m_array.shape());
+        auto access_region = Bounds<N>(m_array.size());
 
         size_t buffer_index = task.add_buffer_requirement(
             m_planner
@@ -442,7 +442,7 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
             auto instance = ArrayInstance<N>::create(  //
                 init.runtime,
                 map_domain_to_distribution(  //
-                    m_array.shape(),
+                    m_array.size(),
                     init.domain,
                     m_access_mapper,
                     true
@@ -460,7 +460,7 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
     }
 
     type before_submit(TaskInstance& task) {
-        auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_array.shape()));
+        auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_array.size()));
         auto private_region = m_private_mapper(task.chunk);
 
         auto rep = checked_cast<size_t>(private_region.volume());
