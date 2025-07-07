@@ -39,7 +39,7 @@ class RuntimeHandle {
     EventId submit(ResourceId target, L&& launcher, Args&&... args) const {
         DomainChunk chunk = {
             .owner_id = target,  //
-            .offset = DomainIndex::zero(),
+            .offset = DomainPoint::zero(),
             .size = DomainDim::one()};
 
         return kmm::parallel_submit(
@@ -83,9 +83,13 @@ class RuntimeHandle {
      * @param args The arguments that are forwarded to the launcher.
      * @return The event identifier for the submitted task.
      */
-    template<size_t N = DOMAIN_DIMS, typename L, typename... Args>
-    EventId parallel_submit(Dim<N> domain_size, Dim<N> chunk_size, L&& launcher, Args&&... args)
-        const {
+    template<typename L, typename... Args>
+    EventId parallel_submit(
+        DomainDim domain_size,
+        DomainDim chunk_size,
+        L&& launcher,
+        Args&&... args
+    ) const {
         return this->parallel_submit(
             TileDomain(domain_size, chunk_size),
             std::forward<L>(launcher),

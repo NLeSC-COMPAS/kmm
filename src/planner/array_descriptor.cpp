@@ -68,9 +68,9 @@ class CopyFromTask: public ComputeTask {
 
 template<size_t N>
 CopyDef build_copy_operation(
-    Index<N> src_offset,
+    Point<N> src_offset,
     Dim<N> src_dims,
-    Index<N> dst_offset,
+    Point<N> dst_offset,
     Dim<N> dst_dims,
     Dim<N> counts,
     size_t element_size
@@ -118,11 +118,11 @@ EventId ArrayDescriptor<N>::copy_bytes_into_buffer(TaskGraph& stage, void* dst_d
         auto chunk_region = Bounds<N>::from_offset_size(chunk.offset, chunk.size);
 
         auto copy_def = build_copy_operation(  //
-            Index<N>::zero(),
-            chunk_region.sizes(),
+            Point<N>::zero(),
+            chunk_region.size(),
             chunk_region.begin(),
             dist.array_size(),
-            chunk_region.sizes(),
+            chunk_region.size(),
             data_type.size_in_bytes()
         );
 
@@ -166,11 +166,11 @@ EventId ArrayDescriptor<N>::copy_bytes_from_buffer(TaskGraph& stage, const void*
         auto chunk_region = Bounds<N>::from_offset_size(chunk.offset, chunk.size);
 
         auto copy_def = build_copy_operation(  //
-            Index<N>::zero(),
-            chunk_region.sizes(),
+            Point<N>::zero(),
+            chunk_region.size(),
             chunk_region.begin(),
             dist.array_size(),
-            chunk_region.sizes(),
+            chunk_region.size(),
             data_type.size_in_bytes()
         );
 

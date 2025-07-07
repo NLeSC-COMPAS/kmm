@@ -87,7 +87,12 @@ GPUresult gpuMemPoolDestroy(GPUmemoryPool pool) {
     return GPUresult(GPU_ERROR_UNKNOWN);
 }
 
-GPUresult gpuMemAllocFromPoolAsync(GPUdeviceptr* dev, size_t size, GPUmemoryPool pool, GPUstream_t stream) {
+GPUresult gpuMemAllocFromPoolAsync(
+    GPUdeviceptr* dev,
+    size_t size,
+    GPUmemoryPool pool,
+    GPUstream_t stream
+) {
     return GPUresult(GPU_ERROR_UNKNOWN);
 }
 
@@ -218,7 +223,14 @@ GPUresult gpuCtxPushCurrent(GPUcontext ctx) {
 GPUresult gpuCtxPopCurrent(GPUcontext* ctx) {
     return GPUresult(GPU_ERROR_UNKNOWN);
 }
-gpuError_t GPUrtLaunchKernel(const void* func, dim3 grid, dim3 block, void** args, size_t smem, GPUstream_t stream) {
+gpuError_t GPUrtLaunchKernel(
+    const void* func,
+    dim3 grid,
+    dim3 block,
+    void** args,
+    size_t smem,
+    GPUstream_t stream
+) {
     return gpuError_t(GPU_ERROR_UNKNOWN);
 }
 
@@ -295,14 +307,39 @@ GPUresult gpuMemcpyHtoD(GPUdeviceptr dstDevice, const void* srcHost, size_t Byte
     return hipMemcpyHtoD(dstDevice, const_cast<void*>(srcHost), ByteCount);
 }
 
-GPUresult gpuMemcpyPeerAsync(GPUdeviceptr dstDevicePtr, GPUcontext dstContext, GPUdevice dstDevice, GPUdeviceptr srcDevicePtr, GPUcontext srcContext, GPUdevice srcDevice, size_t ByteCount, GPUstream_t hStream) {
+GPUresult gpuMemcpyPeerAsync(
+    GPUdeviceptr dstDevicePtr,
+    GPUcontext dstContext,
+    GPUdevice dstDevice,
+    GPUdeviceptr srcDevicePtr,
+    GPUcontext srcContext,
+    GPUdevice srcDevice,
+    size_t ByteCount,
+    GPUstream_t hStream
+) {
     return hipMemcpyPeerAsync(dstDevicePtr, dstDevice, srcDevicePtr, srcDevice, ByteCount, hStream);
 }
 
 #elif defined(KMM_USE_CUDA)
 
-GPUresult gpuMemcpyPeerAsync(GPUdeviceptr dstDevicePtr, GPUcontext dstContext, GPUdevice dstDevice, GPUdeviceptr srcDevicePtr, GPUcontext srcContext, GPUdevice srcDevice, size_t ByteCount, GPUstream_t hStream) {
-    return cuMemcpyPeerAsync(dstDevicePtr, dstContext, srcDevicePtr, srcContext, ByteCount, hStream);
+GPUresult gpuMemcpyPeerAsync(
+    GPUdeviceptr dstDevicePtr,
+    GPUcontext dstContext,
+    GPUdevice dstDevice,
+    GPUdeviceptr srcDevicePtr,
+    GPUcontext srcContext,
+    GPUdevice srcDevice,
+    size_t ByteCount,
+    GPUstream_t hStream
+) {
+    return cuMemcpyPeerAsync(
+        dstDevicePtr,
+        dstContext,
+        srcDevicePtr,
+        srcContext,
+        ByteCount,
+        hStream
+    );
 }
 
 #endif

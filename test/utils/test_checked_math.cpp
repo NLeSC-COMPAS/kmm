@@ -1,250 +1,101 @@
 #include "catch2/catch_all.hpp"
 
 #include "kmm/utils/checked_math.hpp"
-#define CHECK_EQ(A, B) CHECK((A) == (B))
 
 using namespace kmm;
 
-template<typename T>
-static constexpr T MAX = std::numeric_limits<T>::max();
+using i8 = int8_t;
+using i32 = int32_t;
+using u32 = uint32_t;
 
-template<typename T>
-static constexpr T MIN = std::numeric_limits<T>::min();
+TEST_CASE("checked_add") {
+    REQUIRE(checked_add(i32(5), i32(1)) == i32(6));
+    REQUIRE(checked_add(i32(-5), i32(1)) == i32(-4));
+    REQUIRE_THROWS(checked_add(std::numeric_limits<i32>::max(), i32(1)));
+    REQUIRE_THROWS(checked_add(std::numeric_limits<i32>::min(), i32(-1)));
 
-TEST_CASE("checked math, checked_add") {
-    CHECK_EQ(checked_add(size_t(1), size_t(2)), size_t(3));
-    CHECK_EQ(checked_add(MAX<size_t>, size_t(0)), MAX<size_t>);
-    CHECK_THROWS(checked_add(MAX<size_t>, size_t(1)));
+    REQUIRE(checked_add(u32(5), u32(1)) == u32(6));
+    REQUIRE(checked_add(u32(0), u32(1)) == u32(1));
+    REQUIRE_THROWS(checked_add(std::numeric_limits<u32>::max(), u32(1)));
 
-    CHECK_EQ(checked_add(uint32_t(1), uint32_t(2)), uint32_t(3));
-    CHECK_EQ(checked_add(MAX<uint32_t>, uint32_t(0)), MAX<uint32_t>);
-    CHECK_THROWS(checked_add(MAX<uint32_t>, uint32_t(1)));
-
-    CHECK_EQ(checked_add(int32_t(1), int32_t(2)), int32_t(3));
-    CHECK_EQ(checked_add(MAX<int32_t>, int32_t(0)), MAX<int32_t>);
-    CHECK_EQ(checked_add(MIN<int32_t>, int32_t(0)), MIN<int32_t>);
-    CHECK_THROWS(checked_add(MAX<int32_t>, int32_t(1)));
-    CHECK_THROWS(checked_add(MIN<int32_t>, int32_t(-1)));
-
-    CHECK_EQ(checked_add(int8_t(1), int8_t(2)), int8_t(3));
-    CHECK_EQ(checked_add(MAX<int8_t>, int8_t(0)), MAX<int8_t>);
-    CHECK_EQ(checked_add(MIN<int8_t>, int8_t(0)), MIN<int8_t>);
-    CHECK_THROWS(checked_add(MAX<int8_t>, int8_t(1)));
-    CHECK_THROWS(checked_add(MIN<int8_t>, int8_t(-1)));
+    REQUIRE(checked_add(i8(5), i8(1)) == i8(6));
+    REQUIRE(checked_add(i8(-5), i8(1)) == i8(-4));
+    REQUIRE_THROWS(checked_add(std::numeric_limits<i8>::max(), i8(1)));
+    REQUIRE_THROWS(checked_add(std::numeric_limits<i8>::min(), i8(-1)));
 }
 
-TEST_CASE("checked math, checked_mul") {
-    CHECK_EQ(checked_mul(size_t(2), size_t(0)), size_t(0));
-    CHECK_EQ(checked_mul(size_t(2), size_t(3)), size_t(6));
-    CHECK_EQ(checked_mul(size_t(2), MAX<size_t> / 2), MAX<size_t> - 1);
-    CHECK_EQ(checked_mul(size_t(1), MAX<size_t>), MAX<size_t>);
-    CHECK_THROWS(checked_add(MAX<size_t>, size_t(2)));
+TEST_CASE("checked_sub") {
+    REQUIRE(checked_sub(i32(5), i32(1)) == i32(4));
+    REQUIRE(checked_sub(i32(-5), i32(1)) == i32(-6));
+    REQUIRE_THROWS(checked_sub(std::numeric_limits<i32>::max(), i32(-1)));
+    REQUIRE_THROWS(checked_sub(std::numeric_limits<i32>::min(), i32(1)));
 
-    CHECK_EQ(checked_mul(uint32_t(2), uint32_t(0)), uint32_t(0));
-    CHECK_EQ(checked_mul(uint32_t(2), uint32_t(3)), uint32_t(6));
-    CHECK_EQ(checked_mul(uint32_t(2), MAX<uint32_t> / 2), MAX<uint32_t> - 1);
-    CHECK_EQ(checked_mul(uint32_t(1), MAX<uint32_t>), MAX<uint32_t>);
-    CHECK_THROWS(checked_mul(MAX<uint32_t>, uint32_t(2)));
+    REQUIRE(checked_sub(u32(5), u32(1)) == u32(4));
+    REQUIRE_THROWS(checked_sub(u32(0), u32(1)));
+    REQUIRE(checked_sub(std::numeric_limits<u32>::max(), std::numeric_limits<u32>::max()) == 0);
 
-    CHECK_EQ(checked_mul(int32_t(2), int32_t(0)), int32_t(0));
-    CHECK_EQ(checked_mul(int32_t(2), int32_t(3)), int32_t(6));
-    CHECK_EQ(checked_mul(int32_t(2), MAX<int32_t> / 2), MAX<int32_t> - 1);
-    CHECK_EQ(checked_mul(int32_t(2), MIN<int32_t> / 2), MIN<int32_t>);
-    CHECK_EQ(checked_mul(int32_t(1), MAX<int32_t>), MAX<int32_t>);
-    CHECK_EQ(checked_mul(int32_t(1), MIN<int32_t>), MIN<int32_t>);
-    CHECK_THROWS(checked_mul(MAX<int32_t>, int32_t(2)));
-    CHECK_THROWS(checked_mul(MIN<int32_t>, int32_t(2)));
-
-    CHECK_EQ(checked_mul(int8_t(2), int8_t(0)), int8_t(0));
-    CHECK_EQ(checked_mul(int8_t(2), int8_t(3)), int8_t(6));
-    CHECK_EQ(checked_mul(int8_t(2), int8_t(MAX<int8_t> / 2)), MAX<int8_t> - 1);
-    CHECK_EQ(checked_mul(int8_t(2), int8_t(MIN<int8_t> / 2)), MIN<int8_t>);
-    CHECK_EQ(checked_mul(int8_t(1), MAX<int8_t>), MAX<int8_t>);
-    CHECK_EQ(checked_mul(int8_t(1), MIN<int8_t>), MIN<int8_t>);
-    CHECK_THROWS(checked_mul(MAX<int8_t>, int8_t(2)));
-    CHECK_THROWS(checked_mul(MIN<int8_t>, int8_t(2)));
+    REQUIRE(checked_sub(i8(5), i8(1)) == i8(4));
+    REQUIRE(checked_sub(i8(-5), i8(1)) == i8(-6));
+    REQUIRE_THROWS(checked_sub(std::numeric_limits<i8>::max(), i8(-1)));
+    REQUIRE_THROWS(checked_sub(std::numeric_limits<i8>::min(), i8(1)));
 }
 
-TEST_CASE("checked math, checked less") {
-    CHECK(checked_less(int32_t(10), int32_t(50)));
-    CHECK(checked_less(uint32_t(10), int32_t(50)));
-    CHECK(checked_less(size_t(10), int32_t(50)));
-    CHECK(checked_less(char(10), uint32_t(50)));
-    CHECK(checked_less(int32_t(10), uint32_t(50)));
-    CHECK(checked_less(uint32_t(10), uint32_t(50)));
-    CHECK(checked_less(size_t(10), uint32_t(50)));
-    CHECK(checked_less(char(10), uint32_t(50)));
-    CHECK(checked_less(int32_t(10), size_t(50)));
-    CHECK(checked_less(uint32_t(10), size_t(50)));
-    CHECK(checked_less(size_t(10), size_t(50)));
-    CHECK(checked_less(char(10), size_t(50)));
-    CHECK(checked_less(int32_t(10), char(50)));
-    CHECK(checked_less(uint32_t(10), char(50)));
-    CHECK(checked_less(size_t(10), char(50)));
-    CHECK(checked_less(char(10), char(50)));
+TEST_CASE("checked_mul") {
+    REQUIRE(checked_mul(i32(5), i32(1)) == i32(5));
+    REQUIRE(checked_mul(i32(-5), i32(1)) == i32(-5));
+    REQUIRE(checked_mul(std::numeric_limits<i32>::max(), i32(-1)) == -2147483647);
+    REQUIRE_THROWS(checked_mul(std::numeric_limits<i32>::min(), i32(-1)));
 
-    CHECK_FALSE(checked_less(int32_t(50), int32_t(10)));
-    CHECK_FALSE(checked_less(uint32_t(50), int32_t(10)));
-    CHECK_FALSE(checked_less(size_t(50), int32_t(10)));
-    CHECK_FALSE(checked_less(char(50), uint32_t(10)));
-    CHECK_FALSE(checked_less(int32_t(50), uint32_t(10)));
-    CHECK_FALSE(checked_less(uint32_t(50), uint32_t(10)));
-    CHECK_FALSE(checked_less(size_t(50), uint32_t(10)));
-    CHECK_FALSE(checked_less(char(50), uint32_t(10)));
-    CHECK_FALSE(checked_less(int32_t(50), size_t(10)));
-    CHECK_FALSE(checked_less(uint32_t(50), size_t(10)));
-    CHECK_FALSE(checked_less(size_t(50), size_t(10)));
-    CHECK_FALSE(checked_less(char(50), size_t(10)));
-    CHECK_FALSE(checked_less(int32_t(50), char(10)));
-    CHECK_FALSE(checked_less(uint32_t(50), char(10)));
-    CHECK_FALSE(checked_less(size_t(50), char(10)));
-    CHECK_FALSE(checked_less(char(50), char(10)));
+    REQUIRE(checked_mul(u32(5), u32(1)) == u32(5));
+    REQUIRE(checked_mul(u32(0), u32(1)) == u32(0));
+    REQUIRE_THROWS(checked_mul(std::numeric_limits<u32>::max(), std::numeric_limits<u32>::max()));
 
-    CHECK(checked_less(int32_t(-1), int32_t(1)));
-    //    CHECK(checked_less(uint32_t(-1), int32_t(1)));
-    //    CHECK(checked_less(size_t(-1), int32_t(1)));
-    CHECK(checked_less(char(-1), uint32_t(1)));
-    CHECK(checked_less(int32_t(-1), uint32_t(1)));
-    //    CHECK(checked_less(uint32_t(-1), uint32_t(1)));
-    //    CHECK(checked_less(size_t(-1), uint32_t(1)));
-    CHECK(checked_less(char(-1), uint32_t(1)));
-    CHECK(checked_less(int32_t(-1), size_t(1)));
-    //    CHECK(checked_less(uint32_t(-1), size_t(1)));
-    //    CHECK(checked_less(size_t(-1), size_t(1)));
-    //    CHECK(checked_less(char(-1), size_t(1)));
-    CHECK(checked_less(int32_t(-1), char(1)));
-    //    CHECK(checked_less(uint32_t(-1), char(1)));
-    //    CHECK(checked_less(size_t(-1), char(1)));
-    CHECK(checked_less(char(-1), char(1)));
-
-    CHECK_FALSE(checked_less(int32_t(1), int32_t(-1)));
-    CHECK_FALSE(checked_less(uint32_t(1), int32_t(-1)));
-    CHECK_FALSE(checked_less(size_t(1), int32_t(-1)));
-    //    CHECK_FALSE(checked_less(char(1), uint32_t(-1)));
-    //    CHECK_FALSE(checked_less(int32_t(1), uint32_t(-1)));
-    //    CHECK_FALSE(checked_less(uint32_t(1), uint32_t(-1)));
-    //    CHECK_FALSE(checked_less(size_t(1), uint32_t(-1)));
-    //    CHECK_FALSE(checked_less(char(1), uint32_t(-1)));
-    //    CHECK_FALSE(checked_less(int32_t(1), size_t(-1)));
-    //    CHECK_FALSE(checked_less(uint32_t(1), size_t(-1)));
-    //    CHECK_FALSE(checked_less(size_t(1), size_t(-1)));
-    //    CHECK_FALSE(checked_less(char(1), size_t(-1)));
-    CHECK_FALSE(checked_less(int32_t(1), char(-1)));
-    CHECK_FALSE(checked_less(uint32_t(1), char(-1)));
-    CHECK_FALSE(checked_less(size_t(1), char(-1)));
-    CHECK_FALSE(checked_less(char(1), char(-1)));
-
-    CHECK(checked_less(MIN<uint32_t>, int32_t(1)));
-    CHECK(checked_less(MIN<uint32_t>, int32_t(1)));
-    CHECK(checked_less(MIN<size_t>, int32_t(1)));
-    CHECK(checked_less(MIN<char>, uint32_t(1)));
-    CHECK(checked_less(MIN<int32_t>, uint32_t(1)));
-    CHECK(checked_less(MIN<uint32_t>, uint32_t(1)));
-    CHECK(checked_less(MIN<size_t>, uint32_t(1)));
-    CHECK(checked_less(MIN<char>, uint32_t(1)));
-    CHECK(checked_less(MIN<int32_t>, size_t(1)));
-    CHECK(checked_less(MIN<uint32_t>, size_t(1)));
-    CHECK(checked_less(MIN<size_t>, size_t(1)));
-    CHECK(checked_less(MIN<char>, size_t(1)));
-    CHECK(checked_less(MIN<int32_t>, char(1)));
-    CHECK(checked_less(MIN<uint32_t>, char(1)));
-    CHECK(checked_less(MIN<size_t>, char(1)));
-    CHECK(checked_less(MIN<char>, char(1)));
-
-    CHECK_FALSE(checked_less(MAX<uint32_t>, int32_t(1)));
-    CHECK_FALSE(checked_less(MAX<uint32_t>, int32_t(1)));
-    CHECK_FALSE(checked_less(MAX<size_t>, int32_t(1)));
-    CHECK_FALSE(checked_less(MAX<char>, uint32_t(1)));
-    CHECK_FALSE(checked_less(MAX<int32_t>, uint32_t(1)));
-    CHECK_FALSE(checked_less(MAX<uint32_t>, uint32_t(1)));
-    CHECK_FALSE(checked_less(MAX<size_t>, uint32_t(1)));
-    CHECK_FALSE(checked_less(MAX<char>, uint32_t(1)));
-    CHECK_FALSE(checked_less(MAX<int32_t>, size_t(1)));
-    CHECK_FALSE(checked_less(MAX<uint32_t>, size_t(1)));
-    CHECK_FALSE(checked_less(MAX<size_t>, size_t(1)));
-    CHECK_FALSE(checked_less(MAX<char>, size_t(1)));
-    CHECK_FALSE(checked_less(MAX<int32_t>, char(1)));
-    CHECK_FALSE(checked_less(MAX<uint32_t>, char(1)));
-    CHECK_FALSE(checked_less(MAX<size_t>, char(1)));
-    CHECK_FALSE(checked_less(MAX<char>, char(1)));
+    REQUIRE(checked_mul(i8(5), i8(-1)) == i8(-5));
+    REQUIRE(checked_mul(i8(-5), i8(-1)) == i8(5));
+    REQUIRE(checked_mul(std::numeric_limits<i8>::max(), i8(-1)) == -127);
+    REQUIRE_THROWS(checked_mul(std::numeric_limits<i8>::min(), i8(-1)));
 }
 
-TEST_CASE("checked math, checked cast") {
-    CHECK_EQ(checked_cast<int32_t>(int32_t(1)), int32_t(1));
-    CHECK_EQ(checked_cast<int32_t>(int32_t(-1)), int32_t(-1));
-    CHECK_EQ(checked_cast<int32_t>(MIN<int32_t>), MIN<int32_t>);
-    CHECK_EQ(checked_cast<int32_t>(MAX<int32_t>), MAX<int32_t>);
+TEST_CASE("checked_sum") {
+    SECTION("empty list") {
+        std::array<int, 0> values = {};
+        REQUIRE(checked_sum(values.data(), values.data()) == 0);
+    }
 
-    CHECK_EQ(checked_cast<int32_t>(uint32_t(1)), uint32_t(1));
-    CHECK_THROWS(checked_cast<int32_t>(uint32_t(-1)));
-    CHECK_EQ(checked_cast<int32_t>(MIN<uint32_t>), MIN<uint32_t>);
-    CHECK_THROWS(checked_cast<int32_t>(MAX<uint32_t>));
+    SECTION("no overflow") {
+        std::array<i32, 4> values = {1, 2, 3, 4};
+        REQUIRE(checked_sum(values.data(), values.data() + 4) == 10);
+    }
 
-    CHECK_EQ(checked_cast<int32_t>(size_t(1)), size_t(1));
-    CHECK_THROWS(checked_cast<int32_t>(size_t(-1)));
-    CHECK_EQ(checked_cast<int32_t>(MIN<size_t>), MIN<size_t>);
-    CHECK_THROWS(checked_cast<int32_t>(MAX<size_t>));
+    SECTION("overflows") {
+        std::array<i32, 4> values = {1, 2, std::numeric_limits<int>::max(), 4};
+        REQUIRE_THROWS(checked_sum(values.data(), values.data() + 4));
+    }
 
-    CHECK_EQ(checked_cast<int32_t>(char(1)), int32_t(1));
-    CHECK_EQ(checked_cast<int32_t>(char(-1)), int32_t(-1));
-    CHECK_EQ(checked_cast<int32_t>(MIN<char>), int32_t(MIN<char>));
-    CHECK_EQ(checked_cast<int32_t>(MAX<char>), int32_t(MAX<char>));
+    SECTION("no overflow with upcast") {
+        std::array<i32, 4> values = {1, 2, std::numeric_limits<int>::max(), 4};
+        REQUIRE(checked_sum(values.data(), values.data() + 4, uint64_t(1)) == 2147483655LL);
+    }
+}
 
-    CHECK_EQ(checked_cast<uint32_t>(int32_t(1)), uint32_t(1));
-    CHECK_THROWS(checked_cast<uint32_t>(int32_t(-1)));
-    CHECK_THROWS(checked_cast<uint32_t>(MIN<int32_t>));
-    CHECK_EQ(checked_cast<uint32_t>(MAX<int32_t>), uint32_t(MAX<int32_t>));
+TEST_CASE("checked_product") {
+    SECTION("empty list") {
+        std::array<int, 0> values = {};
+        REQUIRE(checked_product(values.data(), values.data()) == 1);
+    }
 
-    CHECK_EQ(checked_cast<uint32_t>(uint32_t(1)), uint32_t(1));
-    CHECK_EQ(checked_cast<uint32_t>(MIN<uint32_t>), MIN<uint32_t>);
-    CHECK_EQ(checked_cast<uint32_t>(MAX<uint32_t>), MAX<uint32_t>);
+    SECTION("no overflow") {
+        std::array<i32, 4> values = {1, 2, 3, 4};
+        REQUIRE(checked_product(values.data(), values.data() + 4) == 24);
+    }
 
-    CHECK_EQ(checked_cast<uint32_t>(size_t(1)), uint32_t(1));
-    CHECK_THROWS(checked_cast<uint32_t>(size_t(-1)));
-    CHECK_EQ(checked_cast<uint32_t>(MIN<size_t>), uint32_t(MIN<size_t>));
-    CHECK_THROWS(checked_cast<uint32_t>(MAX<size_t>));
+    SECTION("overflows") {
+        std::array<i32, 3> values = {1, std::numeric_limits<int>::max() / 2, 3};
+        REQUIRE_THROWS(checked_product(&*values.begin(), &*values.end()));
+    }
 
-    CHECK_EQ(checked_cast<uint32_t>(char(1)), uint32_t(1));
-    CHECK_THROWS(checked_cast<uint32_t>(char(-1)));
-    CHECK_THROWS(checked_cast<uint32_t>(MIN<char>));
-    CHECK_EQ(checked_cast<uint32_t>(MAX<char>), uint32_t(MAX<char>));
-
-    CHECK_EQ(checked_cast<char>(int32_t(1)), char(1));
-    CHECK_EQ(checked_cast<char>(int32_t(-1)), char(-1));
-    CHECK_THROWS(checked_cast<char>(MIN<int32_t>));
-    CHECK_THROWS(checked_cast<char>(MAX<int32_t>));
-
-    CHECK_EQ(checked_cast<char>(uint32_t(1)), char(1));
-    CHECK_THROWS(checked_cast<char>(uint32_t(-1)));
-    CHECK_EQ(checked_cast<char>(MIN<uint32_t>), char(MIN<uint32_t>));
-    CHECK_THROWS(checked_cast<char>(MAX<uint32_t>));
-
-    CHECK_EQ(checked_cast<char>(size_t(1)), char(1));
-    CHECK_THROWS(checked_cast<char>(size_t(-1)));
-    CHECK_EQ(checked_cast<char>(MIN<size_t>), char(MIN<size_t>));
-    CHECK_THROWS(checked_cast<char>(MAX<size_t>));
-
-    CHECK_EQ(checked_cast<char>(char(1)), char(1));
-    CHECK_EQ(checked_cast<char>(char(-1)), char(-1));
-    CHECK_EQ(checked_cast<char>(MIN<char>), MIN<char>);
-    CHECK_EQ(checked_cast<char>(MAX<char>), MAX<char>);
-
-    CHECK_EQ(checked_cast<size_t>(int32_t(1)), size_t(1));
-    CHECK_THROWS(checked_cast<size_t>(int32_t(-1)));
-    CHECK_THROWS(checked_cast<size_t>(MIN<int32_t>));
-    CHECK_EQ(checked_cast<size_t>(MAX<int32_t>), size_t(MAX<int32_t>));
-
-    CHECK_EQ(checked_cast<size_t>(uint32_t(1)), size_t(1));
-    CHECK_EQ(checked_cast<size_t>(MIN<uint32_t>), size_t(MIN<uint32_t>));
-    CHECK_EQ(checked_cast<size_t>(MAX<uint32_t>), size_t(MAX<uint32_t>));
-
-    CHECK_EQ(checked_cast<size_t>(size_t(1)), size_t(1));
-    CHECK_EQ(checked_cast<size_t>(size_t(-1)), size_t(-1));
-    CHECK_EQ(checked_cast<size_t>(MIN<size_t>), MIN<size_t>);
-    CHECK_EQ(checked_cast<size_t>(MAX<size_t>), MAX<size_t>);
-
-    CHECK_EQ(checked_cast<size_t>(char(1)), size_t(1));
-    CHECK_THROWS(checked_cast<size_t>(char(-1)));
-    CHECK_THROWS(checked_cast<size_t>(MIN<char>));
-    CHECK_EQ(checked_cast<size_t>(MAX<char>), size_t(MAX<char>));
+    SECTION("no overflow with upcast") {
+        std::array<i32, 3> values = {1, std::numeric_limits<int>::max() / 2, 3};
+        REQUIRE(checked_product(&*values.begin(), &*values.end(), uint64_t(1)) == 3221225469LL);
+    }
 }

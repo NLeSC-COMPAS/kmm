@@ -41,13 +41,13 @@ Domain TileDomain::operator()(const SystemInfo& info, ExecutionSpace space) cons
     }
 
     size_t owner_id = 0;
-    auto offset = DomainIndex {};
+    auto offset = DomainPoint {};
     auto size = DomainDim {};
 
     for (int64_t z = 0; z < num_chunks[2]; z++) {
         for (int64_t y = 0; y < num_chunks[1]; y++) {
             for (int64_t x = 0; x < num_chunks[0]; x++) {
-                auto current = Index<3> {x, y, z};
+                auto current = Point<3> {x, y, z};
 
                 for (size_t i = 0; i < DOMAIN_DIMS; i++) {
                     offset[i] = m_domain_size[i].begin + current[i] * m_tile_size[i];

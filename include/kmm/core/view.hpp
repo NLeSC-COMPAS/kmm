@@ -1,6 +1,6 @@
 #pragma once
 
-#include "kmm/utils/fixed_array.hpp"
+#include "kmm/utils/fixed_vector.hpp"
 
 namespace kmm {
 namespace views {
@@ -72,7 +72,7 @@ struct dynamic_domain {
     using index_type = I;
 
     KMM_HOST_DEVICE
-    dynamic_domain(fixed_array<index_type, rank> sizes = {}) noexcept : m_sizes(sizes) {}
+    dynamic_domain(fixed_vector<index_type, rank> sizes = {}) noexcept : m_sizes(sizes) {}
 
     KMM_HOST_DEVICE
     static dynamic_domain from_domain(const dynamic_domain& domain) noexcept {
@@ -83,7 +83,7 @@ struct dynamic_domain {
     KMM_HOST_DEVICE static dynamic_domain from_domain(const static_domain<I, Dims...>& domain
     ) noexcept {
         static_assert(sizeof...(Dims) == rank);
-        return fixed_array<index_type, rank> {Dims...};
+        return fixed_vector<index_type, rank> {Dims...};
     }
 
     KMM_HOST_DEVICE
@@ -97,7 +97,7 @@ struct dynamic_domain {
     }
 
   private:
-    fixed_array<index_type, rank> m_sizes;
+    fixed_vector<index_type, rank> m_sizes;
 };
 
 template<size_t N, typename I = default_index_type>
@@ -114,7 +114,7 @@ struct dynamic_subdomain {
     }
 
     KMM_HOST_DEVICE
-    constexpr dynamic_subdomain(fixed_array<index_type, rank> sizes) noexcept : m_sizes(sizes) {
+    constexpr dynamic_subdomain(fixed_vector<index_type, rank> sizes) noexcept : m_sizes(sizes) {
         for (size_t i = 0; i < rank; i++) {
             m_offsets[i] = 0;
         }
@@ -130,8 +130,8 @@ struct dynamic_subdomain {
 
     KMM_HOST_DEVICE
     constexpr dynamic_subdomain(
-        fixed_array<index_type, rank> offsets,
-        fixed_array<index_type, rank> sizes
+        fixed_vector<index_type, rank> offsets,
+        fixed_vector<index_type, rank> sizes
     ) noexcept :
         m_offsets(offsets),
         m_sizes(sizes) {}
@@ -156,8 +156,8 @@ struct dynamic_subdomain {
     template<typename D, index_type... Offsets>
     KMM_HOST_DEVICE static dynamic_subdomain from_domain(const static_offset<D, Offsets...>& domain
     ) noexcept {
-        fixed_array<index_type, rank> offsets;
-        fixed_array<index_type, rank> sizes;
+        fixed_vector<index_type, rank> offsets;
+        fixed_vector<index_type, rank> sizes;
 
         for (size_t i = 0; i < rank; i++) {
             offsets[i] = domain.offset(i);
@@ -178,8 +178,8 @@ struct dynamic_subdomain {
     }
 
   private:
-    fixed_array<index_type, rank> m_offsets;
-    fixed_array<index_type, rank> m_sizes;
+    fixed_vector<index_type, rank> m_offsets;
+    fixed_vector<index_type, rank> m_sizes;
 };
 
 template<typename S = default_stride_type, S... Strides>
@@ -206,7 +206,7 @@ struct static_layout {
     }
 
     template<typename I>
-    KMM_HOST_DEVICE ptrdiff_t linearize_index(const fixed_array<I, rank>& ndindex) const noexcept {
+    KMM_HOST_DEVICE ptrdiff_t linearize_index(const fixed_vector<I, rank>& ndindex) const noexcept {
         S strides[rank] = {Strides...};
         ptrdiff_t result = 0;
 
@@ -241,7 +241,7 @@ struct static_layout<S> {
     }
 
     template<typename I>
-    KMM_HOST_DEVICE ptrdiff_t linearize_index(const fixed_array<I, rank>& ndindex) const noexcept {
+    KMM_HOST_DEVICE ptrdiff_t linearize_index(const fixed_vector<I, rank>& ndindex) const noexcept {
         return static_cast<ptrdiff_t>(0);
     }
 };
@@ -259,7 +259,7 @@ struct left_to_right_layout {
     KMM_HOST_DEVICE
     explicit constexpr left_to_right_layout(
         from_strides_t,
-        fixed_array<stride_type, rank> strides
+        fixed_vector<stride_type, rank> strides
     ) noexcept {
         for (size_t i = 1; i < rank; i++) {
             m_strides[i + 1] = strides[i];
@@ -267,7 +267,7 @@ struct left_to_right_layout {
     }
 
     KMM_HOST_DEVICE
-    constexpr left_to_right_layout(fixed_array<stride_type, rank> dims) noexcept {
+    constexpr left_to_right_layout(fixed_vector<stride_type, rank> dims) noexcept {
         stride_type stride = 1;
 
         for (size_t i = 0; i < rank - 1; i++) {
@@ -283,7 +283,7 @@ struct left_to_right_layout {
 
     template<typename D>
     KMM_HOST_DEVICE static left_to_right_layout from_domain(const D& domain) noexcept {
-        fixed_array<stride_type, rank> dims;
+        fixed_vector<stride_type, rank> dims;
 
         for (size_t i = 0; i < rank; i++) {
             dims[i] = static_cast<stride_type>(domain.size(i));
@@ -302,7 +302,7 @@ struct left_to_right_layout {
     }
 
     template<typename I>
-    KMM_HOST_DEVICE ptrdiff_t linearize_index(const fixed_array<I, N>& ndindex) const noexcept {
+    KMM_HOST_DEVICE ptrdiff_t linearize_index(const fixed_vector<I, N>& ndindex) const noexcept {
         ptrdiff_t offset = static_cast<ptrdiff_t>(ndindex[0]);
 
         for (size_t i = 1; i < rank; i++) {
@@ -313,16 +313,16 @@ struct left_to_right_layout {
     }
 
   private:
-    fixed_array<stride_type, rank - 1> m_strides;
+    fixed_vector<stride_type, rank - 1> m_strides;
 };
 
 template<typename S>
 struct left_to_right_layout<0, S>: public static_layout<S> {
     KMM_HOST_DEVICE
-    explicit constexpr left_to_right_layout(from_strides_t, fixed_array<S, 0> strides) noexcept {}
+    explicit constexpr left_to_right_layout(from_strides_t, fixed_vector<S, 0> strides) noexcept {}
 
     KMM_HOST_DEVICE
-    constexpr left_to_right_layout(fixed_array<S, 0> dims = {}) noexcept {}
+    constexpr left_to_right_layout(fixed_vector<S, 0> dims = {}) noexcept {}
 
     KMM_HOST_DEVICE
     constexpr left_to_right_layout(static_layout<S>) noexcept {}
@@ -336,7 +336,7 @@ struct right_to_left_layout {
     KMM_HOST_DEVICE
     explicit constexpr right_to_left_layout(
         from_strides_t,
-        fixed_array<stride_type, rank> strides
+        fixed_vector<stride_type, rank> strides
     ) noexcept {
         for (size_t i = 0; i + 1 < rank; i++) {
             m_strides[i] = strides[i];
@@ -351,7 +351,7 @@ struct right_to_left_layout {
     }
 
     KMM_HOST_DEVICE
-    constexpr right_to_left_layout(fixed_array<stride_type, rank> dims) noexcept {
+    constexpr right_to_left_layout(fixed_vector<stride_type, rank> dims) noexcept {
         stride_type stride = 1;
 
         for (size_t i = 1; i < rank; i++) {
@@ -367,7 +367,7 @@ struct right_to_left_layout {
 
     template<typename D>
     KMM_HOST_DEVICE static right_to_left_layout from_domain(const D& domain) noexcept {
-        fixed_array<stride_type, rank> dims;
+        fixed_vector<stride_type, rank> dims;
 
         for (size_t i = 0; i < rank; i++) {
             dims[i] = static_cast<stride_type>(domain.size(i));
@@ -386,7 +386,7 @@ struct right_to_left_layout {
     }
 
     template<typename I>
-    KMM_HOST_DEVICE ptrdiff_t linearize_index(const fixed_array<I, N>& ndindex) const noexcept {
+    KMM_HOST_DEVICE ptrdiff_t linearize_index(const fixed_vector<I, N>& ndindex) const noexcept {
         ptrdiff_t offset = static_cast<ptrdiff_t>(ndindex[rank - 1]);
 
         for (size_t i = 0; i + 1 < rank; i++) {
@@ -397,16 +397,16 @@ struct right_to_left_layout {
     }
 
   private:
-    fixed_array<stride_type, rank - 1> m_strides;
+    fixed_vector<stride_type, rank - 1> m_strides;
 };
 
 template<typename S>
 struct right_to_left_layout<0, S>: public static_layout<S> {
     KMM_HOST_DEVICE
-    explicit constexpr right_to_left_layout(from_strides_t, fixed_array<S, 0> strides) noexcept {}
+    explicit constexpr right_to_left_layout(from_strides_t, fixed_vector<S, 0> strides) noexcept {}
 
     KMM_HOST_DEVICE
-    constexpr right_to_left_layout(fixed_array<S, 0> dims = {}) noexcept {}
+    constexpr right_to_left_layout(fixed_vector<S, 0> dims = {}) noexcept {}
 
     KMM_HOST_DEVICE
     constexpr right_to_left_layout(static_layout<S>) noexcept {}
@@ -418,12 +418,12 @@ struct dynamic_layout {
     using stride_type = S;
 
     KMM_HOST_DEVICE
-    constexpr dynamic_layout(fixed_array<stride_type, rank> strides) noexcept :
+    constexpr dynamic_layout(fixed_vector<stride_type, rank> strides) noexcept :
         m_strides(strides) {}
 
     template<typename L>
     KMM_HOST_DEVICE static dynamic_layout from_layout(const L& layout) noexcept {
-        fixed_array<stride_type, rank> strides;
+        fixed_vector<stride_type, rank> strides;
 
         for (size_t i = 0; i < rank; i++) {
             strides[i] = layout.stride(i);
@@ -443,7 +443,7 @@ struct dynamic_layout {
     }
 
     template<typename I>
-    KMM_HOST_DEVICE ptrdiff_t linearize_index(const fixed_array<I, N>& ndindex) const noexcept {
+    KMM_HOST_DEVICE ptrdiff_t linearize_index(const fixed_vector<I, N>& ndindex) const noexcept {
         ptrdiff_t result = 0;
 
         for (size_t i = 0; i < rank; i++) {
@@ -454,7 +454,7 @@ struct dynamic_layout {
     }
 
   private:
-    fixed_array<stride_type, rank> m_strides;
+    fixed_vector<stride_type, rank> m_strides;
 };
 
 template<size_t Axis, typename D>
@@ -465,8 +465,8 @@ struct drop_domain_axis {
 
     KMM_HOST_DEVICE
     static type call(const D& domain) noexcept {
-        fixed_array<index_type, D::rank - 1> new_offsets;
-        fixed_array<index_type, D::rank - 1> new_sizes;
+        fixed_vector<index_type, D::rank - 1> new_offsets;
+        fixed_vector<index_type, D::rank - 1> new_sizes;
         size_t axis = Axis;
 
         for (size_t i = 0; i < D::rank - 1; i++) {
@@ -486,7 +486,7 @@ struct drop_domain_axis<Axis, dynamic_domain<N, I>> {
 
     KMM_HOST_DEVICE
     static type call(const dynamic_domain<N, I>& domain) noexcept {
-        fixed_array<index_type, N - 1> new_sizes;
+        fixed_vector<index_type, N - 1> new_sizes;
         size_t axis = Axis;
 
         for (size_t i = 0; i < N - 1; i++) {
@@ -516,7 +516,7 @@ struct drop_layout_axis {
 
     KMM_HOST_DEVICE
     static type call(const L& layout) noexcept {
-        fixed_array<stride_type, L::rank - 1> new_strides;
+        fixed_vector<stride_type, L::rank - 1> new_strides;
         size_t axis = Axis;
 
         for (size_t i = 0; i < L::rank - 1; i++) {
@@ -534,7 +534,7 @@ struct drop_layout_axis<0, right_to_left_layout<N, S>> {
 
     KMM_HOST_DEVICE
     static type call(const right_to_left_layout<N, S>& layout) noexcept {
-        fixed_array<stride_type, N - 1> new_strides;
+        fixed_vector<stride_type, N - 1> new_strides;
 
         for (size_t i = 0; i < N - 1; i++) {
             new_strides[i] = layout.stride(i + 1);
@@ -551,7 +551,7 @@ struct drop_layout_axis<K, left_to_right_layout<K + 1, S>> {
 
     KMM_HOST_DEVICE
     static type call(const right_to_left_layout<K + 1, S>& layout) noexcept {
-        fixed_array<stride_type, K> new_strides;
+        fixed_vector<stride_type, K> new_strides;
 
         for (size_t i = 0; i < K; i++) {
             new_strides[i] = layout.stride(i);
@@ -604,7 +604,7 @@ struct ViewSubscript {
     using type = ViewSubscript;
     using subscript_type = typename ViewSubscript<View, T, D, K + 1>::type;
     using index_type = typename D::index_type;
-    using ndindex_type = fixed_array<index_type, D::rank>;
+    using ndindex_type = fixed_vector<index_type, D::rank>;
 
     KMM_HOST_DEVICE
     static type instantiate(const View* base, ndindex_type index = {}) noexcept {
@@ -629,7 +629,7 @@ template<typename View, typename T, typename D, size_t N>
 struct ViewSubscript<View, T, D, N, N> {
     using type = T&;
     using index_type = typename D::index_type;
-    using ndindex_type = fixed_array<index_type, N>;
+    using ndindex_type = fixed_vector<index_type, N>;
 
     KMM_HOST_DEVICE
     static type instantiate(const View* base, ndindex_type index) {
@@ -677,8 +677,8 @@ struct AbstractView:
     static constexpr size_t rank = D::rank;
     using index_type = typename domain_type::index_type;
     using stride_type = typename layout_type::stride_type;
-    using ndindex_type = fixed_array<index_type, rank>;
-    using ndstride_type = fixed_array<stride_type, rank>;
+    using ndindex_type = fixed_vector<index_type, rank>;
+    using ndstride_type = fixed_vector<stride_type, rank>;
 
     using origin_domain_type = views::dynamic_domain<rank, index_type>;
     using shifted_domain_type = views::dynamic_subdomain<rank, index_type>;

@@ -657,7 +657,7 @@ void Executor::execute_task(
             std::move(dependencies)
         ));
     } else {
-        KMM_PANIC("unsupported copy")
+        KMM_PANIC("unsupported copy");
     }
 }
 

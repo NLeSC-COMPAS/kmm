@@ -38,7 +38,7 @@ BufferRequirement ArrayReductionPlanner<N>::prepare_access(
     region = Bounds<N>::from_offset_size(chunk.offset, chunk.size);
 
     auto dtype = m_instance->data_type();
-    auto num_elements = checked_mul(checked_cast<size_t>(region.size()), replication_factor);
+    auto num_elements = checked_mul(checked_cast<size_t>(region.volume()), replication_factor);
     BufferLayout layout = BufferLayout::for_type(dtype, num_elements);
 
     auto buffer_id = stage.create_buffer(layout);

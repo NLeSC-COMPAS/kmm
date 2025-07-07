@@ -12,7 +12,7 @@ Bounds<N> index2region(
 ) {
     Bounds<N> result;
 
-    for (size_t j = 0; checked_less(j, N); j++) {
+    for (size_t j = 0; is_less(j, N); j++) {
         size_t i = N - 1 - j;
         auto k = index % num_chunks[i];
         index /= num_chunks[i];
@@ -33,7 +33,7 @@ size_t region2index(
 ) {
     size_t index = 0;
 
-    for (size_t i = 0; checked_less(i, N); i++) {
+    for (size_t i = 0; is_less(i, N); i++) {
         auto k = div_floor(region.begin(i), chunk_size[i]);
 
         if (!in_range(k, chunks_count[i])) {
@@ -60,7 +60,7 @@ size_t region2index(
 
 template<size_t N>
 Distribution<N>::Distribution() : m_array_size(Dim<N>::zero()), m_chunk_size(Dim<N>::one()) {
-    for (size_t i = 0; checked_less(i, N); i++) {
+    for (size_t i = 0; is_less(i, N); i++) {
         m_chunks_count[i] = 0;
     }
 
@@ -81,7 +81,7 @@ Distribution<N>::Distribution(
     m_memories(std::move(memories)) {
     size_t total_chunk_count = 1;
 
-    for (size_t i = 0; checked_less(i, N); i++) {
+    for (size_t i = 0; is_less(i, N); i++) {
         m_chunks_count[i] = checked_cast<size_t>(div_ceil(array_size[i], chunk_size[i]));
         total_chunk_count = checked_mul(total_chunk_count, m_chunks_count[i]);
     }
@@ -106,7 +106,7 @@ Distribution<N> Distribution<N>::from_chunks(
     Dim<N> chunk_size = Dim<N>::zero();
 
     for (const auto& chunk : chunks) {
-        if (chunk.offset == Index<N>::zero()) {
+        if (chunk.offset == Point<N>::zero()) {
             chunk_size = chunk.size;
         }
     }
@@ -115,7 +115,7 @@ Distribution<N> Distribution<N>::from_chunks(
         throw std::runtime_error("chunk size cannot be empty");
     }
 
-    for (size_t i = 0; checked_less(i, N); i++) {
+    for (size_t i = 0; is_less(i, N); i++) {
         chunks_count[i] = checked_cast<size_t>(div_ceil(array_size[i], chunk_size[i]));
         total_chunk_count = checked_mul(total_chunk_count, chunks_count[i]);
     }
@@ -126,10 +126,10 @@ Distribution<N> Distribution<N>::from_chunks(
     for (size_t index = 0; index < chunks.size(); index++) {
         const auto chunk = chunks[index];
         size_t linear_index = 0;
-        Index<N> expected_offset;
+        Point<N> expected_offset;
         Dim<N> expected_size;
 
-        for (size_t i = 0; checked_less(i, N); i++) {
+        for (size_t i = 0; is_less(i, N); i++) {
             auto k = div_floor(chunk.offset[i], chunk_size[i]);
 
             expected_offset[i] = k * chunk_size[i];
@@ -196,7 +196,7 @@ ArrayChunk<N> Distribution<N>::chunk(size_t index) const {
     return ArrayChunk<N> {
         .owner_id = m_memories[index],
         .offset = region.begin(),
-        .size = region.sizes()};
+        .size = region.size()};
 }
 
 KMM_INSTANTIATE_ARRAY_IMPL(Distribution)

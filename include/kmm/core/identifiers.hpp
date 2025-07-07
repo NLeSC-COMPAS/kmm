@@ -247,7 +247,9 @@ struct BufferId {
 };
 
 struct EventId {
-    KMM_INLINE explicit constexpr EventId(uint64_t v = 0) : m_value(v) {}
+    KMM_INLINE constexpr EventId() = default;
+
+    KMM_INLINE explicit constexpr EventId(uint64_t v) : m_value(v) {}
 
     KMM_INLINE constexpr uint64_t get() const {
         return m_value;
@@ -270,7 +272,7 @@ struct EventId {
     friend std::ostream& operator<<(std::ostream&, const EventId&);
 
   private:
-    uint64_t m_value;
+    uint64_t m_value = 0;
 };
 
 using EventList = small_vector<EventId, 2>;

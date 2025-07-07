@@ -12,7 +12,7 @@ CachingAllocator::CachingAllocator(
     m_bytes_watermark(initial_watermark),
     m_max_fragmentation(max_fragmentation){
     KMM_ASSERT(m_allocator != nullptr);
-    KMM_ASSERT(m_max_fragmentation >= 0.0 && m_max_fragmentation < 1.0)
+    KMM_ASSERT(m_max_fragmentation >= 0.0 && m_max_fragmentation < 1.0);
 }
 
 CachingAllocator::~CachingAllocator() {

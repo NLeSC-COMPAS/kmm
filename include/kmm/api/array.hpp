@@ -131,7 +131,7 @@ class Array: public ArrayBase {
 
     void copy_bytes_to(void* output, size_t num_bytes) const {
         KMM_ASSERT(num_bytes % sizeof(T) == 0);
-        KMM_ASSERT(checked_equals(num_bytes / sizeof(T), size()));
+        KMM_ASSERT(is_equal(num_bytes / sizeof(T), size()));
         instance().copy_bytes_into(output);
     }
 
@@ -141,7 +141,7 @@ class Array: public ArrayBase {
 
     template<typename I>
     void copy_to(T* output, I num_elements) const {
-        KMM_ASSERT(checked_equals(num_elements, size()));
+        KMM_ASSERT(is_equal(num_elements, size()));
         instance().copy_bytes_into(output);
     }
 
@@ -158,7 +158,7 @@ class Array: public ArrayBase {
 
     void copy_bytes_from(const void* input, size_t num_bytes) const {
         KMM_ASSERT(num_bytes % sizeof(T) == 0);
-        KMM_ASSERT(checked_equals(num_bytes / sizeof(T), size()));
+        KMM_ASSERT(is_equal(num_bytes / sizeof(T), size()));
         instance().copy_bytes_from(input);
     }
 
@@ -168,7 +168,7 @@ class Array: public ArrayBase {
 
     template<typename I>
     void copy_from(T* input, I num_elements) const {
-        KMM_ASSERT(checked_equals(num_elements, size()));
+        KMM_ASSERT(is_equal(num_elements, size()));
         instance().copy_bytes_from(input);
     }
 
@@ -178,7 +178,7 @@ class Array: public ArrayBase {
 
   private:
     std::shared_ptr<ArrayInstance<N>> m_instance;
-    Index<N> m_offset;  // Unused for now, always zero
+    Point<N> m_offset;  // Unused for now, always zero
     Dim<N> m_shape;
 };
 
@@ -201,7 +201,7 @@ struct ArgumentHandler<Read<const Array<T, N>>> {
             m_planner.prepare_access(task.graph, task.memory_id, region, task.dependencies)
         );
 
-        auto domain = views::dynamic_domain<N> {region.sizes()};
+        auto domain = views::dynamic_domain<N> {region.size()};
         return {buffer_index, domain};
     }
 
@@ -245,7 +245,7 @@ struct ArgumentHandler<Read<const Array<T, N>, M>> {
             m_planner.prepare_access(task.graph, task.memory_id, region, task.dependencies)
         );
 
-        auto domain = views::dynamic_subdomain<N> {region.begin(), region.sizes()};
+        auto domain = views::dynamic_subdomain<N> {region.begin(), region.size()};
         return {buffer_index, domain};
     }
 
@@ -289,7 +289,7 @@ struct ArgumentHandler<Write<Array<T, N>>> {
             m_planner->prepare_access(task.graph, task.memory_id, access_region, task.dependencies)
         );
 
-        auto domain = views::dynamic_domain<N> {access_region.sizes()};
+        auto domain = views::dynamic_domain<N> {access_region.size()};
         return {buffer_index, domain};
     }
 
@@ -340,7 +340,7 @@ struct ArgumentHandler<Write<Array<T, N>, M>> {
             m_planner->prepare_access(task.graph, task.memory_id, access_region, task.dependencies)
         );
 
-        auto domain = views::dynamic_subdomain<N> {access_region.begin(), access_region.sizes()};
+        auto domain = views::dynamic_subdomain<N> {access_region.begin(), access_region.size()};
         return {buffer_index, domain};
     }
 
@@ -397,7 +397,7 @@ struct ArgumentHandler<Reduce<Array<T, N>>> {
                 ->prepare_access(task.graph, task.memory_id, access_region, 1, task.dependencies)
         );
 
-        views::dynamic_domain<N> domain = {access_region.sizes()};
+        views::dynamic_domain<N> domain = {access_region.size()};
 
         return {buffer_index, domain};
     }
@@ -463,7 +463,7 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
         auto access_region = m_access_mapper(task.chunk, Bounds<N>(m_array.shape()));
         auto private_region = m_private_mapper(task.chunk);
 
-        auto rep = checked_cast<size_t>(private_region.size());
+        auto rep = checked_cast<size_t>(private_region.volume());
         size_t buffer_index = task.add_buffer_requirement(
             m_planner
                 ->prepare_access(task.graph, task.memory_id, access_region, rep, task.dependencies)
@@ -471,7 +471,7 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
 
         views::dynamic_subdomain<K + N> domain = {
             concat(private_region, access_region).begin(),
-            concat(private_region, access_region).sizes()};
+            concat(private_region, access_region).size()};
 
         return {buffer_index, domain};
     }
