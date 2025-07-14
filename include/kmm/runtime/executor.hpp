@@ -6,6 +6,7 @@
 #include "kmm/core/resource.hpp"
 #include "kmm/runtime/buffer_registry.hpp"
 #include "kmm/runtime/device_resources.hpp"
+#include "kmm/runtime/job.hpp"
 #include "kmm/runtime/memory_manager.hpp"
 #include "kmm/runtime/scheduler.hpp"
 #include "kmm/runtime/stream_manager.hpp"
@@ -17,19 +18,6 @@ class Executor {
     KMM_NOT_COPYABLE_OR_MOVABLE(Executor)
 
   public:
-    class Job {
-        KMM_NOT_COPYABLE_OR_MOVABLE(Job)
-
-      public:
-        Job(TaskHandle task) : m_task(task) {}
-        virtual ~Job() = default;
-        virtual Poll poll(Executor& executor) = 0;
-
-        //      private:
-        TaskHandle m_task;
-        std::unique_ptr<Job> next = nullptr;
-    };
-
     Executor(
         std::shared_ptr<DeviceResources> device_resources,
         std::shared_ptr<DeviceStreamManager> stream_manager,
@@ -61,21 +49,6 @@ class Executor {
     }
 
   private:
-    void insert_job(std::unique_ptr<Job> job);
-    void execute_task(TaskHandle task, const CommandEmpty& command, DeviceEventSet dependencies);
-
-    void execute_task(TaskHandle task, const CommandExecute& command, DeviceEventSet dependencies);
-
-    void execute_task(TaskHandle task, const CommandCopy& command, DeviceEventSet dependencies);
-
-    void execute_task(
-        TaskHandle task,
-        const CommandReduction& command,
-        DeviceEventSet dependencies
-    );
-
-    void execute_task(TaskHandle task, const CommandFill& command, DeviceEventSet dependencies);
-
     std::shared_ptr<DeviceResources> m_device_resources;
     std::shared_ptr<DeviceStreamManager> m_stream_manager;
     std::shared_ptr<BufferRegistry> m_buffer_registry;
