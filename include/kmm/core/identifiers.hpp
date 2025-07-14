@@ -251,6 +251,10 @@ struct EventId {
 
     KMM_INLINE explicit constexpr EventId(uint64_t v) : m_value(v) {}
 
+    KMM_INLINE static constexpr EventId invalid() {
+        return EventId(~uint64_t(0));
+    }
+
     KMM_INLINE constexpr uint64_t get() const {
         return m_value;
     }

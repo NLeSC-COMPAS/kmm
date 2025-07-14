@@ -5,7 +5,7 @@
 #include "kmm/memops/host_fill.hpp"
 #include "kmm/memops/host_reduction.hpp"
 #include "kmm/runtime/executor.hpp"
-#include "kmm/runtime/job.hpp"
+#include "kmm/runtime/task.hpp"
 
 namespace kmm {
 
@@ -17,7 +17,7 @@ static PoisonException make_poison_exception(TaskHandle task, const std::excepti
     return fmt::format("task {} failed due to error: {}", task->id(), error.what());
 }
 
-Poll MergeJob::poll(Executor& executor) {
+Poll MergeTask::poll(Executor& executor) {
     if (!executor.streams().is_ready(m_dependencies)) {
         return Poll::Pending;
     }
@@ -26,7 +26,7 @@ Poll MergeJob::poll(Executor& executor) {
     return Poll::Ready;
 }
 
-Poll DeleteBufferJob::poll(Executor& executor) {
+Poll DeleteBufferTask::poll(Executor& executor) {
     if (!executor.streams().is_ready(m_dependencies)) {
         return Poll::Pending;
     }
@@ -36,7 +36,7 @@ Poll DeleteBufferJob::poll(Executor& executor) {
     return Poll::Ready;
 }
 
-Poll HostJob::poll(Executor& executor) {
+Poll HostTask::poll(Executor& executor) {
     if (m_status == Status::Init) {
         try {
             m_requests = executor.buffers().create_requests(m_buffers);
@@ -96,7 +96,7 @@ Poll HostJob::poll(Executor& executor) {
     return Poll::Ready;
 }
 
-std::future<void> ExecuteHostJob::submit(
+std::future<void> ExecuteHostTask::submit(
     Executor& executor,
     std::vector<BufferAccessor> accessors
 ) {
@@ -109,7 +109,7 @@ std::future<void> ExecuteHostJob::submit(
     });
 }
 
-std::future<void> CopyHostJob::submit(Executor& executor, std::vector<BufferAccessor> accessors) {
+std::future<void> CopyHostTask::submit(Executor& executor, std::vector<BufferAccessor> accessors) {
     KMM_ASSERT(accessors[0].layout.size_in_bytes >= m_copy.minimum_source_bytes_needed());
     KMM_ASSERT(accessors[1].layout.size_in_bytes >= m_copy.minimum_destination_bytes_needed());
     KMM_ASSERT(accessors[1].is_writable);
@@ -119,7 +119,7 @@ std::future<void> CopyHostJob::submit(Executor& executor, std::vector<BufferAcce
     });
 }
 
-std::future<void> ReductionHostJob::submit(
+std::future<void> ReductionHostTask::submit(
     Executor& executor,
     std::vector<BufferAccessor> accessors
 ) {
@@ -128,11 +128,11 @@ std::future<void> ReductionHostJob::submit(
     });
 }
 
-std::future<void> FillHostJob::submit(Executor& executor, std::vector<BufferAccessor> accessors) {
+std::future<void> FillHostTask::submit(Executor& executor, std::vector<BufferAccessor> accessors) {
     return std::async(std::launch::async, [=] { execute_fill(accessors[0].address, m_fill); });
 }
 
-Poll DeviceJob::poll(Executor& executor) {
+Poll DeviceTask::poll(Executor& executor) {
     if (m_status == Status::Init) {
         try {
             m_requests = executor.buffers().create_requests(m_buffers);
@@ -204,12 +204,12 @@ Poll DeviceJob::poll(Executor& executor) {
     return Poll::Ready;
 }
 
-void ExecuteDeviceJob::execute(DeviceResource& device, std::vector<BufferAccessor> accessors) {
+void ExecuteDeviceTask::execute(DeviceResource& device, std::vector<BufferAccessor> accessors) {
     auto context = TaskContext {std::move(accessors)};
     m_task->execute(device, context);
 }
 
-void CopyDeviceJob::execute(DeviceResource& device, std::vector<BufferAccessor> accessors) {
+void CopyDeviceTask::execute(DeviceResource& device, std::vector<BufferAccessor> accessors) {
     KMM_ASSERT(accessors[0].layout.size_in_bytes >= m_copy.minimum_source_bytes_needed());
     KMM_ASSERT(accessors[1].layout.size_in_bytes >= m_copy.minimum_destination_bytes_needed());
     KMM_ASSERT(accessors[1].is_writable);
@@ -222,7 +222,7 @@ void CopyDeviceJob::execute(DeviceResource& device, std::vector<BufferAccessor> 
     );
 }
 
-void ReductionDeviceJob::execute(DeviceResource& device, std::vector<BufferAccessor> accessors) {
+void ReductionDeviceTask::execute(DeviceResource& device, std::vector<BufferAccessor> accessors) {
     execute_gpu_reduction_async(
         device,
         reinterpret_cast<GPUdeviceptr>(accessors[0].address),
@@ -231,11 +231,11 @@ void ReductionDeviceJob::execute(DeviceResource& device, std::vector<BufferAcces
     );
 }
 
-void FillDeviceJob::execute(DeviceResource& device, std::vector<BufferAccessor> accessors) {
+void FillDeviceTask::execute(DeviceResource& device, std::vector<BufferAccessor> accessors) {
     execute_gpu_fill_async(device, reinterpret_cast<GPUdeviceptr>(accessors[0].address), m_fill);
 }
 
-Poll PrefetchJob::poll(Executor& executor) {
+Poll PrefetchTask::poll(Executor& executor) {
     if (m_status == Status::Init) {
         m_requests = executor.buffers().create_requests(m_buffers);
         m_status = Status::Polling;
@@ -262,19 +262,19 @@ Poll PrefetchJob::poll(Executor& executor) {
     return Poll::Ready;
 }
 
-std::unique_ptr<Job> build_job_for_command(
+std::unique_ptr<Task> build_job_for_command(
     TaskHandle task,
     const Command& command,
     DeviceEventSet dependencies
 ) {
     if (std::get_if<CommandEmpty>(&command) != nullptr) {
-        return std::make_unique<MergeJob>(task, std::move(dependencies));
+        return std::make_unique<MergeTask>(task, std::move(dependencies));
 
     } else if (const auto* e = std::get_if<CommandBufferDelete>(&command)) {
-        return std::make_unique<DeleteBufferJob>(task, e->id, std::move(dependencies));
+        return std::make_unique<DeleteBufferTask>(task, e->id, std::move(dependencies));
 
     } else if (const auto* e = std::get_if<CommandPrefetch>(&command)) {
-        return std::make_unique<PrefetchJob>(
+        return std::make_unique<PrefetchTask>(
             task,
             e->buffer_id,
             e->memory_id,
@@ -285,7 +285,7 @@ std::unique_ptr<Job> build_job_for_command(
         auto proc = e->processor_id;
 
         if (proc.is_device()) {
-            return std::make_unique<ExecuteDeviceJob>(
+            return std::make_unique<ExecuteDeviceTask>(
                 task,
                 proc,
                 e->task.get(),
@@ -293,7 +293,7 @@ std::unique_ptr<Job> build_job_for_command(
                 std::move(dependencies)
             );
         } else {
-            return std::make_unique<ExecuteHostJob>(
+            return std::make_unique<ExecuteHostTask>(
                 task,
                 e->task.get(),
                 e->buffers,
@@ -306,7 +306,7 @@ std::unique_ptr<Job> build_job_for_command(
         auto dst_mem = e->dst_memory;
 
         if (src_mem.is_host() && dst_mem.is_host()) {
-            return std::make_unique<CopyHostJob>(
+            return std::make_unique<CopyHostTask>(
                 task,
                 e->src_buffer,
                 e->dst_buffer,
@@ -314,7 +314,7 @@ std::unique_ptr<Job> build_job_for_command(
                 std::move(dependencies)
             );
         } else if (dst_mem.is_device()) {
-            return std::make_unique<CopyDeviceJob>(
+            return std::make_unique<CopyDeviceTask>(
                 task,
                 dst_mem.as_device(),
                 e->src_buffer,
@@ -323,7 +323,7 @@ std::unique_ptr<Job> build_job_for_command(
                 std::move(dependencies)
             );
         } else if (src_mem.is_device()) {
-            return std::make_unique<CopyDeviceJob>(
+            return std::make_unique<CopyDeviceTask>(
                 task,
                 src_mem.as_device(),
                 e->src_buffer,
@@ -339,7 +339,7 @@ std::unique_ptr<Job> build_job_for_command(
         auto memory_id = e->memory_id;
 
         if (memory_id.is_device()) {
-            return std::make_unique<ReductionDeviceJob>(
+            return std::make_unique<ReductionDeviceTask>(
                 task,
                 memory_id.as_device(),
                 e->src_buffer,
@@ -348,7 +348,7 @@ std::unique_ptr<Job> build_job_for_command(
                 std::move(dependencies)
             );
         } else {
-            return std::make_unique<ReductionHostJob>(
+            return std::make_unique<ReductionHostTask>(
                 task,
                 e->src_buffer,
                 e->dst_buffer,
@@ -361,7 +361,7 @@ std::unique_ptr<Job> build_job_for_command(
         auto memory_id = e->memory_id;
 
         if (memory_id.is_device()) {
-            return std::make_unique<FillDeviceJob>(
+            return std::make_unique<FillDeviceTask>(
                 task,
                 memory_id.as_device(),
                 e->dst_buffer,
@@ -369,7 +369,7 @@ std::unique_ptr<Job> build_job_for_command(
                 std::move(dependencies)
             );
         } else {
-            return std::make_unique<FillHostJob>(
+            return std::make_unique<FillHostTask>(
                 task,
                 e->dst_buffer,
                 std::move(e->definition),

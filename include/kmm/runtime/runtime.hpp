@@ -67,7 +67,6 @@ class Runtime: public std::enable_shared_from_this<Runtime> {
     std::shared_ptr<BufferRegistry> m_buffer_registry;
     std::shared_ptr<DeviceStreamManager> m_stream_manager;
     std::shared_ptr<DeviceResources> m_devices;
-    std::shared_ptr<Scheduler> m_scheduler;
     SystemInfo m_info;
     Executor m_executor;
     TaskGraphState m_graph_state;

@@ -25,14 +25,14 @@ struct SchedulerQueue {
     size_t num_jobs_active = 0;
     std::priority_queue<QueueSlot> tasks;
 
-    void push_job(const Task* predecessor, TaskHandle task);
+    void push_job(const TaskRecord* predecessor, TaskHandle task);
     bool pop_job(TaskHandle& task_out);
     void scheduled_job(TaskHandle task);
     void completed_job(TaskHandle task);
 };
 
-void Scheduler::enqueue_if_ready(const Task* predecessor, const TaskHandle& task) {
-    if (task->status != Task::Status::AwaitingDependencies) {
+void Scheduler::enqueue_if_ready(const TaskRecord* predecessor, const TaskHandle& task) {
+    if (task->status != TaskRecord::Status::AwaitingDependencies) {
         return;
     }
 
@@ -40,11 +40,11 @@ void Scheduler::enqueue_if_ready(const Task* predecessor, const TaskHandle& task
         return;
     }
 
-    task->status = Task::Status::ReadyToSubmit;
+    task->status = TaskRecord::Status::ReadyToSubmit;
     m_queues.at(task->queue_id).push_job(predecessor, task);
 }
 
-void SchedulerQueue::push_job(const Task* predecessor, TaskHandle task) {
+void SchedulerQueue::push_job(const TaskRecord* predecessor, TaskHandle task) {
     this->tasks.push(QueueSlot {task});
 }
 
@@ -82,20 +82,20 @@ Scheduler::Scheduler(size_t num_devices) {
 
 Scheduler::~Scheduler() = default;
 
-void Scheduler::submit(EventId event_id, Command&& command, EventList dependencies) {
-    auto task = std::make_shared<Task>(event_id, std::move(command), std::move(dependencies));
+void Scheduler::submit(std::shared_ptr<TaskRecord> task, EventId event_id, EventList dependencies) {
+    KMM_ASSERT(task->status == TaskRecord::Status::Init);
 
     spdlog::debug(
         "submit task {} (command={}, dependencies={})",
-        task->event_id,
+        event_id,
         task->command,
-        task->dependencies
+        dependencies
     );
 
-    size_t num_pending = task->dependencies.size();
+    size_t num_pending = dependencies.size();
     DeviceEventSet dependency_events;
 
-    for (EventId dep_id : task->dependencies) {
+    for (EventId dep_id : dependencies) {
         auto it = m_tasks.find(dep_id);
 
         if (it == m_tasks.end()) {
@@ -106,18 +106,19 @@ void Scheduler::submit(EventId event_id, Command&& command, EventList dependenci
         auto& dep = it->second;
         dep->successors.push_back(task);
 
-        if (dep->status == Task::Status::Executing) {
+        if (dep->status == TaskRecord::Status::Executing) {
             num_pending--;
             dependency_events.insert(dep->execution_event);
         }
 
-        if (dep->status == Task::Status::Completed) {
+        if (dep->status == TaskRecord::Status::Completed) {
             num_pending--;
         }
     }
 
-    KMM_ASSERT(task->status == Task::Status::Init);
-    task->status = Task::Status::AwaitingDependencies;
+    task->status = TaskRecord::Status::AwaitingDependencies;
+    task->event_id = event_id;
+    task->dependencies = std::move(dependencies);
     task->queue_id = determine_queue_id(task->command);
     task->dependencies_pending = num_pending;
     task->dependency_events = std::move(dependency_events);
@@ -138,8 +139,8 @@ std::optional<TaskHandle> Scheduler::pop_ready(DeviceEventSet* deps_out) {
                 result->dependency_events
             );
 
-            KMM_ASSERT(result->status == Task::Status::ReadyToSubmit);
-            result->status = Task::Status::Submitted;
+            KMM_ASSERT(result->status == TaskRecord::Status::ReadyToSubmit);
+            result->status = TaskRecord::Status::Submitted;
             *deps_out = std::move(result->dependency_events);
             return result;
         }
@@ -151,8 +152,8 @@ std::optional<TaskHandle> Scheduler::pop_ready(DeviceEventSet* deps_out) {
 void Scheduler::mark_as_scheduled(TaskHandle task, DeviceEvent event) {
     spdlog::debug("scheduled task {} (command={}, GPU event={})", task->id(), task->command, event);
 
-    KMM_ASSERT(task->status == Task::Status::Submitted);
-    task->status = Task::Status::Executing;
+    KMM_ASSERT(task->status == TaskRecord::Status::Submitted);
+    task->status = TaskRecord::Status::Executing;
     task->execution_event = event;
 
     for (const auto& succ : task->successors) {
@@ -167,18 +168,18 @@ void Scheduler::mark_as_scheduled(TaskHandle task, DeviceEvent event) {
 void Scheduler::mark_as_completed(TaskHandle task) {
     spdlog::debug("completed task {} (command={})", task->id(), task->command);
 
-    if (task->status == Task::Status::Submitted) {
+    if (task->status == TaskRecord::Status::Submitted) {
         for (const auto& succ : task->successors) {
             succ->dependencies_pending -= 1;
             enqueue_if_ready(task.get(), succ);
         }
 
-        task->status = Task::Status::Executing;
+        task->status = TaskRecord::Status::Executing;
         m_queues.at(task->queue_id).scheduled_job(task);
     }
 
-    KMM_ASSERT(task->status == Task::Status::Executing);
-    task->status = Task::Status::Completed;
+    KMM_ASSERT(task->status == TaskRecord::Status::Executing);
+    task->status = TaskRecord::Status::Completed;
     m_tasks.erase(task->event_id);
     m_queues.at(task->queue_id).completed_job(task);
 }
@@ -205,9 +206,6 @@ size_t Scheduler::determine_queue_id(const Command& cmd) {
     }
 }
 
-Task::Task(EventId event_id, Command&& command, EventList&& dependencies) :
-    event_id(event_id),
-    command(std::move(command)),
-    dependencies(std::move(dependencies)) {}
+TaskRecord::TaskRecord(Command&& command) : command(std::move(command)) {}
 
 }  // namespace kmm

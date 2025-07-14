@@ -19,13 +19,25 @@ Executor::Executor(
 
 Executor::~Executor() {}
 
+void Executor::submit(EventId event_id, Command&& command, EventList dependencies) {
+    m_scheduler->submit(
+        std::make_shared<TaskRecord>(std::move(command)),
+        event_id,
+        std::move(dependencies)
+    );
+}
+
+bool Executor::is_completed(EventId event_id) {
+    return m_scheduler->is_completed(event_id);
+}
+
 bool Executor::is_idle() const {
-    return m_jobs_head == nullptr;
+    return m_jobs_head == nullptr && m_scheduler->is_idle();
 }
 
 void Executor::make_progress() {
-    Job* prev = nullptr;
-    std::unique_ptr<Job>* current_ptr = &m_jobs_head;
+    Task* prev = nullptr;
+    std::unique_ptr<Task>* current_ptr = &m_jobs_head;
 
     while (auto* current = current_ptr->get()) {
         // In debug mode, only poll the head task (prev == nullptr)
@@ -40,6 +52,13 @@ void Executor::make_progress() {
     }
 
     m_jobs_tail = prev;
+
+    {
+        DeviceEventSet deps;
+        while (auto task = m_scheduler->pop_ready(&deps)) {
+            execute_task(std::move(*task), std::move(deps));
+        }
+    }
 }
 
 void Executor::execute_task(TaskHandle task, DeviceEventSet dependencies) {

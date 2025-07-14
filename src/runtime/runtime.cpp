@@ -45,9 +45,14 @@ Runtime::Runtime(
         config.device_concurrent_streams,
         m_stream_manager
     )),
-    m_scheduler(std::make_shared<Scheduler>(contexts.size())),
     m_info(make_system_info(contexts, config)),
-    m_executor(m_devices, stream_manager, m_buffer_registry, m_scheduler, config.debug_mode) {}
+    m_executor(
+        m_devices,
+        stream_manager,
+        m_buffer_registry,
+        std::make_shared<Scheduler>(contexts.size()),
+        config.debug_mode
+    ) {}
 
 Runtime::~Runtime() {
     shutdown();
@@ -74,7 +79,7 @@ bool Runtime::query_event(EventId event_id, std::chrono::system_clock::time_poin
     std::unique_lock guard {m_mutex};
     make_progress_impl();
 
-    while (!m_scheduler->is_completed(event_id)) {
+    while (!m_executor.is_completed(event_id)) {
         KMM_ASSERT(!m_executor.is_idle());
         auto next_update = m_next_updated_planned;
 
@@ -140,7 +145,7 @@ EventId Runtime::commit_impl(TaskGraph& g) {
 
     // Flush all events from the DAG builder to the scheduler
     for (auto&& e : nodes_out) {
-        m_scheduler->submit(e.id, std::move(e.command), std::move(e.dependencies));
+        m_executor.submit(e.id, std::move(e.command), std::move(e.dependencies));
     }
 
     // Plan an update to happen now since we have added new tasks to the scheduler.
@@ -161,15 +166,10 @@ void Runtime::make_progress_impl() {
     m_stream_manager->make_progress();
     m_memory_system->make_progress();
     m_executor.make_progress();
-
-    DeviceEventSet deps;
-    while (auto task = m_scheduler->pop_ready(&deps)) {
-        m_executor.execute_task(std::move(*task), std::move(deps));
-    }
 }
 
 bool Runtime::is_idle_impl() {
-    return m_stream_manager->is_idle() && m_executor.is_idle() && m_scheduler->is_idle()
+    return m_stream_manager->is_idle() && m_executor.is_idle()
         && m_memory_manager->is_idle(*m_stream_manager);
 }
 

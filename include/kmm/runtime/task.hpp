@@ -11,31 +11,31 @@ namespace kmm {
 
 class Executor;
 
-class Job {
-    KMM_NOT_COPYABLE_OR_MOVABLE(Job)
+class Task {
+    KMM_NOT_COPYABLE_OR_MOVABLE(Task)
 
   public:
-    Job(TaskHandle task) : m_task(task) {}
-    virtual ~Job() = default;
+    Task(TaskHandle task) : m_task(task) {}
+    virtual ~Task() = default;
     virtual Poll poll(Executor& executor) = 0;
 
     //      private:
     TaskHandle m_task;
-    std::unique_ptr<Job> next = nullptr;
+    std::unique_ptr<Task> next = nullptr;
 };
 
-std::unique_ptr<Job> build_job_for_command(
+std::unique_ptr<Task> build_job_for_command(
     TaskHandle task,
     const Command& command,
     DeviceEventSet dependencies
 );
 
-class MergeJob: public Job {
+class MergeTask: public Task {
   public:
-    MergeJob(TaskHandle task) : Job(std::move(task)) {}
+    MergeTask(TaskHandle task) : Task(std::move(task)) {}
 
-    MergeJob(TaskHandle task, DeviceEventSet dependencies) :
-        Job(task),
+    MergeTask(TaskHandle task, DeviceEventSet dependencies) :
+        Task(task),
         m_dependencies(std::move(dependencies)) {}
 
     Poll poll(Executor& executor) final;
@@ -44,10 +44,10 @@ class MergeJob: public Job {
     DeviceEventSet m_dependencies;
 };
 
-class DeleteBufferJob: public Job {
+class DeleteBufferTask: public Task {
   public:
-    DeleteBufferJob(TaskHandle task, BufferId buffer_id, DeviceEventSet dependencies) :
-        Job(task),
+    DeleteBufferTask(TaskHandle task, BufferId buffer_id, DeviceEventSet dependencies) :
+        Task(task),
         m_buffer_id(buffer_id),
         m_dependencies(std::move(dependencies)) {}
 
@@ -58,10 +58,10 @@ class DeleteBufferJob: public Job {
     DeviceEventSet m_dependencies;
 };
 
-class HostJob: public Job {
+class HostTask: public Task {
   public:
-    HostJob(TaskHandle task, std::vector<BufferRequirement> buffers, DeviceEventSet dependencies) :
-        Job(task),
+    HostTask(TaskHandle task, std::vector<BufferRequirement> buffers, DeviceEventSet dependencies) :
+        Task(task),
         m_buffers(std::move(buffers)),
         m_dependencies(std::move(dependencies)) {}
 
@@ -87,15 +87,15 @@ class HostJob: public Job {
     DeviceEventSet m_dependencies;
 };
 
-class ExecuteHostJob: public HostJob {
+class ExecuteHostTask: public HostTask {
   public:
-    ExecuteHostJob(
+    ExecuteHostTask(
         TaskHandle task,
         ComputeTask* compute_task,
         std::vector<BufferRequirement> buffers,
         DeviceEventSet dependencies
     ) :
-        HostJob(task, std::move(buffers), std::move(dependencies)),
+        HostTask(task, std::move(buffers), std::move(dependencies)),
         m_task(compute_task) {}
 
     std::future<void> submit(Executor& executor, std::vector<BufferAccessor> accessors) override;
@@ -104,16 +104,16 @@ class ExecuteHostJob: public HostJob {
     ComputeTask* m_task;
 };
 
-class CopyHostJob: public HostJob {
+class CopyHostTask: public HostTask {
   public:
-    CopyHostJob(
+    CopyHostTask(
         TaskHandle task,
         BufferId src_buffer,
         BufferId dst_buffer,
         CopyDef definition,
         DeviceEventSet dependencies
     ) :
-        HostJob(
+        HostTask(
             task,
             {BufferRequirement {src_buffer, MemoryId::host(), AccessMode::Read},
              BufferRequirement {dst_buffer, MemoryId::host(), AccessMode::ReadWrite}},
@@ -127,16 +127,16 @@ class CopyHostJob: public HostJob {
     CopyDef m_copy;
 };
 
-class ReductionHostJob: public HostJob {
+class ReductionHostTask: public HostTask {
   public:
-    ReductionHostJob(
+    ReductionHostTask(
         TaskHandle task,
         BufferId src_buffer,
         BufferId dst_buffer,
         ReductionDef definition,
         DeviceEventSet dependencies
     ) :
-        HostJob(
+        HostTask(
             task,
             {BufferRequirement {src_buffer, MemoryId::host(), AccessMode::Read},
              BufferRequirement {dst_buffer, MemoryId::host(), AccessMode::ReadWrite}},
@@ -150,15 +150,15 @@ class ReductionHostJob: public HostJob {
     ReductionDef m_reduction;
 };
 
-class FillHostJob: public HostJob {
+class FillHostTask: public HostTask {
   public:
-    FillHostJob(
+    FillHostTask(
         TaskHandle task,
         BufferId dst_buffer,
         FillDef definition,
         DeviceEventSet dependencies
     ) :
-        HostJob(
+        HostTask(
             task,
             {BufferRequirement {dst_buffer, MemoryId::host(), AccessMode::ReadWrite}},
             std::move(dependencies)
@@ -171,15 +171,15 @@ class FillHostJob: public HostJob {
     FillDef m_fill;
 };
 
-class DeviceJob: public Job, public DeviceResourceOperation {
+class DeviceTask: public Task, public DeviceResourceOperation {
   public:
-    DeviceJob(
+    DeviceTask(
         TaskHandle task,
         ResourceId resource_id,
         std::vector<BufferRequirement> buffers,
         DeviceEventSet dependencies
     ) :
-        Job(task),
+        Task(task),
         m_resource(resource_id),
         m_buffers(std::move(buffers)),
         m_dependencies(std::move(dependencies)) {}
@@ -205,16 +205,16 @@ class DeviceJob: public Job, public DeviceResourceOperation {
     DeviceEventSet m_local_dependencies;
 };
 
-class ExecuteDeviceJob: public DeviceJob {
+class ExecuteDeviceTask: public DeviceTask {
   public:
-    ExecuteDeviceJob(
+    ExecuteDeviceTask(
         TaskHandle task,
         ResourceId device_id,
         ComputeTask* compute_task,
         std::vector<BufferRequirement> buffers,
         DeviceEventSet dependencies
     ) :
-        DeviceJob(task, device_id, std::move(buffers), std::move(dependencies)),
+        DeviceTask(task, device_id, std::move(buffers), std::move(dependencies)),
         m_task(compute_task) {}
 
     void execute(DeviceResource& device, std::vector<BufferAccessor> accessors) final;
@@ -223,9 +223,9 @@ class ExecuteDeviceJob: public DeviceJob {
     ComputeTask* m_task;
 };
 
-class CopyDeviceJob: public DeviceJob {
+class CopyDeviceTask: public DeviceTask {
   public:
-    CopyDeviceJob(
+    CopyDeviceTask(
         TaskHandle id,
         DeviceId device_id,
         BufferId src_buffer,
@@ -233,7 +233,7 @@ class CopyDeviceJob: public DeviceJob {
         CopyDef definition,
         DeviceEventSet dependencies
     ) :
-        DeviceJob(
+        DeviceTask(
             id,
             device_id,
             {BufferRequirement {src_buffer, device_id, AccessMode::Read},
@@ -248,9 +248,9 @@ class CopyDeviceJob: public DeviceJob {
     CopyDef m_copy;
 };
 
-class ReductionDeviceJob: public DeviceJob {
+class ReductionDeviceTask: public DeviceTask {
   public:
-    ReductionDeviceJob(
+    ReductionDeviceTask(
         TaskHandle id,
         DeviceId device_id,
         BufferId src_buffer,
@@ -258,7 +258,7 @@ class ReductionDeviceJob: public DeviceJob {
         ReductionDef definition,
         DeviceEventSet dependencies
     ) :
-        DeviceJob(
+        DeviceTask(
             id,
             device_id,
             {BufferRequirement {src_buffer, device_id, AccessMode::Read},
@@ -273,16 +273,16 @@ class ReductionDeviceJob: public DeviceJob {
     ReductionDef m_reduction;
 };
 
-class FillDeviceJob: public DeviceJob {
+class FillDeviceTask: public DeviceTask {
   public:
-    FillDeviceJob(
+    FillDeviceTask(
         TaskHandle id,
         DeviceId device_id,
         BufferId dst_buffer,
         FillDef definition,
         DeviceEventSet dependencies
     ) :
-        DeviceJob(
+        DeviceTask(
             id,
             device_id,
             {BufferRequirement {dst_buffer, device_id, AccessMode::ReadWrite}},
@@ -296,15 +296,15 @@ class FillDeviceJob: public DeviceJob {
     FillDef m_fill;
 };
 
-class PrefetchJob: public Job {
+class PrefetchTask: public Task {
   public:
-    PrefetchJob(
+    PrefetchTask(
         TaskHandle task,
         BufferId buffer_id,
         MemoryId memory_id,
         DeviceEventSet dependencies
     ) :
-        Job(task),
+        Task(task),
         m_buffers {{buffer_id, memory_id, AccessMode::Read}},
         m_dependencies(std::move(dependencies)) {}
 
