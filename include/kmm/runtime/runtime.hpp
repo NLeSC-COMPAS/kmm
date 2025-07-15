@@ -2,9 +2,7 @@
 
 #include <mutex>
 
-#include "executor.hpp"
-#include "scheduler.hpp"
-
+#include "kmm/runtime/executor.hpp"
 #include "kmm/core/config.hpp"
 #include "kmm/core/system_info.hpp"
 #include "kmm/runtime/memory_system.hpp"

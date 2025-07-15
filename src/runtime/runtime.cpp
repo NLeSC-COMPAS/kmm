@@ -1,6 +1,5 @@
 #include <thread>
 
-#include "fmt/chrono.h"
 #include "fmt/std.h"
 #include "spdlog/spdlog.h"
 
@@ -46,13 +45,7 @@ Runtime::Runtime(
         m_stream_manager
     )),
     m_info(make_system_info(contexts, config)),
-    m_executor(
-        m_devices,
-        stream_manager,
-        m_buffer_registry,
-        std::make_shared<Scheduler>(contexts.size()),
-        config.debug_mode
-    ) {}
+    m_executor(m_devices, stream_manager, m_buffer_registry, config.debug_mode) {}
 
 Runtime::~Runtime() {
     shutdown();

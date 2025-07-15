@@ -26,6 +26,7 @@ class DeviceResources {
 
     ~DeviceResources();
 
+    size_t num_contexts() const;
     GPUContextHandle context(DeviceId device_id);
 
     DeviceEvent submit(

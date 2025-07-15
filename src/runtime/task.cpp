@@ -22,7 +22,6 @@ Poll MergeTask::poll(Executor& executor) {
         return Poll::Pending;
     }
 
-    executor.scheduler().mark_as_completed(m_task);
     return Poll::Ready;
 }
 
@@ -32,7 +31,6 @@ Poll DeleteBufferTask::poll(Executor& executor) {
     }
 
     executor.buffers().remove(m_buffer_id);
-    executor.scheduler().mark_as_completed(m_task);
     return Poll::Ready;
 }
 
@@ -56,6 +54,7 @@ Poll HostTask::poll(Executor& executor) {
             m_status = Status::PollingDependencies;
         } catch (const std::exception& e) {
             executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
+            executor.buffers().release_requests(m_requests);
             m_status = Status::Completing;
         }
     }
@@ -70,6 +69,7 @@ Poll HostTask::poll(Executor& executor) {
             m_status = Status::Running;
         } catch (const std::exception& e) {
             executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
+            executor.buffers().release_requests(m_requests);
             m_status = Status::Completing;
         }
     }
@@ -79,17 +79,15 @@ Poll HostTask::poll(Executor& executor) {
             if (m_future.wait_for(std::chrono::seconds(0)) == std::future_status::timeout) {
                 return Poll::Pending;
             }
-
-            m_status = Status::Completing;
         } catch (const std::exception& e) {
             executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
-            m_status = Status::Completing;
         }
+
+        executor.buffers().release_requests(m_requests);
+        m_status = Status::Completing;
     }
 
     if (m_status == Status::Completing) {
-        executor.buffers().release_requests(m_requests);
-        executor.scheduler().mark_as_completed(m_task);
         m_status = Status::Completed;
     }
 
@@ -160,6 +158,7 @@ Poll DeviceTask::poll(Executor& executor) {
             m_status = Status::PollingDependencies;
         } catch (const std::exception& e) {
             executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
+            executor.buffers().release_requests(m_requests);
             m_status = Status::Completing;
         }
     }
@@ -169,6 +168,10 @@ Poll DeviceTask::poll(Executor& executor) {
             return Poll::Pending;
         }
 
+        m_status = Status::Running;
+    }
+
+    if (m_status == Status::Running) {
         try {
             m_execution_event = executor.devices().submit(
                 m_resource.as_device(),
@@ -178,17 +181,17 @@ Poll DeviceTask::poll(Executor& executor) {
                 executor.buffers().access_requests(m_requests)
             );
 
-            executor.scheduler().mark_as_scheduled(m_task, m_execution_event);
-            m_status = Status::Running;
+            executor.mark_as_scheduled(m_task, m_execution_event);
+            executor.buffers().release_requests(m_requests, m_execution_event);
+            m_status = Status::WaitingForDeviceEvent;
         } catch (const std::exception& e) {
             executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
+            executor.buffers().release_requests(m_requests);
             m_status = Status::Completing;
         }
-
-        executor.buffers().release_requests(m_requests, m_execution_event);
     }
 
-    if (m_status == Status::Running) {
+    if (m_status == Status::WaitingForDeviceEvent) {
         if (!executor.streams().is_ready(m_execution_event)) {
             return Poll::Pending;
         }
@@ -197,7 +200,6 @@ Poll DeviceTask::poll(Executor& executor) {
     }
 
     if (m_status == Status::Completing) {
-        executor.scheduler().mark_as_completed(m_task);
         m_status = Status::Completed;
     }
 
@@ -255,7 +257,6 @@ Poll PrefetchTask::poll(Executor& executor) {
             return Poll::Pending;
         }
 
-        executor.scheduler().mark_as_completed(m_task);
         m_status = Status::Completed;
     }
 

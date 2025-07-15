@@ -72,6 +72,10 @@ DeviceResources::~DeviceResources() {
     }
 }
 
+size_t DeviceResources::num_contexts() const {
+    return m_devices.size();
+}
+
 GPUContextHandle DeviceResources::context(DeviceId device_id) {
     KMM_ASSERT(device_id < m_devices.size());
     return m_devices[device_id]->context;

@@ -4,66 +4,41 @@
 
 #include "kmm/runtime/buffer_registry.hpp"
 #include "kmm/runtime/device_resources.hpp"
-#include "kmm/runtime/scheduler.hpp"
+#include "kmm/runtime/executor.hpp"
 #include "kmm/utils/poll.hpp"
 
 namespace kmm {
 
-class Executor;
-
-class Task {
-    KMM_NOT_COPYABLE_OR_MOVABLE(Task)
-
-  public:
-    Task(TaskHandle task) : m_task(task) {}
-    virtual ~Task() = default;
-    virtual Poll poll(Executor& executor) = 0;
-
-    //      private:
-    TaskHandle m_task;
-    std::unique_ptr<Task> next = nullptr;
-};
-
-std::unique_ptr<Task> build_job_for_command(
-    TaskHandle task,
-    const Command& command,
-    DeviceEventSet dependencies
-);
-
 class MergeTask: public Task {
   public:
-    MergeTask(TaskHandle task) : Task(std::move(task)) {}
+    MergeTask(TaskHandle task) : Task(std::move(task), {}) {}
 
-    MergeTask(TaskHandle task, DeviceEventSet dependencies) :
-        Task(task),
-        m_dependencies(std::move(dependencies)) {}
+    MergeTask(TaskHandle task, DeviceEventSet dependencies) : Task(task, std::move(dependencies)) {}
 
     Poll poll(Executor& executor) final;
 
   private:
-    DeviceEventSet m_dependencies;
+    //DeviceEventSet m_dependencies;
 };
 
 class DeleteBufferTask: public Task {
   public:
     DeleteBufferTask(TaskHandle task, BufferId buffer_id, DeviceEventSet dependencies) :
-        Task(task),
-        m_buffer_id(buffer_id),
-        m_dependencies(std::move(dependencies)) {}
+        Task(task, std::move(dependencies)),
+        m_buffer_id(buffer_id) {}
 
     Poll poll(Executor& executor) final;
 
   private:
     BufferId m_buffer_id;
-    DeviceEventSet m_dependencies;
+    //DeviceEventSet m_dependencies;
 };
 
 class HostTask: public Task {
   public:
     HostTask(TaskHandle task, std::vector<BufferRequirement> buffers, DeviceEventSet dependencies) :
-        Task(task),
-        m_buffers(std::move(buffers)),
-        m_dependencies(std::move(dependencies)) {}
+        Task(task, std::move(dependencies)),
+        m_buffers(std::move(buffers)) {}
 
     Poll poll(Executor& executor) final;
 
@@ -84,7 +59,7 @@ class HostTask: public Task {
     std::future<void> m_future;
     std::vector<BufferRequirement> m_buffers;
     BufferRequestList m_requests;
-    DeviceEventSet m_dependencies;
+    //DeviceEventSet m_dependencies;
 };
 
 class ExecuteHostTask: public HostTask {
@@ -179,10 +154,9 @@ class DeviceTask: public Task, public DeviceResourceOperation {
         std::vector<BufferRequirement> buffers,
         DeviceEventSet dependencies
     ) :
-        Task(task),
+        Task(task, std::move(dependencies)),
         m_resource(resource_id),
-        m_buffers(std::move(buffers)),
-        m_dependencies(std::move(dependencies)) {}
+        m_buffers(std::move(buffers)) {}
 
     Poll poll(Executor& executor) final;
 
@@ -192,6 +166,7 @@ class DeviceTask: public Task, public DeviceResourceOperation {
         PollingBuffers,
         PollingDependencies,
         Running,
+        WaitingForDeviceEvent,
         Completing,
         Completed
     };
@@ -201,7 +176,7 @@ class DeviceTask: public Task, public DeviceResourceOperation {
     std::vector<BufferRequirement> m_buffers;
     BufferRequestList m_requests;
     DeviceEvent m_execution_event;
-    DeviceEventSet m_dependencies;
+    //DeviceEventSet m_dependencies;
     DeviceEventSet m_local_dependencies;
 };
 
@@ -304,9 +279,8 @@ class PrefetchTask: public Task {
         MemoryId memory_id,
         DeviceEventSet dependencies
     ) :
-        Task(task),
-        m_buffers {{buffer_id, memory_id, AccessMode::Read}},
-        m_dependencies(std::move(dependencies)) {}
+        Task(task, std::move(dependencies)),
+        m_buffers {{buffer_id, memory_id, AccessMode::Read}} {}
 
     Poll poll(Executor& executor) final;
 
@@ -316,7 +290,13 @@ class PrefetchTask: public Task {
     Status m_status = Status::Init;
     std::vector<BufferRequirement> m_buffers;
     BufferRequestList m_requests;
-    DeviceEventSet m_dependencies;
+    //DeviceEventSet m_dependencies;
 };
+
+std::unique_ptr<Task> build_job_for_command(
+    TaskHandle task,
+    const Command& command,
+    DeviceEventSet dependencies
+);
 
 }  // namespace kmm
