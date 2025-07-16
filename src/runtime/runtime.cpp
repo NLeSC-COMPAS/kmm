@@ -126,7 +126,7 @@ void Runtime::shutdown() {
 }
 
 EventId Runtime::commit_impl(TaskGraph& g) {
-    std::vector<TaskNode> nodes_out;
+    std::vector<TaskGraph::Node> nodes_out;
     std::vector<std::pair<BufferId, BufferLayout>> buffers_out;
 
     auto barrier_id = m_graph_state.commit(g, nodes_out, buffers_out);
@@ -138,7 +138,7 @@ EventId Runtime::commit_impl(TaskGraph& g) {
 
     // Flush all events from the DAG builder to the scheduler
     for (auto&& e : nodes_out) {
-        m_executor.submit(e.id, std::move(e.command), std::move(e.dependencies));
+        m_executor.submit(e.id, build_task_for_command(e.command), std::move(e.dependencies));
     }
 
     // Plan an update to happen now since we have added new tasks to the scheduler.

@@ -8,59 +8,51 @@
 #include "kmm/runtime/device_resources.hpp"
 #include "kmm/runtime/memory_manager.hpp"
 #include "kmm/runtime/stream_manager.hpp"
+#include "kmm/runtime/task.hpp"
 #include "kmm/utils/poll.hpp"
 
 namespace kmm {
 
 struct SchedulerQueue;
 class Executor;
+class Task;
 
 class TaskRecord {
     KMM_NOT_COPYABLE_OR_MOVABLE(TaskRecord)
 
     friend class Executor;
-    enum Status { Init, AwaitingDependencies, ReadyToSubmit, Submitted, Executing, Completed };
+    enum struct Status {  //
+        Init,
+        AwaitingDependencies,
+        ReadyToStart,
+        Running,
+        WaitingForCompletion,
+        Completed
+    };
 
   public:
-    TaskRecord(Command&& command);
+    TaskRecord(EventId event_id, std::unique_ptr<Task> task) :
+        event_id(event_id),
+        task(std::move(task)) {}
 
     EventId id() const {
         return event_id;
     }
 
-    const Command& get_command() const {
-        return command;
-    }
-
   private:
+    EventId event_id;
     Status status = Status::Init;
-    EventId event_id = EventId::invalid();
-    Command command;
     size_t queue_id = 0;
-    DeviceEvent output_event;
-    small_vector<std::shared_ptr<TaskRecord>, 4> successors;
 
     EventList predecessors;
     size_t predecessors_pending = 0;
     DeviceEventSet input_events;
-};
 
-using TaskHandle = std::shared_ptr<TaskRecord>;
+    small_vector<std::shared_ptr<TaskRecord>, 4> successors;
+    DeviceEventSet output_events;
 
-class Task {
-    KMM_NOT_COPYABLE_OR_MOVABLE(Task)
-
-  public:
-    Task(TaskHandle task, DeviceEventSet dependencies) :
-        m_task(std::move(task)),
-        m_dependencies(std::move(dependencies)) {}
-    virtual ~Task() = default;
-    virtual Poll poll(Executor& executor) = 0;
-
-    //      private:
-    TaskHandle m_task;
-    DeviceEventSet m_dependencies;
-    std::unique_ptr<Task> next = nullptr;
+    std::shared_ptr<TaskRecord> next = nullptr;
+    std::unique_ptr<Task> task = nullptr;
 };
 
 class Executor {
@@ -76,13 +68,10 @@ class Executor {
 
     ~Executor();
 
-    void submit(EventId event_id, Command&& command, EventList dependencies);
+    void submit(EventId event_id, std::unique_ptr<Task> task, EventList dependencies);
     bool is_completed(EventId event_id) const;
-
     bool is_idle() const;
     void make_progress();
-
-    void mark_as_scheduled(TaskHandle task, DeviceEvent event);
 
     DeviceResources& devices() {
         return *m_device_resources;
@@ -97,19 +86,20 @@ class Executor {
     }
 
   private:
-    void execute_task(TaskHandle task, DeviceEventSet dependencies);
-    static size_t determine_queue_id(const Command& cmd);
-    void enqueue_if_ready(const TaskRecord* predecessor, const TaskHandle& task);
-    void mark_as_completed(TaskHandle task);
+    static size_t determine_queue_id(const Task&);
+    void enqueue_if_ready(const TaskRecord* predecessor, const std::shared_ptr<TaskRecord>& task);
+    std::shared_ptr<TaskRecord> dequeue_ready_task();
+    void start_task(std::shared_ptr<TaskRecord> record);
+    Poll poll_completion(TaskRecord& record);
 
     std::shared_ptr<DeviceResources> m_device_resources;
     std::shared_ptr<DeviceStreamManager> m_stream_manager;
     std::shared_ptr<BufferRegistry> m_buffer_registry;
 
-    std::vector<SchedulerQueue> m_queues;
-    std::unordered_map<EventId, TaskHandle> m_tasks;
-    std::unique_ptr<Task> m_jobs_head = nullptr;
-    Task* m_jobs_tail = nullptr;
+    std::vector<SchedulerQueue> m_ready_queues;
+    std::unordered_map<EventId, std::shared_ptr<TaskRecord>> m_tasks;
+    std::shared_ptr<TaskRecord> m_running_head = nullptr;
+    TaskRecord* m_running_tail = nullptr;
     bool m_debug_mode = false;
 };
 

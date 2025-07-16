@@ -9,38 +9,46 @@
 
 namespace kmm {
 
-static PoisonException make_poison_exception(TaskHandle task, const std::exception& error) {
+static PoisonException make_poison_exception(TaskRecord& record, const std::exception& error) {
     if (const auto* reason = dynamic_cast<const PoisonException*>(&error)) {
         return *reason;
     }
 
-    return fmt::format("task {} failed due to error: {}", task->id(), error.what());
+    return fmt::format("task {} failed due to error: {}", record.id(), error.what());
 }
 
-Poll MergeTask::poll(Executor& executor) {
-    if (!executor.streams().is_ready(m_dependencies)) {
-        return Poll::Pending;
-    }
+void JoinTask::start(const DeviceEventSet& input_events) {
+    m_dependencies = input_events;
+}
 
+Poll JoinTask::poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) {
+    output_events.insert(std::move(m_dependencies));
     return Poll::Ready;
 }
 
-Poll DeleteBufferTask::poll(Executor& executor) {
-    if (!executor.streams().is_ready(m_dependencies)) {
-        return Poll::Pending;
-    }
+void DeleteBufferTask::start(const DeviceEventSet& input_events) {
+    m_dependencies = input_events;
+}
 
+Poll DeleteBufferTask::poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) {
     executor.buffers().remove(m_buffer_id);
+    output_events.insert(m_dependencies);
     return Poll::Ready;
 }
 
-Poll HostTask::poll(Executor& executor) {
-    if (m_status == Status::Init) {
+void HostTask::start(const DeviceEventSet& input_events) {
+    KMM_ASSERT(m_status == Status::Init);
+    m_dependencies = input_events;
+    m_status = Status::CreateBuffers;
+}
+
+Poll HostTask::poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) {
+    if (m_status == Status::CreateBuffers) {
         try {
             m_requests = executor.buffers().create_requests(m_buffers);
             m_status = Status::PollingBuffers;
         } catch (const std::exception& e) {
-            executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
+            executor.buffers().poison_all(m_buffers, make_poison_exception(record, e));
             m_status = Status::Completing;
         }
     }
@@ -53,8 +61,7 @@ Poll HostTask::poll(Executor& executor) {
 
             m_status = Status::PollingDependencies;
         } catch (const std::exception& e) {
-            executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
-            executor.buffers().release_requests(m_requests);
+            executor.buffers().poison_all(m_buffers, make_poison_exception(record, e));
             m_status = Status::Completing;
         }
     }
@@ -68,8 +75,7 @@ Poll HostTask::poll(Executor& executor) {
             m_future = submit(executor, executor.buffers().access_requests(m_requests));
             m_status = Status::Running;
         } catch (const std::exception& e) {
-            executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
-            executor.buffers().release_requests(m_requests);
+            executor.buffers().poison_all(m_buffers, make_poison_exception(record, e));
             m_status = Status::Completing;
         }
     }
@@ -80,14 +86,14 @@ Poll HostTask::poll(Executor& executor) {
                 return Poll::Pending;
             }
         } catch (const std::exception& e) {
-            executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
+            executor.buffers().poison_all(m_buffers, make_poison_exception(record, e));
         }
 
-        executor.buffers().release_requests(m_requests);
         m_status = Status::Completing;
     }
 
     if (m_status == Status::Completing) {
+        executor.buffers().release_requests(m_requests);
         m_status = Status::Completed;
     }
 
@@ -130,13 +136,19 @@ std::future<void> FillHostTask::submit(Executor& executor, std::vector<BufferAcc
     return std::async(std::launch::async, [=] { execute_fill(accessors[0].address, m_fill); });
 }
 
-Poll DeviceTask::poll(Executor& executor) {
-    if (m_status == Status::Init) {
+void DeviceTask::start(const DeviceEventSet& input_events) {
+    KMM_ASSERT(m_status == Status::Init);
+    m_dependencies = input_events;
+    m_status = Status::CreateBuffers;
+}
+
+Poll DeviceTask::poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) {
+    if (m_status == Status::CreateBuffers) {
         try {
             m_requests = executor.buffers().create_requests(m_buffers);
             m_status = Status::PollingBuffers;
         } catch (const std::exception& e) {
-            executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
+            executor.buffers().poison_all(m_buffers, make_poison_exception(record, e));
             m_status = Status::Completing;
         }
     }
@@ -157,8 +169,7 @@ Poll DeviceTask::poll(Executor& executor) {
 
             m_status = Status::PollingDependencies;
         } catch (const std::exception& e) {
-            executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
-            executor.buffers().release_requests(m_requests);
+            executor.buffers().poison_all(m_buffers, make_poison_exception(record, e));
             m_status = Status::Completing;
         }
     }
@@ -180,26 +191,15 @@ Poll DeviceTask::poll(Executor& executor) {
                 *this,
                 executor.buffers().access_requests(m_requests)
             );
-
-            executor.mark_as_scheduled(m_task, m_execution_event);
-            executor.buffers().release_requests(m_requests, m_execution_event);
-            m_status = Status::WaitingForDeviceEvent;
+            m_status = Status::Completing;
         } catch (const std::exception& e) {
-            executor.buffers().poison_all(m_buffers, make_poison_exception(m_task, e));
-            executor.buffers().release_requests(m_requests);
+            executor.buffers().poison_all(m_buffers, make_poison_exception(record, e));
             m_status = Status::Completing;
         }
     }
 
-    if (m_status == Status::WaitingForDeviceEvent) {
-        if (!executor.streams().is_ready(m_execution_event)) {
-            return Poll::Pending;
-        }
-
-        m_status = Status::Completing;
-    }
-
     if (m_status == Status::Completing) {
+        executor.buffers().release_requests(m_requests, m_execution_event);
         m_status = Status::Completed;
     }
 
@@ -237,7 +237,11 @@ void FillDeviceTask::execute(DeviceResource& device, std::vector<BufferAccessor>
     execute_gpu_fill_async(device, reinterpret_cast<GPUdeviceptr>(accessors[0].address), m_fill);
 }
 
-Poll PrefetchTask::poll(Executor& executor) {
+void PrefetchTask::start(const DeviceEventSet& input_events) {
+    m_dependencies = input_events;
+}
+
+Poll PrefetchTask::poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) {
     if (m_status == Status::Init) {
         m_requests = executor.buffers().create_requests(m_buffers);
         m_status = Status::Polling;
@@ -263,43 +267,23 @@ Poll PrefetchTask::poll(Executor& executor) {
     return Poll::Ready;
 }
 
-std::unique_ptr<Task> build_job_for_command(
-    TaskHandle task,
-    const Command& command,
-    DeviceEventSet dependencies
-) {
+std::unique_ptr<Task> build_task_for_command(const Command& command) {
     if (std::get_if<CommandEmpty>(&command) != nullptr) {
-        return std::make_unique<MergeTask>(task, std::move(dependencies));
+        return std::make_unique<JoinTask>();
 
     } else if (const auto* e = std::get_if<CommandBufferDelete>(&command)) {
-        return std::make_unique<DeleteBufferTask>(task, e->id, std::move(dependencies));
+        return std::make_unique<DeleteBufferTask>(e->id);
 
     } else if (const auto* e = std::get_if<CommandPrefetch>(&command)) {
-        return std::make_unique<PrefetchTask>(
-            task,
-            e->buffer_id,
-            e->memory_id,
-            std::move(dependencies)
-        );
+        return std::make_unique<PrefetchTask>(e->buffer_id, e->memory_id);
 
     } else if (const auto* e = std::get_if<CommandExecute>(&command)) {
         auto proc = e->processor_id;
 
         if (proc.is_device()) {
-            return std::make_unique<ExecuteDeviceTask>(
-                task,
-                proc,
-                e->task.get(),
-                e->buffers,
-                std::move(dependencies)
-            );
+            return std::make_unique<ExecuteDeviceTask>(proc, e->task.get(), e->buffers);
         } else {
-            return std::make_unique<ExecuteHostTask>(
-                task,
-                e->task.get(),
-                e->buffers,
-                std::move(dependencies)
-            );
+            return std::make_unique<ExecuteHostTask>(e->task.get(), e->buffers);
         }
 
     } else if (const auto* e = std::get_if<CommandCopy>(&command)) {
@@ -307,30 +291,20 @@ std::unique_ptr<Task> build_job_for_command(
         auto dst_mem = e->dst_memory;
 
         if (src_mem.is_host() && dst_mem.is_host()) {
-            return std::make_unique<CopyHostTask>(
-                task,
-                e->src_buffer,
-                e->dst_buffer,
-                e->definition,
-                std::move(dependencies)
-            );
+            return std::make_unique<CopyHostTask>(e->src_buffer, e->dst_buffer, e->definition);
         } else if (dst_mem.is_device()) {
             return std::make_unique<CopyDeviceTask>(
-                task,
                 dst_mem.as_device(),
                 e->src_buffer,
                 e->dst_buffer,
-                e->definition,
-                std::move(dependencies)
+                e->definition
             );
         } else if (src_mem.is_device()) {
             return std::make_unique<CopyDeviceTask>(
-                task,
                 src_mem.as_device(),
                 e->src_buffer,
                 e->dst_buffer,
-                e->definition,
-                std::move(dependencies)
+                e->definition
             );
         } else {
             KMM_PANIC("unsupported copy");
@@ -341,20 +315,16 @@ std::unique_ptr<Task> build_job_for_command(
 
         if (memory_id.is_device()) {
             return std::make_unique<ReductionDeviceTask>(
-                task,
                 memory_id.as_device(),
                 e->src_buffer,
                 e->dst_buffer,
-                std::move(e->definition),
-                std::move(dependencies)
+                std::move(e->definition)
             );
         } else {
             return std::make_unique<ReductionHostTask>(
-                task,
                 e->src_buffer,
                 e->dst_buffer,
-                std::move(e->definition),
-                std::move(dependencies)
+                std::move(e->definition)
             );
         }
 
@@ -363,19 +333,12 @@ std::unique_ptr<Task> build_job_for_command(
 
         if (memory_id.is_device()) {
             return std::make_unique<FillDeviceTask>(
-                task,
                 memory_id.as_device(),
                 e->dst_buffer,
-                std::move(e->definition),
-                std::move(dependencies)
+                std::move(e->definition)
             );
         } else {
-            return std::make_unique<FillHostTask>(
-                task,
-                e->dst_buffer,
-                std::move(e->definition),
-                std::move(dependencies)
-            );
+            return std::make_unique<FillHostTask>(e->dst_buffer, std::move(e->definition));
         }
 
     } else {

@@ -8,7 +8,7 @@ namespace kmm {
 
 EventId TaskGraphState::commit(
     TaskGraph& g,
-    std::vector<TaskNode>& staged_nodes,
+    std::vector<TaskGraph::Node>& staged_nodes,
     std::vector<std::pair<BufferId, BufferLayout>>& staged_buffers
 ) {
     KMM_ASSERT(g.m_state == this);
@@ -75,7 +75,7 @@ EventId TaskGraph::insert_node(Command command, EventList deps) {
 
     m_events_since_last_barrier.push_back(id);
     m_staged_nodes.push_back(
-        TaskNode {.id = id, .command = std::move(command), .dependencies = std::move(deps)}
+        Node {.id = id, .command = std::move(command), .dependencies = std::move(deps)}
     );
 
     return id;
