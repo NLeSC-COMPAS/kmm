@@ -20,7 +20,7 @@ class Task;
 class TaskRecord {
     KMM_NOT_COPYABLE_OR_MOVABLE(TaskRecord)
 
-    friend class Executor;
+    friend class Scheduler;
     enum struct Status {  //
         Init,
         AwaitingDependencies,
@@ -42,7 +42,7 @@ class TaskRecord {
   private:
     EventId event_id;
     Status status = Status::Init;
-    size_t queue_id = 0;
+    SchedulerQueue* queue = nullptr;
 
     EventList predecessors;
     size_t predecessors_pending = 0;
@@ -55,18 +55,18 @@ class TaskRecord {
     std::unique_ptr<Task> task = nullptr;
 };
 
-class Executor {
-    KMM_NOT_COPYABLE_OR_MOVABLE(Executor)
+class Scheduler {
+    KMM_NOT_COPYABLE_OR_MOVABLE(Scheduler)
 
   public:
-    Executor(
+    Scheduler(
         std::shared_ptr<DeviceResources> device_resources,
         std::shared_ptr<DeviceStreamManager> stream_manager,
         std::shared_ptr<BufferRegistry> buffer_registry,
         bool debug_mode
     );
 
-    ~Executor();
+    ~Scheduler();
 
     void submit(EventId event_id, std::unique_ptr<Task> task, EventList dependencies);
     bool is_completed(EventId event_id) const;

@@ -2,7 +2,7 @@
 
 #include "spdlog/spdlog.h"
 
-#include "kmm/runtime/executor.hpp"
+#include "kmm/runtime/scheduler.hpp"
 #include "kmm/runtime/task.hpp"
 
 namespace kmm {
@@ -59,7 +59,7 @@ void SchedulerQueue::completed_job(const TaskRecord& record) {
     num_jobs_active--;
 }
 
-Executor::Executor(
+Scheduler::Scheduler(
     std::shared_ptr<DeviceResources> device_resources,
     std::shared_ptr<DeviceStreamManager> stream_manager,
     std::shared_ptr<BufferRegistry> buffer_registry,
@@ -77,9 +77,9 @@ Executor::Executor(
     }
 }
 
-Executor::~Executor() {}
+Scheduler::~Scheduler() {}
 
-void Executor::submit(EventId event_id, std::unique_ptr<Task> task, EventList dependencies) {
+void Scheduler::submit(EventId event_id, std::unique_ptr<Task> task, EventList dependencies) {
     auto record = std::make_shared<TaskRecord>(event_id, std::move(task));
 
     spdlog::debug(
@@ -111,7 +111,7 @@ void Executor::submit(EventId event_id, std::unique_ptr<Task> task, EventList de
 
     record->status = TaskRecord::Status::AwaitingDependencies;
     record->predecessors = std::move(dependencies);
-    record->queue_id = determine_queue_id(*record->task);
+    record->queue = &m_ready_queues[determine_queue_id(*record->task)];
     record->predecessors_pending = num_pending;
     record->input_events = std::move(dependency_events);
     enqueue_if_ready(nullptr, record);
@@ -119,15 +119,15 @@ void Executor::submit(EventId event_id, std::unique_ptr<Task> task, EventList de
     m_tasks.emplace(event_id, std::move(record));
 }
 
-bool Executor::is_completed(EventId event_id) const {
+bool Scheduler::is_completed(EventId event_id) const {
     return m_tasks.find(event_id) == m_tasks.end();
 }
 
-bool Executor::is_idle() const {
+bool Scheduler::is_idle() const {
     return m_running_head == nullptr && m_tasks.empty();
 }
 
-void Executor::make_progress() {
+void Scheduler::make_progress() {
     TaskRecord* prev = nullptr;
     std::shared_ptr<TaskRecord>* current_ptr = &m_running_head;
 
@@ -150,7 +150,7 @@ void Executor::make_progress() {
     }
 }
 
-size_t Executor::determine_queue_id(const Task& task) {
+size_t Scheduler::determine_queue_id(const Task& task) {
     if (dynamic_cast<const JoinTask*>(&task) != nullptr) {
         return QUEUE_JOIN;
     } else if (dynamic_cast<const HostTask*>(&task) != nullptr) {
@@ -162,7 +162,7 @@ size_t Executor::determine_queue_id(const Task& task) {
     }
 }
 
-void Executor::enqueue_if_ready(
+void Scheduler::enqueue_if_ready(
     const TaskRecord* predecessor,
     const std::shared_ptr<TaskRecord>& task
 ) {
@@ -175,10 +175,10 @@ void Executor::enqueue_if_ready(
     }
 
     task->status = TaskRecord::Status::ReadyToStart;
-    m_ready_queues.at(task->queue_id).push_job(predecessor, task);
+    task->queue->push_job(predecessor, task);
 }
 
-std::shared_ptr<TaskRecord> Executor::dequeue_ready_task() {
+std::shared_ptr<TaskRecord> Scheduler::dequeue_ready_task() {
     for (auto& q : m_ready_queues) {
         if (auto result = q.pop_job()) {
             return result;
@@ -188,7 +188,7 @@ std::shared_ptr<TaskRecord> Executor::dequeue_ready_task() {
     return nullptr;
 }
 
-void Executor::start_task(std::shared_ptr<TaskRecord> record) {
+void Scheduler::start_task(std::shared_ptr<TaskRecord> record) {
     KMM_ASSERT(record->status == TaskRecord::Status::ReadyToStart);
 
     if (poll_completion(*record) == Poll::Pending) {
@@ -200,7 +200,7 @@ void Executor::start_task(std::shared_ptr<TaskRecord> record) {
     }
 }
 
-Poll Executor::poll_completion(TaskRecord& record) {
+Poll Scheduler::poll_completion(TaskRecord& record) {
     if (record.status == TaskRecord::Status::ReadyToStart) {
         spdlog::debug(
             "scheduling task {} (command={}, GPU deps={})",
@@ -225,7 +225,7 @@ Poll Executor::poll_completion(TaskRecord& record) {
             record.output_events
         );
 
-        m_ready_queues.at(record.queue_id).scheduled_job(record);
+        record.queue->scheduled_job(record);
         record.status = TaskRecord::Status::WaitingForCompletion;
 
         for (const auto& succ : record.successors) {
@@ -242,7 +242,7 @@ Poll Executor::poll_completion(TaskRecord& record) {
 
         spdlog::debug("completed task {} (command={})", record.id(), record.task->name());
         m_tasks.erase(record.event_id);
-        m_ready_queues.at(record.queue_id).completed_job(record);
+        record.queue->completed_job(record);
         record.status = TaskRecord::Status::Completed;
         record.task = nullptr;
     }

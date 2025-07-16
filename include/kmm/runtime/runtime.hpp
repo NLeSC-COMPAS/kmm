@@ -4,8 +4,8 @@
 
 #include "kmm/core/config.hpp"
 #include "kmm/core/system_info.hpp"
-#include "kmm/runtime/executor.hpp"
 #include "kmm/runtime/memory_system.hpp"
+#include "kmm/runtime/scheduler.hpp"
 #include "kmm/runtime/task_graph.hpp"
 
 namespace kmm {
@@ -66,7 +66,7 @@ class Runtime: public std::enable_shared_from_this<Runtime> {
     std::shared_ptr<DeviceStreamManager> m_stream_manager;
     std::shared_ptr<DeviceResources> m_devices;
     SystemInfo m_info;
-    Executor m_executor;
+    Scheduler m_scheduler;
     TaskGraphState m_graph_state;
 };
 

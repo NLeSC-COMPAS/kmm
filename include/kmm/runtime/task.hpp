@@ -8,7 +8,7 @@
 
 namespace kmm {
 
-class Executor;
+class Scheduler;
 class TaskRecord;
 
 class Task {
@@ -18,7 +18,7 @@ class Task {
     Task() = default;
     virtual ~Task() = default;
     virtual void start(const DeviceEventSet& input_events) = 0;
-    virtual Poll poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) = 0;
+    virtual Poll poll(TaskRecord& record, Scheduler& scheduler, DeviceEventSet& output_events) = 0;
 
     virtual const char* name() const {
         return typeid(*this).name();
@@ -28,7 +28,7 @@ class Task {
 class JoinTask final: public Task {
   public:
     void start(const DeviceEventSet& input_events) final;
-    Poll poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) final;
+    Poll poll(TaskRecord& record, Scheduler& scheduler, DeviceEventSet& output_events) final;
 
   private:
     DeviceEventSet m_dependencies;
@@ -39,7 +39,7 @@ class DeleteBufferTask: public Task {
     DeleteBufferTask(BufferId buffer_id) : m_buffer_id(buffer_id) {}
 
     void start(const DeviceEventSet& input_events) final;
-    Poll poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) final;
+    Poll poll(TaskRecord& record, Scheduler& scheduler, DeviceEventSet& output_events) final;
 
   private:
     BufferId m_buffer_id;
@@ -51,10 +51,13 @@ class HostTask: public Task {
     HostTask(std::vector<BufferRequirement> buffers) : m_buffers(std::move(buffers)) {}
 
     void start(const DeviceEventSet& input_events) final;
-    Poll poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) final;
+    Poll poll(TaskRecord& record, Scheduler& scheduler, DeviceEventSet& output_events) final;
 
   protected:
-    virtual std::future<void> submit(Executor& executor, std::vector<BufferAccessor> accessors) = 0;
+    virtual std::future<void> submit(
+        Scheduler& scheduler,
+        std::vector<BufferAccessor> accessors
+    ) = 0;
     DeviceEventSet m_dependencies;
 
   private:
@@ -80,7 +83,7 @@ class ExecuteHostTask: public HostTask {
         HostTask(std::move(buffers)),
         m_task(compute_task) {}
 
-    std::future<void> submit(Executor& executor, std::vector<BufferAccessor> accessors) override;
+    std::future<void> submit(Scheduler& scheduler, std::vector<BufferAccessor> accessors) override;
 
   private:
     ComputeTask* m_task;
@@ -95,7 +98,7 @@ class CopyHostTask: public HostTask {
         ),
         m_copy(definition) {}
 
-    std::future<void> submit(Executor& executor, std::vector<BufferAccessor> accessors) override;
+    std::future<void> submit(Scheduler& scheduler, std::vector<BufferAccessor> accessors) override;
 
   private:
     CopyDef m_copy;
@@ -110,7 +113,7 @@ class ReductionHostTask: public HostTask {
         ),
         m_reduction(definition) {}
 
-    std::future<void> submit(Executor& executor, std::vector<BufferAccessor> accessors) override;
+    std::future<void> submit(Scheduler& scheduler, std::vector<BufferAccessor> accessors) override;
 
   private:
     ReductionDef m_reduction;
@@ -122,7 +125,7 @@ class FillHostTask: public HostTask {
         HostTask({BufferRequirement {dst_buffer, MemoryId::host(), AccessMode::ReadWrite}}),
         m_fill(definition) {}
 
-    std::future<void> submit(Executor& executor, std::vector<BufferAccessor> accessors) override;
+    std::future<void> submit(Scheduler& scheduler, std::vector<BufferAccessor> accessors) override;
 
   private:
     FillDef m_fill;
@@ -135,7 +138,7 @@ class DeviceTask: public Task, public DeviceResourceOperation {
         m_buffers(std::move(buffers)) {}
 
     void start(const DeviceEventSet& input_events) final;
-    Poll poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) final;
+    Poll poll(TaskRecord& record, Scheduler& scheduler, DeviceEventSet& output_events) final;
 
     ResourceId resource_id() const {
         return m_resource;
@@ -237,7 +240,7 @@ class PrefetchTask: public Task {
         m_buffers {{buffer_id, memory_id, AccessMode::Read}} {}
 
     void start(const DeviceEventSet& input_events) final;
-    Poll poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) final;
+    Poll poll(TaskRecord& record, Scheduler& scheduler, DeviceEventSet& output_events) final;
 
   private:
     enum struct Status { Init, Polling, Completing, Completed };

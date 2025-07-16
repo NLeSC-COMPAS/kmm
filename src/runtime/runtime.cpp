@@ -45,7 +45,7 @@ Runtime::Runtime(
         m_stream_manager
     )),
     m_info(make_system_info(contexts, config)),
-    m_executor(m_devices, stream_manager, m_buffer_registry, config.debug_mode) {}
+    m_scheduler(m_devices, stream_manager, m_buffer_registry, config.debug_mode) {}
 
 Runtime::~Runtime() {
     shutdown();
@@ -72,8 +72,8 @@ bool Runtime::query_event(EventId event_id, std::chrono::system_clock::time_poin
     std::unique_lock guard {m_mutex};
     make_progress_impl();
 
-    while (!m_executor.is_completed(event_id)) {
-        KMM_ASSERT(!m_executor.is_idle());
+    while (!m_scheduler.is_completed(event_id)) {
+        KMM_ASSERT(!m_scheduler.is_idle());
         auto next_update = m_next_updated_planned;
 
         if (next_update > deadline) {
@@ -138,7 +138,7 @@ EventId Runtime::commit_impl(TaskGraph& g) {
 
     // Flush all events from the DAG builder to the scheduler
     for (auto&& e : nodes_out) {
-        m_executor.submit(e.id, build_task_for_command(e.command), std::move(e.dependencies));
+        m_scheduler.submit(e.id, build_task_for_command(e.command), std::move(e.dependencies));
     }
 
     // Plan an update to happen now since we have added new tasks to the scheduler.
@@ -158,11 +158,11 @@ void Runtime::make_progress_impl() {
     m_next_updated_planned = now + TIMEOUT;
     m_stream_manager->make_progress();
     m_memory_system->make_progress();
-    m_executor.make_progress();
+    m_scheduler.make_progress();
 }
 
 bool Runtime::is_idle_impl() {
-    return m_stream_manager->is_idle() && m_executor.is_idle()
+    return m_stream_manager->is_idle() && m_scheduler.is_idle()
         && m_memory_manager->is_idle(*m_stream_manager);
 }
 

@@ -4,7 +4,7 @@
 #include "kmm/memops/host_copy.hpp"
 #include "kmm/memops/host_fill.hpp"
 #include "kmm/memops/host_reduction.hpp"
-#include "kmm/runtime/executor.hpp"
+#include "kmm/runtime/scheduler.hpp"
 #include "kmm/runtime/task.hpp"
 
 namespace kmm {
@@ -21,7 +21,7 @@ void JoinTask::start(const DeviceEventSet& input_events) {
     m_dependencies = input_events;
 }
 
-Poll JoinTask::poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) {
+Poll JoinTask::poll(TaskRecord& record, Scheduler& scheduler, DeviceEventSet& output_events) {
     output_events.insert(std::move(m_dependencies));
     return Poll::Ready;
 }
@@ -30,8 +30,12 @@ void DeleteBufferTask::start(const DeviceEventSet& input_events) {
     m_dependencies = input_events;
 }
 
-Poll DeleteBufferTask::poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) {
-    executor.buffers().remove(m_buffer_id);
+Poll DeleteBufferTask::poll(
+    TaskRecord& record,
+    Scheduler& scheduler,
+    DeviceEventSet& output_events
+) {
+    scheduler.buffers().remove(m_buffer_id);
     output_events.insert(m_dependencies);
     return Poll::Ready;
 }
@@ -42,40 +46,40 @@ void HostTask::start(const DeviceEventSet& input_events) {
     m_status = Status::CreateBuffers;
 }
 
-Poll HostTask::poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) {
+Poll HostTask::poll(TaskRecord& record, Scheduler& scheduler, DeviceEventSet& output_events) {
     if (m_status == Status::CreateBuffers) {
         try {
-            m_requests = executor.buffers().create_requests(m_buffers);
+            m_requests = scheduler.buffers().create_requests(m_buffers);
             m_status = Status::PollingBuffers;
         } catch (const std::exception& e) {
-            executor.buffers().poison_all(m_buffers, make_poison_exception(record, e));
+            scheduler.buffers().poison_all(m_buffers, make_poison_exception(record, e));
             m_status = Status::Completing;
         }
     }
 
     if (m_status == Status::PollingBuffers) {
         try {
-            if (executor.buffers().poll_requests(m_requests, m_dependencies) == Poll::Pending) {
+            if (scheduler.buffers().poll_requests(m_requests, m_dependencies) == Poll::Pending) {
                 return Poll::Pending;
             }
 
             m_status = Status::PollingDependencies;
         } catch (const std::exception& e) {
-            executor.buffers().poison_all(m_buffers, make_poison_exception(record, e));
+            scheduler.buffers().poison_all(m_buffers, make_poison_exception(record, e));
             m_status = Status::Completing;
         }
     }
 
     if (m_status == Status::PollingDependencies) {
         try {
-            if (!executor.streams().is_ready(m_dependencies)) {
+            if (!scheduler.streams().is_ready(m_dependencies)) {
                 return Poll::Pending;
             }
 
-            m_future = submit(executor, executor.buffers().access_requests(m_requests));
+            m_future = submit(scheduler, scheduler.buffers().access_requests(m_requests));
             m_status = Status::Running;
         } catch (const std::exception& e) {
-            executor.buffers().poison_all(m_buffers, make_poison_exception(record, e));
+            scheduler.buffers().poison_all(m_buffers, make_poison_exception(record, e));
             m_status = Status::Completing;
         }
     }
@@ -86,14 +90,14 @@ Poll HostTask::poll(TaskRecord& record, Executor& executor, DeviceEventSet& outp
                 return Poll::Pending;
             }
         } catch (const std::exception& e) {
-            executor.buffers().poison_all(m_buffers, make_poison_exception(record, e));
+            scheduler.buffers().poison_all(m_buffers, make_poison_exception(record, e));
         }
 
         m_status = Status::Completing;
     }
 
     if (m_status == Status::Completing) {
-        executor.buffers().release_requests(m_requests);
+        scheduler.buffers().release_requests(m_requests);
         m_status = Status::Completed;
     }
 
@@ -101,7 +105,7 @@ Poll HostTask::poll(TaskRecord& record, Executor& executor, DeviceEventSet& outp
 }
 
 std::future<void> ExecuteHostTask::submit(
-    Executor& executor,
+    Scheduler& scheduler,
     std::vector<BufferAccessor> accessors
 ) {
     auto* task = m_task;
@@ -113,7 +117,10 @@ std::future<void> ExecuteHostTask::submit(
     });
 }
 
-std::future<void> CopyHostTask::submit(Executor& executor, std::vector<BufferAccessor> accessors) {
+std::future<void> CopyHostTask::submit(
+    Scheduler& scheduler,
+    std::vector<BufferAccessor> accessors
+) {
     KMM_ASSERT(accessors[0].layout.size_in_bytes >= m_copy.minimum_source_bytes_needed());
     KMM_ASSERT(accessors[1].layout.size_in_bytes >= m_copy.minimum_destination_bytes_needed());
     KMM_ASSERT(accessors[1].is_writable);
@@ -124,7 +131,7 @@ std::future<void> CopyHostTask::submit(Executor& executor, std::vector<BufferAcc
 }
 
 std::future<void> ReductionHostTask::submit(
-    Executor& executor,
+    Scheduler& scheduler,
     std::vector<BufferAccessor> accessors
 ) {
     return std::async(std::launch::async, [=] {
@@ -132,7 +139,10 @@ std::future<void> ReductionHostTask::submit(
     });
 }
 
-std::future<void> FillHostTask::submit(Executor& executor, std::vector<BufferAccessor> accessors) {
+std::future<void> FillHostTask::submit(
+    Scheduler& scheduler,
+    std::vector<BufferAccessor> accessors
+) {
     return std::async(std::launch::async, [=] { execute_fill(accessors[0].address, m_fill); });
 }
 
@@ -142,20 +152,20 @@ void DeviceTask::start(const DeviceEventSet& input_events) {
     m_status = Status::CreateBuffers;
 }
 
-Poll DeviceTask::poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) {
+Poll DeviceTask::poll(TaskRecord& record, Scheduler& scheduler, DeviceEventSet& output_events) {
     if (m_status == Status::CreateBuffers) {
         try {
-            m_requests = executor.buffers().create_requests(m_buffers);
+            m_requests = scheduler.buffers().create_requests(m_buffers);
             m_status = Status::PollingBuffers;
         } catch (const std::exception& e) {
-            executor.buffers().poison_all(m_buffers, make_poison_exception(record, e));
+            scheduler.buffers().poison_all(m_buffers, make_poison_exception(record, e));
             m_status = Status::Completing;
         }
     }
 
     if (m_status == Status::PollingBuffers) {
         try {
-            if (executor.buffers().poll_requests(m_requests, m_dependencies) == Poll::Pending) {
+            if (scheduler.buffers().poll_requests(m_requests, m_dependencies) == Poll::Pending) {
                 return Poll::Pending;
             }
 
@@ -163,19 +173,19 @@ Poll DeviceTask::poll(TaskRecord& record, Executor& executor, DeviceEventSet& ou
             // have the same context as the current device, and thus can be directly put
             // as dependencies on the current device stream.
             m_local_dependencies = m_dependencies.extract_events_for_context(
-                executor.streams(),
-                executor.devices().context(m_resource.as_device())
+                scheduler.streams(),
+                scheduler.devices().context(m_resource.as_device())
             );
 
             m_status = Status::PollingDependencies;
         } catch (const std::exception& e) {
-            executor.buffers().poison_all(m_buffers, make_poison_exception(record, e));
+            scheduler.buffers().poison_all(m_buffers, make_poison_exception(record, e));
             m_status = Status::Completing;
         }
     }
 
     if (m_status == Status::PollingDependencies) {
-        if (!executor.streams().is_ready(m_dependencies)) {
+        if (!scheduler.streams().is_ready(m_dependencies)) {
             return Poll::Pending;
         }
 
@@ -184,22 +194,22 @@ Poll DeviceTask::poll(TaskRecord& record, Executor& executor, DeviceEventSet& ou
 
     if (m_status == Status::Running) {
         try {
-            m_execution_event = executor.devices().submit(
+            m_execution_event = scheduler.devices().submit(
                 m_resource.as_device(),
                 m_resource.stream_affinity(),
                 m_local_dependencies,
                 *this,
-                executor.buffers().access_requests(m_requests)
+                scheduler.buffers().access_requests(m_requests)
             );
             m_status = Status::Completing;
         } catch (const std::exception& e) {
-            executor.buffers().poison_all(m_buffers, make_poison_exception(record, e));
+            scheduler.buffers().poison_all(m_buffers, make_poison_exception(record, e));
             m_status = Status::Completing;
         }
     }
 
     if (m_status == Status::Completing) {
-        executor.buffers().release_requests(m_requests, m_execution_event);
+        scheduler.buffers().release_requests(m_requests, m_execution_event);
         m_status = Status::Completed;
     }
 
@@ -241,23 +251,23 @@ void PrefetchTask::start(const DeviceEventSet& input_events) {
     m_dependencies = input_events;
 }
 
-Poll PrefetchTask::poll(TaskRecord& record, Executor& executor, DeviceEventSet& output_events) {
+Poll PrefetchTask::poll(TaskRecord& record, Scheduler& scheduler, DeviceEventSet& output_events) {
     if (m_status == Status::Init) {
-        m_requests = executor.buffers().create_requests(m_buffers);
+        m_requests = scheduler.buffers().create_requests(m_buffers);
         m_status = Status::Polling;
     }
 
     if (m_status == Status::Polling) {
-        if (executor.buffers().poll_requests(m_requests, m_dependencies) == Poll::Pending) {
+        if (scheduler.buffers().poll_requests(m_requests, m_dependencies) == Poll::Pending) {
             return Poll::Pending;
         }
 
-        executor.buffers().release_requests(m_requests);
+        scheduler.buffers().release_requests(m_requests);
         m_status = Status::Completing;
     }
 
     if (m_status == Status::Completing) {
-        if (!executor.streams().is_ready(m_dependencies)) {
+        if (!scheduler.streams().is_ready(m_dependencies)) {
             return Poll::Pending;
         }
 
