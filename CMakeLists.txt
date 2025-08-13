@@ -17,7 +17,7 @@ option(KMM_BUILD_BENCHMARKS "Build benchmarks" OFF)
 
 # Check options
 if(KMM_USE_CUDA AND KMM_USE_HIP)
-  message(FATAL_ERROR "CUDA and HIP backend are mutually exclusive.")
+  message(FATAL_ERROR "CUDA and HIP backends are mutually exclusive.")
 endif()
 
 # Enable C++17 support
