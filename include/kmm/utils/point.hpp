@@ -136,7 +136,7 @@ KMM_HOST_DEVICE bool operator!=(const Point<N, T>& lhs, const Point<M, U>& rhs) 
 
 }  // namespace kmm
 
-#if !KMM_IS_DEVICE
+#if !KMM_IS_RTC
     #include <iosfwd>
 
     #include "fmt/ostream.h"

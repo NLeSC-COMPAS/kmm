@@ -51,7 +51,8 @@ struct numeric_type_traits<double> {
         static constexpr numeric_type_tag tag = numeric_type_tag::unsigned_int;           \
                                                                                           \
         static constexpr unsigned T min_inclusive = 0;                                    \
-        static constexpr unsigned T max_inclusive = ~static_cast<unsigned T>(0);          \
+        static constexpr unsigned T max_inclusive =                                       \
+            static_cast<unsigned T>(~static_cast<unsigned T>(0));                         \
                                                                                           \
         static constexpr float min_inclusive_float = min_inclusive;                       \
         static constexpr float max_exclusive_float = 2.0f * float(max_inclusive / 2 + 1); \

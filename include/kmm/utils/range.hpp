@@ -159,6 +159,9 @@ std::ostream& operator<<(std::ostream& stream, const Range<T>& p) {
 }  // namespace kmm
 
 template<typename T>
+struct fmt::formatter<kmm::Range<T>>: fmt::ostream_formatter {};
+
+template<typename T>
 struct std::hash<kmm::Range<T>> {
     size_t operator()(const kmm::Range<T>& p) const {
         size_t result = 0;

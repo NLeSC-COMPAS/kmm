@@ -61,7 +61,7 @@ KMM_HOST_DEVICE bool operator>=(const KeyValue<T>& a, const KeyValue<T>& b) {
 
 }  // namespace kmm
 
-#if !KMM_IS_DEVICE
+#if !KMM_IS_RTC
     #include <iostream>
 
     #include "fmt/ostream.h"

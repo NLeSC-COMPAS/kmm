@@ -19,7 +19,7 @@
 #define KMM_DEBUG_ASSERT(...) KMM_ASSERT(__VA_ARGS__)
 #define KMM_TODO()            KMM_PANIC("not implemented")
 
-#if !KMM_IS_DEVICE
+#if !KMM_IS_RTC
     #include "fmt/format.h"
 
     #define KMM_PANIC_FMT(...)                                                    \

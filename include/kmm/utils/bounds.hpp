@@ -311,7 +311,7 @@ KMM_HOST_DEVICE bool operator!=(const Bounds<N, T>& lhs, const Bounds<M, U>& rhs
 }
 }  // namespace kmm
 
-#if !KMM_IS_DEVICE
+#if !KMM_IS_RTC
     #include <iosfwd>
 
     #include "fmt/ostream.h"

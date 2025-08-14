@@ -228,7 +228,7 @@ KMM_HOST_DEVICE fixed_vector<T, N + M> concat(
 }
 }  // namespace kmm
 
-#if !KMM_IS_DEVICE
+#if !KMM_IS_RTC
     #include <iostream>
 
     #include "fmt/ostream.h"
