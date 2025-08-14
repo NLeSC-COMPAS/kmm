@@ -471,7 +471,8 @@ struct ArgumentHandler<Reduce<Array<T, N>, M, P>> {
 
         views::dynamic_subdomain<K + N> domain = {
             concat(private_region, access_region).begin(),
-            concat(private_region, access_region).size()};
+            concat(private_region, access_region).size()
+        };
 
         return {buffer_index, domain};
     }

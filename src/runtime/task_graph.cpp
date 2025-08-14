@@ -64,7 +64,8 @@ EventId TaskGraph::insert_compute_task(
         CommandExecute {
             .processor_id = process_id,
             .task = std::move(task),
-            .buffers = std::move(buffers)},
+            .buffers = std::move(buffers)
+        },
         std::move(deps)
     );
 }

@@ -43,29 +43,36 @@ BufferRequirement ArrayReductionPlanner<N>::prepare_access(
 
     auto buffer_id = stage.create_buffer(layout);
 
-    auto fill_event = stage.insert_node(CommandFill {
-        .dst_buffer = buffer_id,
-        .memory_id = memory_id,
-        .definition = FillDef(
-            dtype.size_in_bytes(),
-            num_elements,
-            reduction_identity_value(dtype, m_reduction).data()
-        )});
+    auto fill_event = stage.insert_node(
+        CommandFill {
+            .dst_buffer = buffer_id,
+            .memory_id = memory_id,
+            .definition = FillDef(
+                dtype.size_in_bytes(),
+                num_elements,
+                reduction_identity_value(dtype, m_reduction).data()
+            )
+        }
+    );
 
-    m_partial_buffers.push_back(PartialReductionBuffer {
-        .chunk_index = chunk_index,
-        .buffer_id = buffer_id,
-        .memory_id = memory_id,
-        .replication_factor = replication_factor,
-        .creation_event = fill_event,
-        .write_events = {}});
+    m_partial_buffers.push_back(
+        PartialReductionBuffer {
+            .chunk_index = chunk_index,
+            .buffer_id = buffer_id,
+            .memory_id = memory_id,
+            .replication_factor = replication_factor,
+            .creation_event = fill_event,
+            .write_events = {}
+        }
+    );
 
     deps_out.push_back(fill_event);
 
     return BufferRequirement {
         .buffer_id = buffer_id,
         .memory_id = memory_id,
-        .access_mode = AccessMode::Exclusive};
+        .access_mode = AccessMode::Exclusive
+    };
 }
 
 template<size_t N>
@@ -101,7 +108,8 @@ std::pair<BufferId, EventId> ArrayReductionPlanner<N>::reduce_per_chunk_and_memo
                     .data_type = dtype,
                     .num_outputs = num_elements,
                     .num_inputs_per_output = buffers[i]->replication_factor,
-                    .output_offset_elements = i * num_elements},
+                    .output_offset_elements = i * num_elements
+                },
             },
             std::move(buffers[i]->write_events)
         );
@@ -188,7 +196,8 @@ EventId ArrayReductionPlanner<N>::reduce_per_chunk(
                 .src_memory = memory_id,
                 .dst_buffer = collect_buffer,
                 .dst_memory = chunk.owner_id,
-                .definition = copy_definition},
+                .definition = copy_definition
+            },
             {event_id}
         );
 
@@ -209,7 +218,9 @@ EventId ArrayReductionPlanner<N>::reduce_per_chunk(
                     .operation = m_reduction,
                     .data_type = m_instance->data_type(),
                     .num_outputs = num_elements,
-                    .num_inputs_per_output = intermediates.size()}},
+                    .num_inputs_per_output = intermediates.size()
+                }
+        },
         std::move(collect_events)
     );
 

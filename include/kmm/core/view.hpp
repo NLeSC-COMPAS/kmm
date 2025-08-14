@@ -41,7 +41,8 @@ struct static_offset {
     constexpr static_offset(D inner = {}) : m_inner(inner) {}
 
     template<typename D2>
-    KMM_HOST_DEVICE static static_offset from_domain(const static_offset<D2, Offsets...>& domain
+    KMM_HOST_DEVICE static static_offset from_domain(
+        const static_offset<D2, Offsets...>& domain
     ) noexcept {
         return D::from_domain(domain.inner_domain());
     }
@@ -80,7 +81,8 @@ struct dynamic_domain {
     }
 
     template<I... Dims>
-    KMM_HOST_DEVICE static dynamic_domain from_domain(const static_domain<I, Dims...>& domain
+    KMM_HOST_DEVICE static dynamic_domain from_domain(
+        const static_domain<I, Dims...>& domain
     ) noexcept {
         static_assert(sizeof...(Dims) == rank);
         return fixed_vector<index_type, rank> {Dims...};
@@ -154,7 +156,8 @@ struct dynamic_subdomain {
     }
 
     template<typename D, index_type... Offsets>
-    KMM_HOST_DEVICE static dynamic_subdomain from_domain(const static_offset<D, Offsets...>& domain
+    KMM_HOST_DEVICE static dynamic_subdomain from_domain(
+        const static_offset<D, Offsets...>& domain
     ) noexcept {
         fixed_vector<index_type, rank> offsets;
         fixed_vector<index_type, rank> sizes;
@@ -893,7 +896,8 @@ struct AbstractView:
             data() - layout().stride(Axis) * offset(Axis) + layout().stride(Axis) * index,
             views::drop_domain_axis<Axis, domain_type>::call(domain()),
             views::drop_layout_axis<Axis, layout_type>::call(layout()),
-            accessor()};
+            accessor()
+        };
     }
 
     template<size_t Axis = 0>

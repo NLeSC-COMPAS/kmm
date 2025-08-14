@@ -10,7 +10,8 @@ TEST_CASE("Distribution<1>") {
     std::vector<ArrayChunk<1>> chunks = {
         ArrayChunk<1> {.owner_id = DeviceId(0), .offset = 0, .size = 10},
         ArrayChunk<1> {.owner_id = DeviceId(1), .offset = 10, .size = 10},
-        ArrayChunk<1> {.owner_id = DeviceId(2), .offset = 20, .size = 6}};
+        ArrayChunk<1> {.owner_id = DeviceId(2), .offset = 20, .size = 6}
+    };
 
     SECTION("no swap") {}
 
@@ -52,7 +53,8 @@ TEST_CASE("Distribution<2>") {
         ArrayChunk<2> {.owner_id = DeviceId(3), .offset = {0, 20}, .size = {15, 7}},
         ArrayChunk<2> {.owner_id = DeviceId(4), .offset = {15, 0}, .size = {14, 10}},
         ArrayChunk<2> {.owner_id = DeviceId(5), .offset = {15, 10}, .size = {14, 10}},
-        ArrayChunk<2> {.owner_id = DeviceId(6), .offset = {15, 20}, .size = {14, 7}}};
+        ArrayChunk<2> {.owner_id = DeviceId(6), .offset = {15, 20}, .size = {14, 7}}
+    };
 
     SECTION("no swap") {}
 

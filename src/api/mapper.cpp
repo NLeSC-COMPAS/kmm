@@ -34,19 +34,23 @@ IndexMap::IndexMap(Axis variable, int64_t scale, int64_t offset, int64_t length,
 
 IndexMap IndexMap::range(IndexMap begin, IndexMap end) {
     if (begin.m_scale != end.m_scale || begin.m_divisor != end.m_divisor) {
-        throw std::runtime_error(fmt::format(
-            "`range` requires two expressions having the same scaling factor, given: `{}` and `{}`",
-            begin,
-            end
-        ));
+        throw std::runtime_error(
+            fmt::format(
+                "`range` requires two expressions having the same scaling factor, given: `{}` and `{}`",
+                begin,
+                end
+            )
+        );
     }
 
     if (begin.m_axis.get() != end.m_axis.get() && begin.m_scale != 0) {
-        throw std::runtime_error(fmt::format(
-            "`range` requires two expression operating on the same axis, given: `{}` and `{}`",
-            begin,
-            end
-        ));
+        throw std::runtime_error(
+            fmt::format(
+                "`range` requires two expression operating on the same axis, given: `{}` and `{}`",
+                begin,
+                end
+            )
+        );
     }
 
     return {
@@ -54,7 +58,8 @@ IndexMap IndexMap::range(IndexMap begin, IndexMap end) {
         begin.m_scale,
         begin.m_offset,
         (end.m_offset - begin.m_offset) + end.m_length,
-        begin.m_divisor};
+        begin.m_divisor
+    };
 }
 
 IndexMap IndexMap::offset_by(int64_t offset) const {
@@ -72,7 +77,8 @@ IndexMap IndexMap::scale_by(int64_t factor) const {
         checked_mul(m_scale, factor),
         checked_mul(m_offset, factor),
         checked_mul(m_length - 1, factor) + 1,
-        m_divisor};
+        m_divisor
+    };
 }
 
 IndexMap IndexMap::divide_by(int64_t divisor) const {

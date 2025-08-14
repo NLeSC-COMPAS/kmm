@@ -99,8 +99,12 @@ class MemorySystemImpl: public MemorySystem {
         DeviceEventSet& deps_out
     ) final;
 
-    void deallocate_device(DeviceId device_id, GPUdeviceptr ptr, size_t nbytes, DeviceEventSet deps)
-        final;
+    void deallocate_device(
+        DeviceId device_id,
+        GPUdeviceptr ptr,
+        size_t nbytes,
+        DeviceEventSet deps
+    ) final;
 
     DeviceEvent copy_host_to_device(
         DeviceId device_id,

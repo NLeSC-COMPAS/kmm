@@ -115,7 +115,8 @@ Point(Ts&&...) -> Point<sizeof...(Ts)>;
 template<typename T, size_t N, size_t M>
 KMM_HOST_DEVICE Point<N + M, T> concat(const Point<N, T>& lhs, const Point<M, T>& rhs) {
     return Point<N + M, T> {
-        concat((const fixed_vector<T, N>&)(lhs), (const fixed_vector<T, M>&)(rhs))};
+        concat((const fixed_vector<T, N>&)(lhs), (const fixed_vector<T, M>&)(rhs))
+    };
 }
 
 template<size_t N, typename T, size_t M, typename U>

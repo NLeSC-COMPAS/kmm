@@ -40,7 +40,8 @@ class RuntimeHandle {
         DomainChunk chunk = {
             .owner_id = target,  //
             .offset = DomainPoint::zero(),
-            .size = DomainDim::one()};
+            .size = DomainDim::one()
+        };
 
         return kmm::parallel_submit(
             worker(),

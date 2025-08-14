@@ -291,7 +291,8 @@ Bounds(Ts&&...) -> Bounds<sizeof...(Ts)>;
 template<typename T, size_t N, size_t M>
 KMM_HOST_DEVICE Bounds<N + M, T> concat(const Bounds<N, T>& lhs, const Bounds<M, T>& rhs) {
     return Bounds<N + M, T> {
-        concat((const fixed_vector<Range<T>, N>&)(lhs), (const fixed_vector<Range<T>, M>&)(rhs))};
+        concat((const fixed_vector<Range<T>, N>&)(lhs), (const fixed_vector<Range<T>, M>&)(rhs))
+    };
 }
 
 template<size_t N, typename T, size_t M, typename U>

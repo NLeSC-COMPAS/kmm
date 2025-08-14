@@ -147,6 +147,8 @@ KMM_HOST_DEVICE bool operator!=(const Range<L>& lhs, const Range<R>& rhs) {
     #include <iosfwd>
     #include <utility>
 
+    #include "fmt/ostream.h"
+
     #include "kmm/utils/hash_utils.hpp"
 
 namespace kmm {

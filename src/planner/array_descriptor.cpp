@@ -112,7 +112,8 @@ EventId ArrayDescriptor<N>::copy_bytes_into_buffer(TaskGraph& stage, void* dst_d
         auto buffer_req = BufferRequirement {
             .buffer_id = buffer.id,
             .memory_id = MemoryId::host(),
-            .access_mode = AccessMode::Read};
+            .access_mode = AccessMode::Read
+        };
 
         auto chunk = dist.chunk(i);
         auto chunk_region = Bounds<N>::from_offset_size(chunk.offset, chunk.size);
@@ -160,7 +161,8 @@ EventId ArrayDescriptor<N>::copy_bytes_from_buffer(TaskGraph& stage, const void*
         auto buffer_req = BufferRequirement {
             .buffer_id = buffer.id,  //
             .memory_id = MemoryId::host(),
-            .access_mode = AccessMode::ReadWrite};
+            .access_mode = AccessMode::ReadWrite
+        };
 
         auto chunk = dist.chunk(i);
         auto chunk_region = Bounds<N>::from_offset_size(chunk.offset, chunk.size);

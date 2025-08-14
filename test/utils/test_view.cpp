@@ -9,7 +9,8 @@ TEST_CASE("view, bound_left_to_right_layout") {
     std::vector<int> vec = {1, 2, 3, 4, 5, 6, 7, 8};
     AbstractView<int, views::dynamic_domain<1>, views::left_to_right_layout<1>> v = {
         vec.data(),
-        {{8}}};
+        {{8}}
+    };
 
     CHECK_EQ(v.offset(), 0);
     CHECK_EQ(v.size(0), 8);
@@ -36,7 +37,8 @@ TEST_CASE("view, bound2_left_to_right_layout") {
     std::vector<int> vec = {1, 2, 3, 4, 5, 6, 7, 8};
     AbstractView<int, views::dynamic_domain<2>, views::left_to_right_layout<2>> v = {
         vec.data(),
-        {{4, 2}}};
+        {{4, 2}}
+    };
 
     CHECK_EQ(v.offset(0), 0);
     CHECK_EQ(v.offset(1), 0);
@@ -72,7 +74,8 @@ TEST_CASE("view, bound2_right_to_left_layout") {
     std::vector<int> vec = {1, 2, 3, 4, 5, 6, 7, 8};
     AbstractView<int, views::dynamic_domain<2>, views::right_to_left_layout<2>> v = {
         vec.data(),
-        {{4, 2}}};
+        {{4, 2}}
+    };
 
     CHECK_EQ(v.offset(0), 0);
     CHECK_EQ(v.offset(1), 0);
@@ -108,7 +111,8 @@ TEST_CASE("view, subbound2_right_to_left_layout") {
     std::vector<int> vec = {1, 2, 3, 4, 5, 6, 7, 8};
     AbstractView<int, views::dynamic_subdomain<2>, views::right_to_left_layout<2>> v = {
         vec.data(),
-        {{100, 42}, {4, 2}}};
+        {{100, 42}, {4, 2}}
+    };
 
     CHECK_EQ(v.offset(0), 100);
     CHECK_EQ(v.offset(1), 42);

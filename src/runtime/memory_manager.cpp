@@ -533,7 +533,8 @@ BufferAccessor MemoryManager::get_accessor(Request& req) {
         .memory_id = req.memory_id,
         .layout = buffer.layout,
         .is_writable = req.mode != AccessMode::Read,
-        .address = address};
+        .address = address
+    };
 }
 
 void MemoryManager::allocate_host(Buffer& buffer, DeviceId device_affinity) {
@@ -762,11 +763,13 @@ bool MemoryManager::try_lock_allocation_device(DeviceId device_id, Buffer& buffe
             return false;
         }
 
-        throw std::runtime_error(fmt::format(
-            "cannot allocate {} bytes on GPU {}, out of memory",
-            buffer.layout.size_in_bytes,
-            device_id
-        ));
+        throw std::runtime_error(
+            fmt::format(
+                "cannot allocate {} bytes on GPU {}, out of memory",
+                buffer.layout.size_in_bytes,
+                device_id
+            )
+        );
     }
 
     spdlog::trace(

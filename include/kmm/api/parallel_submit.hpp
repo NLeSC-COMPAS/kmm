@@ -56,7 +56,8 @@ EventId parallel_submit_impl(
 
     auto init = TaskGroupInit {
         .runtime = runtime,  //
-        .domain = domain};
+        .domain = domain
+    };
 
     (std::get<Is>(handlers).initialize(init), ...);
 
@@ -72,7 +73,8 @@ EventId parallel_submit_impl(
                 .chunk = chunk,
                 .memory_id = system_info.affinity_memory(processor_id),
                 .buffers = {},
-                .dependencies = {}};
+                .dependencies = {}
+            };
 
             auto task = std::make_unique<ComputeTaskImpl<Launcher, packed_argument_t<Args>...>>(
                 chunk,
@@ -92,7 +94,8 @@ EventId parallel_submit_impl(
             auto result = TaskSubmissionResult {
                 .runtime = runtime,  //
                 .graph = graph,
-                .event_id = event_id};
+                .event_id = event_id
+            };
 
             (std::get<Is>(handlers).after_submit(result), ...);
         }
