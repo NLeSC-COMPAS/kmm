@@ -27,7 +27,7 @@
     // HIP
     // TODO: using __forceinline__ breaks compilation, it needs to be investigated
     #define KMM_HOST_DEVICE          __host__ __device__
-    #define KMM_DEVICE               __device__ __forceinline__
+    #define KMM_DEVICE               __device__
     #define KMM_HOST_DEVICE_NOINLINE __host__ __device__
     #define KMM_DEVICE_NOINLINE      __device__
     #ifdef __HIP_DEVICE_COMPILE__
