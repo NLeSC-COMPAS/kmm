@@ -25,6 +25,7 @@
     #endif
 #elif defined(__HIPCC__)
     // HIP
+    #include <hip/hip_runtime.h>
     // TODO: using __forceinline__ breaks compilation, it needs to be investigated
     #define KMM_HOST_DEVICE          __host__ __device__
     #define KMM_DEVICE               __device__
