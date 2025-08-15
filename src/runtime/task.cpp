@@ -177,6 +177,7 @@ Poll DeviceTask::poll(TaskRecord& record, Scheduler& scheduler, DeviceEventSet& 
                 scheduler.devices().context(m_resource.as_device())
             );
 
+            output_events.insert(m_local_dependencies);
             m_status = Status::PollingDependencies;
         } catch (const std::exception& e) {
             scheduler.buffers().poison_all(m_buffers, make_poison_exception(record, e));
@@ -201,6 +202,8 @@ Poll DeviceTask::poll(TaskRecord& record, Scheduler& scheduler, DeviceEventSet& 
                 *this,
                 scheduler.buffers().access_requests(m_requests)
             );
+
+            output_events.insert(m_execution_event);
             m_status = Status::Completing;
         } catch (const std::exception& e) {
             scheduler.buffers().poison_all(m_buffers, make_poison_exception(record, e));
