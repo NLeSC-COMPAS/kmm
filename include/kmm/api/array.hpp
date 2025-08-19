@@ -151,7 +151,7 @@ class Array: public ArrayBase {
     }
 
     std::vector<T> copy_to_vector() const {
-        std::vector<T> output(size());
+        std::vector<T> output(volume());
         copy_to(output);
         return output;
     }
