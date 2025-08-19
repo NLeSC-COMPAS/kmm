@@ -178,6 +178,35 @@ KMM_HOST_DEVICE bool operator!=(const Dim<N, T>& lhs, const Dim<M, U>& rhs) {
     return !(lhs == rhs);
 }
 
+namespace detail {
+// Specialize comparison between Dim<T> and T
+template<typename L, typename R, numeric_type_tag Ltag, numeric_type_tag Rtag>
+struct checked_compare_impl<L, Dim<1, R>, Ltag, Rtag>: checked_compare_impl<L, R> {};
+
+template<typename L, typename R, numeric_type_tag Ltag, numeric_type_tag Rtag>
+struct checked_compare_impl<Dim<1, L>, R, Ltag, Rtag>: checked_compare_impl<L, R> {};
+
+template<typename L, typename R, numeric_type_tag Ltag, numeric_type_tag Rtag>
+struct checked_compare_impl<Dim<1, L>, Dim<1, R>, Ltag, Rtag>: checked_compare_impl<L, R> {};
+
+template<typename T>
+struct checked_compare_impl<Dim<1, T>, Dim<1, T>, numeric_type_tag::other, numeric_type_tag::other>:
+    checked_compare_impl<T, T> {};
+
+template<typename L, typename R, numeric_type_tag Ltag, numeric_type_tag Rtag>
+struct checked_convert_impl<L, Dim<1, R>, Ltag, Rtag>: checked_convert_impl<L, R> {};
+
+template<typename L, typename R, numeric_type_tag Ltag, numeric_type_tag Rtag>
+struct checked_convert_impl<Dim<1, L>, R, Ltag, Rtag>: checked_convert_impl<L, R> {};
+
+template<typename L, typename R, numeric_type_tag Ltag, numeric_type_tag Rtag>
+struct checked_convert_impl<Dim<1, L>, Dim<1, R>, Ltag, Rtag>: checked_convert_impl<L, R> {};
+
+template<typename T>
+struct checked_convert_impl<Dim<1, T>, Dim<1, T>, numeric_type_tag::other, numeric_type_tag::other>:
+    checked_convert_impl<T, T> {};
+}  // namespace detail
+
 }  // namespace kmm
 
 #if !KMM_IS_RTC

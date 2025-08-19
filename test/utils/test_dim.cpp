@@ -149,7 +149,7 @@ TEST_CASE("Dim") {
         REQUIRE_FALSE(d.contains(p6));
     }
 
-    SECTION("concat==") {
+    SECTION("concat") {
         Dim<2> a = {1, 2};
         Dim<3> b = {3, 4, 5};
         Dim<5> c = concat(a, b);
@@ -193,6 +193,26 @@ TEST_CASE("Dim") {
         REQUIRE(e != c);
         REQUIRE(e != d);
         REQUIRE(e == e);
+    }
+
+    SECTION("is_less") {
+        REQUIRE(is_less(Dim(int(1)), int(2)));
+        REQUIRE(is_less(int(1), Dim(int(2))));
+        REQUIRE(is_less(Dim(int(1)), Dim(int(2))));
+
+        REQUIRE(is_less(Dim(int(1)), uint(2)));
+        REQUIRE(is_less(int(1), Dim(uint(2))));
+        REQUIRE(is_less(Dim(int(1)), Dim(uint(2))));
+    }
+
+    SECTION("checked_cast") {
+        REQUIRE(checked_cast<int>(Dim(int(1))) == 1);
+        REQUIRE(checked_cast<Dim<1, int>>(Dim(int(1))) == Dim(1));
+        REQUIRE(checked_cast<Dim<1, int>>(int(1)) == Dim(1));
+
+        REQUIRE(checked_cast<int>(Dim(uint(1))) == 1);
+        REQUIRE(checked_cast<Dim<1, int>>(Dim(uint(1))) == Dim(1));
+        REQUIRE(checked_cast<Dim<1, int>>(uint(1)) == Dim(1));
     }
 
     SECTION("operator<<") {
