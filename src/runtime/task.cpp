@@ -108,7 +108,8 @@ std::future<void> ExecuteHostTask::submit(
     Scheduler& scheduler,
     std::vector<BufferAccessor> accessors
 ) {
-    auto* task = m_task;
+    KMM_ASSERT(m_task != nullptr);
+    auto* task = m_task.get();
 
     return std::async(std::launch::async, [=] {
         auto host = HostResource {};
@@ -220,6 +221,7 @@ Poll DeviceTask::poll(TaskRecord& record, Scheduler& scheduler, DeviceEventSet& 
 }
 
 void ExecuteDeviceTask::execute(DeviceResource& device, std::vector<BufferAccessor> accessors) {
+    KMM_ASSERT(m_task != nullptr);
     auto context = TaskContext {std::move(accessors)};
     m_task->execute(device, context);
 }
@@ -280,7 +282,7 @@ Poll PrefetchTask::poll(TaskRecord& record, Scheduler& scheduler, DeviceEventSet
     return Poll::Ready;
 }
 
-std::unique_ptr<Task> build_task_for_command(const Command& command) {
+std::unique_ptr<Task> build_task_for_command(Command&& command) {
     if (std::get_if<CommandEmpty>(&command) != nullptr) {
         return std::make_unique<JoinTask>();
 
@@ -290,13 +292,13 @@ std::unique_ptr<Task> build_task_for_command(const Command& command) {
     } else if (const auto* e = std::get_if<CommandPrefetch>(&command)) {
         return std::make_unique<PrefetchTask>(e->buffer_id, e->memory_id);
 
-    } else if (const auto* e = std::get_if<CommandExecute>(&command)) {
+    } else if (auto* e = std::get_if<CommandExecute>(&command)) {
         auto proc = e->processor_id;
 
         if (proc.is_device()) {
-            return std::make_unique<ExecuteDeviceTask>(proc, e->task.get(), e->buffers);
+            return std::make_unique<ExecuteDeviceTask>(proc, std::move(e->task), e->buffers);
         } else {
-            return std::make_unique<ExecuteHostTask>(e->task.get(), e->buffers);
+            return std::make_unique<ExecuteHostTask>(std::move(e->task), e->buffers);
         }
 
     } else if (const auto* e = std::get_if<CommandCopy>(&command)) {

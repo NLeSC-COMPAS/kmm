@@ -14,8 +14,6 @@
 namespace kmm {
 
 struct SchedulerQueue;
-class Executor;
-class Task;
 
 class TaskRecord {
     KMM_NOT_COPYABLE_OR_MOVABLE(TaskRecord)

@@ -79,14 +79,14 @@ class HostTask: public Task {
 
 class ExecuteHostTask: public HostTask {
   public:
-    ExecuteHostTask(ComputeTask* compute_task, std::vector<BufferRequirement> buffers) :
+    ExecuteHostTask(std::unique_ptr<ComputeTask> compute_task, std::vector<BufferRequirement> buffers) :
         HostTask(std::move(buffers)),
-        m_task(compute_task) {}
+        m_task(std::move(compute_task)) {}
 
     std::future<void> submit(Scheduler& scheduler, std::vector<BufferAccessor> accessors) override;
 
   private:
-    ComputeTask* m_task;
+    std::unique_ptr<ComputeTask> m_task;
 };
 
 class CopyHostTask: public HostTask {
@@ -168,16 +168,16 @@ class ExecuteDeviceTask: public DeviceTask {
   public:
     ExecuteDeviceTask(
         ResourceId device_id,
-        ComputeTask* compute_task,
+        std::unique_ptr<ComputeTask> compute_task,
         std::vector<BufferRequirement> buffers
     ) :
         DeviceTask(device_id, std::move(buffers)),
-        m_task(compute_task) {}
+        m_task(std::move(compute_task)) {}
 
     void execute(DeviceResource& device, std::vector<BufferAccessor> accessors) final;
 
   private:
-    ComputeTask* m_task;
+    std::unique_ptr<ComputeTask> m_task;
 };
 
 class CopyDeviceTask: public DeviceTask {
@@ -251,6 +251,6 @@ class PrefetchTask: public Task {
     DeviceEventSet m_dependencies;
 };
 
-std::unique_ptr<Task> build_task_for_command(const Command& command);
+std::unique_ptr<Task> build_task_for_command(Command&& command);
 
 }  // namespace kmm

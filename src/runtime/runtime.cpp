@@ -140,7 +140,7 @@ EventId Runtime::commit_impl(TaskGraph& g) {
 
     // Flush all events from the DAG builder to the scheduler
     for (auto&& e : nodes_out) {
-        m_scheduler.submit(e.id, build_task_for_command(e.command), std::move(e.dependencies));
+        m_scheduler.submit(e.id, build_task_for_command(std::move(e.command)), std::move(e.dependencies));
     }
 
     // Plan an update to happen now since we have added new tasks to the scheduler.
