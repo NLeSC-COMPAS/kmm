@@ -1,8 +1,7 @@
+![KMM: Kernel Memory Manager](https://raw.githubusercontent.com/NLeSC-COMPAS/kmm/refs/heads/main/docs/_static/kmm-logo.png)
 
-![KMM Logo](https://raw.githubusercontent.com/NLeSC-COMPAS/kmm/refs/heads/main/docs/_static/kmm-logo.png)
 
-# KMM: Kernel Memory Manager
-
+#
 [![CPU Build Status](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-multi-compiler.yml/badge.svg)](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-multi-compiler.yml)
 [![CUDA Build Status](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-cuda-multi-compiler.yml/badge.svg)](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-cuda-multi-compiler.yml)
 [![HIP Build Status](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-hip.yml/badge.svg)](https://github.com/NLeSC-COMPAS/kmm/actions/workflows/cmake-hip.yml)
