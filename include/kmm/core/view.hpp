@@ -709,7 +709,11 @@ struct AbstractView:
     AbstractView(pointer data = nullptr, domain_type domain = {}) noexcept :
         AbstractView(data, domain, layout_type::from_domain(domain)) {}
 
-    template<typename T2, typename D2, typename L2>
+    template<
+        typename T2,
+        typename D2,
+        typename L2,
+        typename = decltype(views::convert_pointer<T2, T>::call(nullptr))>
     KMM_HOST_DEVICE AbstractView(const AbstractView<T2, D2, L2, A>& that) noexcept :
         AbstractView(
             views::convert_pointer<T2, T>::call(that.data()),
