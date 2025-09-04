@@ -4,9 +4,12 @@ name: CUDA build
 
 on:
   push:
-    branches: [ "dev" ]
-  pull_request:
-    branches: [ "main" ]
+    branches: [ 
+      # "dev"
+      "ubicloud"
+     ]
+  # pull_request:
+  #   branches: [ "main" ]
 
 jobs:
   build:
@@ -16,16 +19,20 @@ jobs:
       fail-fast: false
 
       matrix:
-        os: [ubuntu-latest]
+        os: ["ubicloud-gpu"]
         build_type: [Debug]
         cpp_compiler: [g++, clang++]
 
     steps:
-      - uses: Jimver/cuda-toolkit@v0.2.22
-        id: cuda-toolkit
-        with:
-          method: 'network'
-          sub-packages: '["toolkit"]'
+      # - uses: Jimver/cuda-toolkit@v0.2.22
+      #   id: cuda-toolkit
+      #   with:
+      #     method: 'network'
+      #     sub-packages: '["toolkit"]'
+      - name: Install cmake and clang
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake clang
       - uses: actions/checkout@v4
         with:
           submodules: 'recursive'
@@ -54,4 +61,7 @@ jobs:
 
       - name: Build
         # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
-        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+        run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }} -- -j 6
+
+      - name: Run benchmark
+        run: build/benchmarks/vector_add_bench 256 8 1000000000
