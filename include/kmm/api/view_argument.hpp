@@ -5,23 +5,23 @@
 
 namespace kmm {
 
-template<typename T, typename D, typename L = views::default_layout<D::rank>>
+template<typename T, typename D, typename L = views::default_layout>
 struct ViewArgument {
     using value_type = T;
     using domain_type = D;
-    using layout_type = L;
+    using mapping_type = typename L::template mapping_type<D>;
 
-    ViewArgument(size_t buffer_index, D domain, L layout) :
+    ViewArgument(size_t buffer_index, domain_type domain, mapping_type layout) :
         buffer_index(buffer_index),
         domain(domain),
         layout(layout) {}
 
-    ViewArgument(size_t buffer_index, D domain) :
+    ViewArgument(size_t buffer_index, domain_type domain) :
         ViewArgument(buffer_index, domain, L::from_domain(domain)) {}
 
     size_t buffer_index;
-    D domain;
-    L layout;
+    domain_type domain;
+    mapping_type layout;
 };
 
 template<typename T, typename D, typename L>
