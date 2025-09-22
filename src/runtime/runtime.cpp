@@ -172,28 +172,52 @@ bool Runtime::is_idle_impl() {
         && m_memory_manager->is_idle(*m_stream_manager);
 }
 
+static size_t compute_device_memory_limit(
+    const RuntimeConfig& config,
+    const GPUContextHandle& context
+) {
+    // ignore `device_memory_reserved` if it is zero
+    if (config.device_memory_keep_free == 0) {
+        return config.device_memory_limit;
+    }
+
+    GPUContextGuard guard {context};
+
+    size_t memory_capacity, memory_available;
+    KMM_GPU_CHECK(gpuMemGetInfo(&memory_available, &memory_capacity));
+
+    // Insufficient memory capacity
+    if (memory_capacity < config.device_memory_keep_free) {
+        spdlog::warn(
+            "cannot keep {} bytes available on GPU, memory capacity is only {} bytes",
+            config.device_memory_keep_free,
+            memory_capacity
+        );
+
+        return 0;
+    }
+
+    return std::min(
+        memory_capacity - config.device_memory_keep_free,  //
+        config.device_memory_limit
+    );
+}
+
 std::unique_ptr<AsyncAllocator> create_device_allocator(
     const RuntimeConfig& config,
-    GPUContextHandle context,
+    const GPUContextHandle& context,
     std::shared_ptr<DeviceStreamManager> stream_manager
 ) {
     std::unique_ptr<AsyncAllocator> alloc;
+    size_t memory_limit = compute_device_memory_limit(config, context);
 
     switch (config.device_memory_kind) {
         case DeviceMemoryKind::NoPool:
-            return std::make_unique<DeviceMemoryAllocator>(
-                context,
-                stream_manager,
-                config.device_memory_limit
-            );
+            return std::make_unique<DeviceMemoryAllocator>(context, stream_manager, memory_limit);
             ;
 
         case DeviceMemoryKind::CachingPool:
-            alloc = std::make_unique<DeviceMemoryAllocator>(
-                context,
-                stream_manager,
-                config.device_memory_limit
-            );
+            alloc = std::make_unique<DeviceMemoryAllocator>(context, stream_manager, memory_limit);
 
             return std::make_unique<CachingAllocator>(std::move(alloc));
 
@@ -202,7 +226,7 @@ std::unique_ptr<AsyncAllocator> create_device_allocator(
                 context,
                 stream_manager,
                 DevicePoolKind::Default,
-                config.device_memory_limit
+                memory_limit
             );
 
         case DeviceMemoryKind::PrivatePool:
@@ -210,7 +234,7 @@ std::unique_ptr<AsyncAllocator> create_device_allocator(
                 context,
                 stream_manager,
                 DevicePoolKind::Create,
-                config.device_memory_limit
+                memory_limit
             );
 
         default:
@@ -233,8 +257,8 @@ std::shared_ptr<Runtime> make_worker(const RuntimeConfig& config) {
     } else {
         for (const auto& device : devices) {
             auto context = GPUContextHandle::retain_primary_context_for_device(device);
-            contexts.push_back(context);
             device_mems.push_back(create_device_allocator(config, context, stream_manager));
+            contexts.push_back(std::move(context));
         }
 
         host_mem = std::make_unique<PinnedMemoryAllocator>(
