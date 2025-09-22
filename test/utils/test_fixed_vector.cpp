@@ -10,14 +10,14 @@ using namespace kmm;
 TEST_CASE("fixed_vector") {
     SECTION("size/alignment") {
         REQUIRE(sizeof(fixed_vector<int32_t, 0>) == 1);
-        REQUIRE(sizeof(fixed_vector<int32_t, 1>) == 1 * sizeof(int32_t));
-        REQUIRE(sizeof(fixed_vector<int32_t, 2>) == 2 * sizeof(int32_t));
-        REQUIRE(sizeof(fixed_vector<int32_t, 3>) == 3 * sizeof(int32_t));
-        REQUIRE(sizeof(fixed_vector<int32_t, 4>) == 4 * sizeof(int32_t));
-        REQUIRE(sizeof(fixed_vector<int32_t, 5>) == 5 * sizeof(int32_t));
-        REQUIRE(sizeof(fixed_vector<int32_t, 6>) == 6 * sizeof(int32_t));
-        REQUIRE(sizeof(fixed_vector<int32_t, 7>) == 7 * sizeof(int32_t));
-        REQUIRE(sizeof(fixed_vector<int32_t, 8>) == 8 * sizeof(int32_t));
+        REQUIRE(sizeof(fixed_vector<int32_t, 1>) == 4);
+        REQUIRE(sizeof(fixed_vector<int32_t, 2>) == 8);
+        REQUIRE(sizeof(fixed_vector<int32_t, 3>) == 16);
+        REQUIRE(sizeof(fixed_vector<int32_t, 4>) == 16);
+        REQUIRE(sizeof(fixed_vector<int32_t, 5>) == 32);
+        REQUIRE(sizeof(fixed_vector<int32_t, 6>) == 32);
+        REQUIRE(sizeof(fixed_vector<int32_t, 7>) == 32);
+        REQUIRE(sizeof(fixed_vector<int32_t, 8>) == 32);
 
         REQUIRE(alignof(fixed_vector<int32_t, 0>) == 1);
         REQUIRE(alignof(fixed_vector<int32_t, 1>) == 4);

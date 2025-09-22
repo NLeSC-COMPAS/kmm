@@ -31,7 +31,7 @@ class DeviceResources {
 
     DeviceEvent submit(
         DeviceId device_id,
-        std::optional<uint64_t> stream_hint,
+        DeviceStreamSet stream_hint,
         DeviceEventSet deps,
         DeviceResourceOperation& op,
         std::vector<BufferAccessor> accessors
@@ -43,7 +43,7 @@ class DeviceResources {
 
     Stream* select_stream_for_operation(
         DeviceId device_id,
-        std::optional<uint64_t> stream_hint,
+        DeviceStreamSet stream_hint,
         const DeviceEventSet& deps
     );
 

@@ -96,6 +96,71 @@ struct DeviceId {
     uint8_t m_value;
 };
 
+struct DeviceStreamSet {
+    static constexpr size_t MAX_SIZE = 64;
+    using value_type = uint64_t;
+
+    constexpr DeviceStreamSet(size_t index) {
+        if (index < MAX_SIZE) {
+            this->m_value |= value_type(1) << value_type(index);
+        }
+    }
+
+    constexpr DeviceStreamSet() = default;
+
+    constexpr DeviceStreamSet(std::initializer_list<size_t> indices) {
+        for (auto index : indices) {
+            this->m_value |= DeviceStreamSet(index).m_value;
+        }
+    }
+
+    static constexpr DeviceStreamSet range(size_t begin, size_t end) {
+        auto result = DeviceStreamSet {};
+
+        for (size_t index = begin; index < end; index++) {
+            result.m_value |= DeviceStreamSet(index).m_value;
+        }
+
+        return result;
+    }
+
+    static constexpr DeviceStreamSet all() {
+        return range(0, MAX_SIZE);
+    }
+
+    constexpr bool is_empty() const {
+        return m_value == 0;
+    }
+
+    constexpr bool contains(DeviceStreamSet that) const {
+        return (this->m_value & that.m_value) == that.m_value;
+    }
+
+    constexpr bool contains(size_t index) const {
+        return contains(DeviceStreamSet {index});
+    }
+
+    constexpr DeviceStreamSet& operator&=(const DeviceStreamSet& that) {
+        this->m_value &= that.m_value;
+        return *this;
+    }
+
+    constexpr DeviceStreamSet operator&(const DeviceStreamSet& that) const {
+        return DeviceStreamSet {*this} &= that;
+    }
+
+    constexpr bool operator==(const DeviceStreamSet& that) const {
+        return m_value == that.m_value;
+    }
+
+    constexpr bool operator!=(const DeviceStreamSet& that) const {
+        return !(*this == that);
+    }
+
+  private:
+    value_type m_value = 0;
+};
+
 struct MemoryId {
   public:
     enum struct Type : uint8_t { Host, Device };
@@ -152,15 +217,17 @@ struct MemoryId {
 
 class ResourceId {
   public:
-    static constexpr uint64_t UNASSIGNED_STREAM = ~uint64_t(0);
     enum struct Type : uint8_t { Host, Device };
 
     KMM_INLINE constexpr ResourceId() : m_type(Type::Host) {}
 
-    KMM_INLINE constexpr ResourceId(DeviceId device, uint64_t stream = UNASSIGNED_STREAM) :
+    KMM_INLINE constexpr ResourceId(
+        DeviceId device,
+        DeviceStreamSet stream_affinity = DeviceStreamSet::all()
+    ) :
         m_type(Type::Device),
         m_device(device),
-        m_stream(stream) {}
+        m_stream_affinity(stream_affinity) {}
 
     KMM_INLINE static constexpr ResourceId host(DeviceId affinity = DeviceId(0)) {
         ResourceId result;
@@ -185,11 +252,11 @@ class ResourceId {
         return m_device;
     }
 
-    KMM_INLINE constexpr std::optional<uint64_t> stream_affinity() const {
-        if (m_type == Type::Device && m_stream != UNASSIGNED_STREAM) {
-            return m_stream;
+    KMM_INLINE constexpr DeviceStreamSet stream_affinity() const {
+        if (m_type == Type::Device && m_stream_affinity != DeviceStreamSet {}) {
+            return m_stream_affinity;
         } else {
-            return std::nullopt;
+            return DeviceStreamSet::all();
         }
     }
 
@@ -197,18 +264,14 @@ class ResourceId {
         return is_host() ? MemoryId::host(m_device) : MemoryId(m_device);
     }
 
-    KMM_INLINE constexpr bool operator==(const ResourceId& that) const {
+    KMM_INLINE constexpr bool contains(const ResourceId& that) const {
         if (m_type == Type::Host && that.m_type == Type::Host) {
-            return m_device == that.m_device;
+            return true;
         } else if (m_type == Type::Device && that.m_type == Type::Device) {
-            return m_device == that.m_device && m_stream == that.m_stream;
+            return m_device == that.m_device && m_stream_affinity.contains(that.m_stream_affinity);
         } else {
             return false;
         }
-    }
-
-    KMM_INLINE constexpr bool operator!=(const ResourceId& that) const {
-        return !(*this == that);
     }
 
     friend std::ostream& operator<<(std::ostream&, const ResourceId&);
@@ -216,7 +279,7 @@ class ResourceId {
   private:
     Type m_type = Type::Host;
     DeviceId m_device = DeviceId(0);
-    uint64_t m_stream = UNASSIGNED_STREAM;  // only for Type::Device
+    DeviceStreamSet m_stream_affinity;  // only for Type::Device
 };
 
 struct BufferId {
