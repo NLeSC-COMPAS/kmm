@@ -7,13 +7,18 @@ namespace kmm {
 
 #define KMM_PANIC_OUT_OF_BOUNDS() KMM_PANIC("access out of bounds")
 
-static constexpr size_t compute_fixed_vector_alignment(size_t elem_size, size_t num) {
+template<typename T>
+static constexpr size_t compute_fixed_vector_alignment(size_t num) {
     constexpr size_t max_align = 16;
-    return ((((elem_size * num) & (~(elem_size * num) + 1)) - 1) & (max_align - 1)) + 1;
+    size_t align = alignof(T);
+    while (align < max_align && align < num * sizeof(T)) {
+        align *= 2;
+    }
+    return align;
 }
 
 template<typename T, size_t N>
-struct alignas(compute_fixed_vector_alignment(sizeof(T), N)) fixed_vector {
+struct alignas(compute_fixed_vector_alignment<T>(N)) fixed_vector {
     KMM_HOST_DEVICE
     T& operator[](size_t i) {
         if (i >= N) {
@@ -49,7 +54,7 @@ struct fixed_vector<T, 0> {
 };
 
 template<typename T>
-struct alignas(compute_fixed_vector_alignment(sizeof(T), 1)) fixed_vector<T, 1> {
+struct alignas(compute_fixed_vector_alignment<T>(1)) fixed_vector<T, 1> {
     KMM_HOST_DEVICE
     T& operator[](size_t i) {
         switch (i) {
@@ -85,7 +90,7 @@ struct alignas(compute_fixed_vector_alignment(sizeof(T), 1)) fixed_vector<T, 1> 
 };
 
 template<typename T>
-struct alignas(compute_fixed_vector_alignment(sizeof(T), 2)) fixed_vector<T, 2> {
+struct alignas(compute_fixed_vector_alignment<T>(2)) fixed_vector<T, 2> {
     KMM_HOST_DEVICE
     T& operator[](size_t i) {
         switch (i) {
@@ -115,7 +120,7 @@ struct alignas(compute_fixed_vector_alignment(sizeof(T), 2)) fixed_vector<T, 2> 
 };
 
 template<typename T>
-struct alignas(compute_fixed_vector_alignment(sizeof(T), 3)) fixed_vector<T, 3> {
+struct alignas(compute_fixed_vector_alignment<T>(3)) fixed_vector<T, 3> {
     KMM_HOST_DEVICE
     T& operator[](size_t i) {
         switch (i) {
@@ -150,7 +155,7 @@ struct alignas(compute_fixed_vector_alignment(sizeof(T), 3)) fixed_vector<T, 3> 
 };
 
 template<typename T>
-struct alignas(compute_fixed_vector_alignment(sizeof(T), 4)) fixed_vector<T, 4> {
+struct alignas(compute_fixed_vector_alignment<T>(4)) fixed_vector<T, 4> {
     KMM_HOST_DEVICE
     T& operator[](size_t i) {
         switch (i) {
