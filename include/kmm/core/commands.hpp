@@ -67,7 +67,8 @@ inline const char* command_name(const Command& cmd) {
         "CommandCopy",
         "CommandExecute",
         "CommandReduction",
-        "CommandFill"};
+        "CommandFill"
+    };
 
     return names[cmd.index()];
 }

@@ -12,14 +12,7 @@
 
 namespace kmm {
 
-class TaskGraph;
 class TaskGraphState;
-
-struct TaskNode {
-    EventId id;
-    Command command;
-    EventList dependencies;
-};
 
 class TaskGraph {
     KMM_NOT_COPYABLE_OR_MOVABLE(TaskGraph)
@@ -27,13 +20,17 @@ class TaskGraph {
   public:
     friend class TaskGraphState;
 
+    struct Node {
+        EventId id;
+        Command command;
+        EventList dependencies;
+    };
+
     TaskGraph(TaskGraphState* state);
 
     BufferId create_buffer(BufferLayout layout);
     EventId delete_buffer(BufferId id, EventList deps = {});
-
     EventId insert_barrier();
-
     EventId insert_compute_task(
         ResourceId process_id,
         std::unique_ptr<ComputeTask> task,
@@ -42,13 +39,12 @@ class TaskGraph {
     );
 
     EventId join_events(EventList deps);
-
     EventId insert_node(Command command, EventList deps = {});
 
   private:
     TaskGraphState* m_state;
     EventList m_events_since_last_barrier;
-    std::vector<TaskNode> m_staged_nodes;
+    std::vector<Node> m_staged_nodes;
     std::vector<std::pair<BufferId, BufferLayout>> m_staged_buffers;
 };
 
@@ -60,7 +56,7 @@ class TaskGraphState {
     TaskGraphState() = default;
     EventId commit(
         TaskGraph& g,
-        std::vector<TaskNode>& staged_nodes,
+        std::vector<TaskGraph::Node>& staged_nodes,
         std::vector<std::pair<BufferId, BufferLayout>>& staged_buffers
     );
 

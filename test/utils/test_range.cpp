@@ -1,213 +1,139 @@
+#include <sstream>
+
 #include "catch2/catch_all.hpp"
 
-#include "kmm/core/domain.hpp"
 #include "kmm/utils/range.hpp"
 
 using namespace kmm;
 
-TEST_CASE("Range basics") {
-    Range<default_index_type> a {0, 0};
-    Range<default_index_type> b {3};
-    Range<default_index_type> c {1, 5};
-    Range<default_index_type> d {Range<char> {3, 8}};
+TEST_CASE("range") {
+    Range<int> empty;
+    REQUIRE(empty.begin == 0);
+    REQUIRE(empty.end == 0);
 
-    SECTION("constructor") {
-        CHECK(a.begin == 0);
-        CHECK(a.end == 0);
+    Range<int> one = {8};
+    REQUIRE(one.begin == 0);
+    REQUIRE(one.end == 8);
 
-        CHECK(b.begin == 0);
-        CHECK(b.end == 3);
+    Range<int> middle = {5, 10};
+    REQUIRE(middle.begin == 5);
+    REQUIRE(middle.end == 10);
 
-        CHECK(c.begin == 1);
-        CHECK(c.end == 5);
+    Range<int> max = {INT_MIN, INT_MAX};
+    REQUIRE(max.begin == INT_MIN);
+    REQUIRE(max.end == INT_MAX);
 
-        CHECK(d.begin == 3);
-        CHECK(d.end == 8);
+    REQUIRE(empty.is_empty());
+    REQUIRE_FALSE(one.is_empty());
+    REQUIRE_FALSE(middle.is_empty());
+    REQUIRE_FALSE(max.is_empty());
+
+    REQUIRE(empty.is_convertible_to<unsigned int>());
+    REQUIRE(one.is_convertible_to<unsigned int>());
+    REQUIRE(middle.is_convertible_to<unsigned int>());
+    REQUIRE_FALSE(max.is_convertible_to<unsigned int>());
+
+    REQUIRE(Range<unsigned int>(empty) == empty);
+    REQUIRE(Range<unsigned int>(one) == one);
+    REQUIRE(Range<unsigned int>(middle) == middle);
+    REQUIRE_THROWS(Range<unsigned int>(max));
+
+    REQUIRE(Range<unsigned int>::from(empty) == empty);
+    REQUIRE(Range<unsigned int>::from(one) == one);
+    REQUIRE(Range<unsigned int>::from(middle) == middle);
+    REQUIRE(Range<unsigned int>::from(max) == Range<unsigned int>(UINT_MAX / 2 + 1, UINT_MAX / 2));
+
+    REQUIRE_FALSE(empty.contains(-1));
+    REQUIRE_FALSE(empty.contains(0));
+    REQUIRE_FALSE(empty.contains(1));
+    REQUIRE_FALSE(empty.contains(-100));
+    REQUIRE_FALSE(one.contains(-1));
+    REQUIRE(one.contains(0));
+    REQUIRE(one.contains(1));
+    REQUIRE_FALSE(one.contains(-100));
+    REQUIRE_FALSE(middle.contains(-1));
+    REQUIRE_FALSE(middle.contains(0));
+    REQUIRE_FALSE(middle.contains(1));
+    REQUIRE_FALSE(middle.contains(-100));
+    REQUIRE(max.contains(-1));
+    REQUIRE(max.contains(0));
+    REQUIRE(max.contains(1));
+    REQUIRE(max.contains(-100));
+    REQUIRE(max.contains(INT_MIN));
+    REQUIRE_FALSE(max.contains(INT_MAX));
+
+    REQUIRE(empty.contains(empty));
+    REQUIRE_FALSE(empty.contains(one));
+    REQUIRE_FALSE(empty.contains(middle));
+    REQUIRE_FALSE(empty.contains(max));
+    REQUIRE(one.contains(empty));
+    REQUIRE(one.contains(one));
+    REQUIRE_FALSE(one.contains(middle));
+    REQUIRE_FALSE(one.contains(max));
+    REQUIRE(middle.contains(empty));
+    REQUIRE_FALSE(middle.contains(one));
+    REQUIRE(middle.contains(middle));
+    REQUIRE_FALSE(middle.contains(max));
+    REQUIRE(max.contains(empty));
+    REQUIRE(max.contains(one));
+    REQUIRE(max.contains(middle));
+    REQUIRE(max.contains(max));
+
+    REQUIRE_FALSE(empty.overlaps(empty));
+    REQUIRE_FALSE(empty.overlaps(one));
+    REQUIRE_FALSE(empty.overlaps(middle));
+    REQUIRE_FALSE(empty.overlaps(max));
+    REQUIRE_FALSE(one.overlaps(empty));
+    REQUIRE(one.overlaps(one));
+    REQUIRE(one.overlaps(middle));
+    REQUIRE(one.overlaps(max));
+    REQUIRE_FALSE(middle.overlaps(empty));
+    REQUIRE(middle.overlaps(one));
+    REQUIRE(middle.overlaps(middle));
+    REQUIRE(middle.overlaps(max));
+    REQUIRE_FALSE(max.overlaps(empty));
+    REQUIRE(max.overlaps(one));
+    REQUIRE(max.overlaps(middle));
+    REQUIRE(max.overlaps(max));
+
+    REQUIRE(empty.intersection(empty) == empty);
+    REQUIRE(empty.intersection(one) == empty);
+    REQUIRE(empty.intersection(middle) == Range {5, 0});
+    REQUIRE(empty.intersection(max) == empty);
+    REQUIRE(one.intersection(empty) == empty);
+    REQUIRE(one.intersection(one) == one);
+    REQUIRE(one.intersection(middle) == Range {5, 8});
+    REQUIRE(one.intersection(max) == one);
+    REQUIRE(middle.intersection(empty) == Range {5, 0});
+    REQUIRE(middle.intersection(one) == Range {5, 8});
+    REQUIRE(middle.intersection(middle) == middle);
+    REQUIRE(middle.intersection(max) == middle);
+    REQUIRE(max.intersection(empty) == empty);
+    REQUIRE(max.intersection(one) == one);
+    REQUIRE(max.intersection(middle) == middle);
+    REQUIRE(max.intersection(max) == max);
+
+    REQUIRE(empty.size() == 0);
+    REQUIRE(one.size() == 8);
+    REQUIRE(middle.size() == 5);
+    //    REQUIRE(max.size() == -1); // ??
+
+    SECTION("split_tail") {
+        auto before = Range {5, 25};
+        auto after = before.split_tail(10);
+        REQUIRE(before == Range {5, 10});
+        REQUIRE(after == Range {10, 25});
     }
 
-    SECTION("contains index") {
-        CHECK_FALSE(a.contains(-1));
-        CHECK_FALSE(a.contains(0));
-        CHECK_FALSE(a.contains(1));
-        CHECK_FALSE(a.contains(5));
-
-        CHECK_FALSE(b.contains(-1));
-        CHECK(b.contains(0));
-        CHECK(b.contains(1));
-        CHECK_FALSE(b.contains(5));
-
-        CHECK_FALSE(c.contains(-1));
-        CHECK_FALSE(c.contains(0));
-        CHECK(c.contains(1));
-        CHECK_FALSE(c.contains(5));
-
-        CHECK_FALSE(d.contains(-1));
-        CHECK_FALSE(d.contains(0));
-        CHECK_FALSE(d.contains(1));
-        CHECK(d.contains(5));
+    SECTION("shift_by") {
+        auto total = Range {5, 25};
+        auto shifted = total.shift_by(10);
+        REQUIRE(shifted == Range {15, 35});
     }
 
-    SECTION("contains range") {
-        CHECK(a.contains(a));
-        CHECK_FALSE(a.contains(b));
-        CHECK_FALSE(a.contains(c));
-        CHECK_FALSE(a.contains(d));
-
-        CHECK(b.contains(a));
-        CHECK(b.contains(b));
-        CHECK_FALSE(b.contains(c));
-        CHECK_FALSE(b.contains(d));
-
-        CHECK_FALSE(c.contains(a));
-        CHECK_FALSE(c.contains(b));
-        CHECK(c.contains(c));
-        CHECK_FALSE(c.contains(d));
-
-        CHECK_FALSE(d.contains(a));
-        CHECK_FALSE(d.contains(b));
-        CHECK_FALSE(d.contains(c));
-        CHECK(d.contains(d));
-    }
-
-    SECTION("overlaps range") {
-        CHECK_FALSE(a.overlaps(a));
-        CHECK_FALSE(a.overlaps(b));
-        CHECK_FALSE(a.overlaps(c));
-        CHECK_FALSE(a.overlaps(d));
-
-        CHECK_FALSE(b.overlaps(a));
-        CHECK(b.overlaps(b));
-        CHECK(b.overlaps(c));
-        CHECK_FALSE(b.overlaps(d));
-
-        CHECK_FALSE(c.overlaps(a));
-        CHECK(c.overlaps(b));
-        CHECK(c.overlaps(c));
-        CHECK(c.overlaps(d));
-
-        CHECK_FALSE(d.overlaps(a));
-        CHECK_FALSE(d.overlaps(b));
-        CHECK(d.overlaps(c));
-        CHECK(d.overlaps(d));
-    }
-
-    SECTION("intersection range") {
-        CHECK(a.intersection(a) == a);
-        CHECK(a.intersection(b).is_empty());
-        CHECK(a.intersection(c).is_empty());
-        CHECK(a.intersection(d).is_empty());
-
-        CHECK(b.intersection(a).is_empty());
-        CHECK(b.intersection(b) == b);
-        CHECK(b.intersection(c) == Range<default_index_type>(1, 3));
-        CHECK(b.intersection(d).is_empty());
-
-        CHECK(c.intersection(a).is_empty());
-        CHECK(c.intersection(b) == Range<default_index_type>(1, 3));
-        CHECK(c.intersection(c) == c);
-        CHECK(c.intersection(d) == Range<default_index_type>(3, 5));
-
-        CHECK(d.intersection(a).is_empty());
-        CHECK(d.intersection(b).is_empty());
-        CHECK(d.intersection(c) == Range<default_index_type>(3, 5));
-        CHECK(d.intersection(d) == d);
-    }
-
-    SECTION("size") {
-        CHECK(a.size() == 0);
-        CHECK(b.size() == 3);
-        CHECK(c.size() == 4);
-        CHECK(d.size() == 5);
-    }
-
-    SECTION("is_empty") {
-        CHECK(a.is_empty());
-        CHECK_FALSE(b.is_empty());
-        CHECK_FALSE(c.is_empty());
-        CHECK_FALSE(d.is_empty());
-    }
-
-    SECTION("split_off") {
-        SECTION("before") {
-            auto x = d.split_off(1);
-            CHECK(d.begin == 3);
-            CHECK(d.end == 3);
-            CHECK(x.begin == 3);
-            CHECK(x.end == 8);
-        }
-
-        SECTION("begin") {
-            auto x = d.split_off(3);
-            CHECK(d.begin == 3);
-            CHECK(d.end == 3);
-            CHECK(x.begin == 3);
-            CHECK(x.end == 8);
-        }
-
-        SECTION("middle") {
-            auto x = d.split_off(5);
-            CHECK(d.begin == 3);
-            CHECK(d.end == 5);
-            CHECK(x.begin == 5);
-            CHECK(x.end == 8);
-        }
-
-        SECTION("end") {
-            auto x = d.split_off(8);
-            CHECK(d.begin == 3);
-            CHECK(d.end == 8);
-            CHECK(x.begin == 8);
-            CHECK(x.end == 8);
-        }
-
-        SECTION("after") {
-            auto x = d.split_off(10);
-            CHECK(d.begin == 3);
-            CHECK(d.end == 8);
-            CHECK(x.begin == 8);
-            CHECK(x.end == 8);
-        }
-    }
-}
-
-TEST_CASE("DomainBounds constructor") {
-    SECTION("default") {
-        auto a = DomainBounds {};
-        CHECK(a.x.begin == 0);
-        CHECK(a.y.begin == 0);
-        CHECK(a.z.begin == 0);
-        CHECK(a.x.end == 1);
-        CHECK(a.y.end == 1);
-        CHECK(a.z.end == 1);
-    }
-
-    SECTION("number") {
-        auto a = DomainBounds {3, 5};
-        CHECK(a.x.begin == 0);
-        CHECK(a.y.begin == 0);
-        CHECK(a.z.begin == 0);
-        CHECK(a.x.end == 3);
-        CHECK(a.y.end == 5);
-        CHECK(a.z.end == 1);
-    }
-
-    SECTION("range") {
-        auto a = DomainBounds {Range {1, 5}, 3};
-        CHECK(a.x.begin == 1);
-        CHECK(a.y.begin == 0);
-        CHECK(a.z.begin == 0);
-        CHECK(a.x.end == 5);
-        CHECK(a.y.end == 3);
-        CHECK(a.z.end == 1);
-    }
-
-    SECTION("offset and size") {
-        auto a = DomainBounds::from_offset_size(Index {1, 2}, Dim {3, 8});
-        CHECK(a.x.begin == 1);
-        CHECK(a.y.begin == 2);
-        CHECK(a.z.begin == 0);
-        CHECK(a.x.end == 4);
-        CHECK(a.y.end == 10);
-        CHECK(a.z.end == 1);
+    SECTION("operator<<") {
+        std::stringstream ss;
+        ss << middle;
+        REQUIRE(ss.str() == "5...10");
     }
 }

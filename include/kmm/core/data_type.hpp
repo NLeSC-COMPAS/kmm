@@ -76,10 +76,8 @@ struct DataType {
 
 template<typename T>
 struct DataTypeOf {
-    static constexpr DataType::Info value = {
-        .size_in_bytes = sizeof(T),
-        .alignment = alignof(T),
-        .type_id = typeid(T)};
+    static constexpr DataType::Info value =
+        {.size_in_bytes = sizeof(T), .alignment = alignof(T), .type_id = typeid(T)};
 };
 
 std::ostream& operator<<(std::ostream& f, ScalarType p);
@@ -96,7 +94,8 @@ std::ostream& operator<<(std::ostream& f, DataType p);
             .name = #S,                                  \
             .c_name = #T,                                \
             .type_id = typeid(T),                        \
-            .scalar_type = ::kmm::ScalarType::S};        \
+            .scalar_type = ::kmm::ScalarType::S          \
+        };                                               \
     };
 
 KMM_DEFINE_SCALAR_TYPE(Int8, int8_t)

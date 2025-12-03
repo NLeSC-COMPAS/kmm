@@ -54,7 +54,7 @@ struct FillDef {
 
     size_t offset_elements = 0;
     size_t num_elements;
-    small_buffer fill_value;
+    byte_buffer fill_value;
 };
 
 struct ReductionDef {

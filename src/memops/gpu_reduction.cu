@@ -120,7 +120,8 @@ void execute_reduction_for_type_and_op(
         checked_cast<unsigned int>(div_ceil(num_outputs, block_size_x)),
         checked_cast<unsigned int>(
             div_ceil(num_partials_per_output, block_size_y * items_per_thread)
-        )};
+        )
+    };
 
     if constexpr (IsReductionSupported<T, Op>()) {
         if (grid_size.y == 1 && block_size_y == 1) {

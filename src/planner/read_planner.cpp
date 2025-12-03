@@ -38,7 +38,8 @@ BufferRequirement ArrayReadPlanner<N>::prepare_access(
     return BufferRequirement {
         .buffer_id = buffer.id,
         .memory_id = memory_id,
-        .access_mode = AccessMode::Read};
+        .access_mode = AccessMode::Read
+    };
 }
 
 template<size_t N>

@@ -52,7 +52,8 @@ struct GPUKernel {
         int64_t g[3] = {
             chunk.size.get_or_default(0),
             chunk.size.get_or_default(1),
-            chunk.size.get_or_default(2)};
+            chunk.size.get_or_default(2)
+        };
         int64_t b[3] = {elements_per_block.x, elements_per_block.y, elements_per_block.z};
         dim3 grid_dim = {
             checked_cast<unsigned int>((g[0] / b[0]) + int64_t(g[0] % b[0] != 0)),

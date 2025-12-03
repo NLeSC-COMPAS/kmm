@@ -60,27 +60,22 @@ int DeviceInfo::attribute(GPUdevice_attribute attrib) const {
 }
 
 SystemInfo::SystemInfo(std::vector<DeviceInfo> devices) : m_devices(devices) {
-    bool keep_going = true;
-
-    for (size_t stream_index = 0; keep_going; stream_index++) {
-        keep_going = false;
-
-        for (const auto& dev : devices) {
-            if (stream_index < dev.num_compute_streams()) {
-                m_resources.push_back(ResourceId(dev.device_id(), stream_index));
-                keep_going = true;
-            }
-        }
+    for (const auto& dev : devices) {
+        m_resources.push_back(ResourceId(dev.device_id()));
     }
 }
 
-SystemInfo::SystemInfo(SystemInfo info, std::vector<ResourceId> subresources) :
-    m_devices(info.m_devices),
+SystemInfo::SystemInfo(SystemInfo base, std::vector<ResourceId> subresources) :
+    m_devices(base.m_devices),
     m_resources(std::move(subresources)) {
     for (const auto& resource : m_resources) {
-        auto occurrences = std::count(info.m_resources.begin(), info.m_resources.end(), resource);
+        bool is_valid = false;
 
-        if (occurrences == 0) {
+        for (auto base_resource : base.m_resources) {
+            is_valid |= base_resource.contains(resource);
+        }
+
+        if (!is_valid) {
             throw std::runtime_error(fmt::format("invalid resource: {}", resource));
         }
     }

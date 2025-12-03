@@ -1,21 +1,25 @@
 #pragma once
 
-#include <limits>
-#include <stdexcept>
-
 namespace kmm {
+
+namespace details {
+template<typename T>
+static constexpr bool is_signed_integral = T(-1) < T(0);
+}
 
 /**
  * Divide `num` by `denom` and round the result down.
  */
 template<typename T>
-T div_floor(T a, T b) {
-    T zero = static_cast<T>(0);
+constexpr T div_floor(T a, T b) {
+    constexpr T zero = static_cast<T>(0);
     T quotient = a / b;
 
-    // Adjust the quotient if a and b have different signs
-    if (a % b != zero && ((a >= zero) ^ (b >= zero))) {
-        quotient -= 1;
+    if constexpr (details::is_signed_integral<T>) {
+        // Adjust the quotient if a and b have different signs
+        if (a % b != zero && ((a >= zero) ^ (b >= zero))) {
+            quotient -= 1;
+        }
     }
 
     return quotient;
@@ -25,13 +29,20 @@ T div_floor(T a, T b) {
  * Divide `num` by `denom` and round the result up.
  */
 template<typename T>
-T div_ceil(T a, T b) {
-    T zero = static_cast<T>(0);
+constexpr T div_ceil(T a, T b) {
+    constexpr T zero = static_cast<T>(0);
     T quotient = a / b;
 
-    // Adjust the quotient if both a and b have the same sign
-    if (a % b != zero && !((a >= zero) ^ (b >= zero))) {
-        quotient += 1;
+    // Adjust the quotient
+    if (a % b != zero) {
+        if constexpr (details::is_signed_integral<T>) {
+            // Adjust the quotient if both a and b have the same sign
+            if ((a >= zero) == (b >= zero)) {
+                quotient += 1;
+            }
+        } else {
+            quotient += 1;
+        }
     }
 
     return quotient;
@@ -43,46 +54,44 @@ T div_ceil(T a, T b) {
  * In other words, returns the smallest value not less than `input` that is divisible by `multiple`.
  */
 template<typename T>
-T round_up_to_multiple(T input, T multiple) {
-    T zero = static_cast<T>(0);
+constexpr T round_up_to_multiple(T input, T multiple) {
+    constexpr T zero = static_cast<T>(0);
 
-    if (multiple == zero) {
-        return input;
-    }
-
-    if (multiple < zero) {
-        multiple = -multiple;
+    if constexpr (details::is_signed_integral<T>) {
+        if (multiple < zero) {
+            multiple = -multiple;
+        }
     }
 
     T remainder = input % multiple;
 
     if (remainder == zero) {
         return input;
-    } else if (input < zero) {
-        return input - remainder;
     } else {
-        return input - remainder + multiple;
+        if constexpr (details::is_signed_integral<T>) {
+            if (input < zero) {
+                return input - remainder;
+            } else {
+                return input - remainder + multiple;
+            }
+        } else {
+            return input - remainder + multiple;
+        }
     }
 }
 
 /**
- * Return the smallest number that is a power of two and is not less than `input`. This function
- * returns `numeric_limits<T>::max()` if not such number exists.
+ * Return the smallest integer that is a power of two and is not less than `input`.
  */
 template<typename T>
-static T round_up_to_power_of_two(T input) {
+constexpr T round_up_to_power_of_two(T input) {
     if (input <= static_cast<T>(0)) {
         return static_cast<T>(1);
     }
 
     input -= static_cast<T>(1);
-    for (size_t i = 1; i < sizeof(T) * 8; i *= 2) {
+    for (decltype(sizeof(T)) i = 1; i < sizeof(T) * 8; i *= 2) {
         input |= (input >> i);
-    }
-
-    // What to do with overflows?
-    if (input == std::numeric_limits<T>::max()) {
-        throw std::overflow_error("overflow in 'round_up_to_power_of_two'");
     }
 
     input += static_cast<T>(1);
@@ -90,7 +99,7 @@ static T round_up_to_power_of_two(T input) {
 }
 
 /**
- * Check if the given number is a power of two.
+ * Check if the given integer is a power of two.
  */
 template<typename T>
 static bool is_power_of_two(T input) {

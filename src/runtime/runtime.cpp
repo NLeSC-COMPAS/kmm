@@ -1,6 +1,5 @@
 #include <thread>
 
-#include "fmt/chrono.h"
 #include "fmt/std.h"
 #include "spdlog/spdlog.h"
 
@@ -40,14 +39,15 @@ Runtime::Runtime(
     m_memory_manager(std::make_shared<MemoryManager>(memory_system)),
     m_buffer_registry(std::make_shared<BufferRegistry>(m_memory_manager)),
     m_stream_manager(stream_manager),
-    m_devices(std::make_shared<DeviceResources>(
-        contexts,
-        config.device_concurrent_streams,
-        m_stream_manager
-    )),
-    m_scheduler(std::make_shared<Scheduler>(contexts.size())),
+    m_devices(
+        std::make_shared<DeviceResources>(
+            contexts,
+            config.device_concurrent_streams,
+            m_stream_manager
+        )
+    ),
     m_info(make_system_info(contexts, config)),
-    m_executor(m_devices, stream_manager, m_buffer_registry, m_scheduler, config.debug_mode) {}
+    m_scheduler(m_devices, stream_manager, m_buffer_registry, config.debug_mode) {}
 
 Runtime::~Runtime() {
     shutdown();
@@ -74,8 +74,8 @@ bool Runtime::query_event(EventId event_id, std::chrono::system_clock::time_poin
     std::unique_lock guard {m_mutex};
     make_progress_impl();
 
-    while (!m_scheduler->is_completed(event_id)) {
-        KMM_ASSERT(!m_executor.is_idle());
+    while (!m_scheduler.is_completed(event_id)) {
+        KMM_ASSERT(!m_scheduler.is_idle());
         auto next_update = m_next_updated_planned;
 
         if (next_update > deadline) {
@@ -128,7 +128,7 @@ void Runtime::shutdown() {
 }
 
 EventId Runtime::commit_impl(TaskGraph& g) {
-    std::vector<TaskNode> nodes_out;
+    std::vector<TaskGraph::Node> nodes_out;
     std::vector<std::pair<BufferId, BufferLayout>> buffers_out;
 
     auto barrier_id = m_graph_state.commit(g, nodes_out, buffers_out);
@@ -140,7 +140,11 @@ EventId Runtime::commit_impl(TaskGraph& g) {
 
     // Flush all events from the DAG builder to the scheduler
     for (auto&& e : nodes_out) {
-        m_scheduler->submit(e.id, std::move(e.command), std::move(e.dependencies));
+        m_scheduler.submit(
+            e.id,  //
+            build_task_for_command(std::move(e.command)),
+            std::move(e.dependencies)
+        );
     }
 
     // Plan an update to happen now since we have added new tasks to the scheduler.
@@ -160,41 +164,60 @@ void Runtime::make_progress_impl() {
     m_next_updated_planned = now + TIMEOUT;
     m_stream_manager->make_progress();
     m_memory_system->make_progress();
-    m_executor.make_progress();
-
-    DeviceEventSet deps;
-    while (auto task = m_scheduler->pop_ready(&deps)) {
-        m_executor.execute_task(std::move(*task), std::move(deps));
-    }
+    m_scheduler.make_progress();
 }
 
 bool Runtime::is_idle_impl() {
-    return m_stream_manager->is_idle() && m_executor.is_idle() && m_scheduler->is_idle()
+    return m_stream_manager->is_idle() && m_scheduler.is_idle()
         && m_memory_manager->is_idle(*m_stream_manager);
+}
+
+static size_t compute_device_memory_limit(
+    const RuntimeConfig& config,
+    const GPUContextHandle& context
+) {
+    // ignore `device_memory_reserved` if it is zero
+    if (config.device_memory_keep_free == 0) {
+        return config.device_memory_limit;
+    }
+
+    GPUContextGuard guard {context};
+
+    size_t memory_capacity, memory_available;
+    KMM_GPU_CHECK(gpuMemGetInfo(&memory_available, &memory_capacity));
+
+    // Insufficient memory capacity
+    if (memory_capacity < config.device_memory_keep_free) {
+        spdlog::warn(
+            "cannot keep {} bytes available on GPU, memory capacity is only {} bytes",
+            config.device_memory_keep_free,
+            memory_capacity
+        );
+
+        return 0;
+    }
+
+    return std::min(
+        memory_capacity - config.device_memory_keep_free,  //
+        config.device_memory_limit
+    );
 }
 
 std::unique_ptr<AsyncAllocator> create_device_allocator(
     const RuntimeConfig& config,
-    GPUContextHandle context,
+    const GPUContextHandle& context,
     std::shared_ptr<DeviceStreamManager> stream_manager
 ) {
     std::unique_ptr<AsyncAllocator> alloc;
+    size_t memory_limit = compute_device_memory_limit(config, context);
 
     switch (config.device_memory_kind) {
         case DeviceMemoryKind::NoPool:
-            return std::make_unique<DeviceMemoryAllocator>(
-                context,
-                stream_manager,
-                config.device_memory_limit
-            );
+            return std::make_unique<DeviceMemoryAllocator>(context, stream_manager, memory_limit);
             ;
 
         case DeviceMemoryKind::CachingPool:
-            alloc = std::make_unique<DeviceMemoryAllocator>(
-                context,
-                stream_manager,
-                config.device_memory_limit
-            );
+            alloc = std::make_unique<DeviceMemoryAllocator>(context, stream_manager, memory_limit);
 
             return std::make_unique<CachingAllocator>(std::move(alloc));
 
@@ -203,7 +226,7 @@ std::unique_ptr<AsyncAllocator> create_device_allocator(
                 context,
                 stream_manager,
                 DevicePoolKind::Default,
-                config.device_memory_limit
+                memory_limit
             );
 
         case DeviceMemoryKind::PrivatePool:
@@ -211,7 +234,7 @@ std::unique_ptr<AsyncAllocator> create_device_allocator(
                 context,
                 stream_manager,
                 DevicePoolKind::Create,
-                config.device_memory_limit
+                memory_limit
             );
 
         default:
@@ -234,8 +257,8 @@ std::shared_ptr<Runtime> make_worker(const RuntimeConfig& config) {
     } else {
         for (const auto& device : devices) {
             auto context = GPUContextHandle::retain_primary_context_for_device(device);
-            contexts.push_back(context);
             device_mems.push_back(create_device_allocator(config, context, stream_manager));
+            contexts.push_back(std::move(context));
         }
 
         host_mem = std::make_unique<PinnedMemoryAllocator>(

@@ -47,12 +47,17 @@ struct RuntimeConfig {
     /// the physical memory is used as the limit instead.
     size_t device_memory_limit = std::numeric_limits<size_t>::max();
 
+    /// Reserve a specified amount of GPU memory for possibly other applications, in bytes. For example, if this is set
+    /// to 1GB and the memory capacity of the GPU is 12 GB, then at most 11 GB will be used by the KMM runtime system
+    /// and the remaining space can be used by other applications.
+    size_t device_memory_keep_free = 0;
+
     /// If nonzero, use an arena allocator on each device. This will allocate large blocks of the
     /// specified size, from which smaller allocations are subsequently sub-allocated.
     size_t device_memory_block_size = 0;
 
     /// The number of concurrent streams on each device for execution of kernels.
-    size_t device_concurrent_streams = 1;
+    size_t device_concurrent_streams = 8;
 
     /// Enable this run the system in debug mode. This will be significantly slower, but can be
     /// used to track down synchronization bugs.

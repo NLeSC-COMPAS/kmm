@@ -37,7 +37,7 @@ int main() {
     auto y = rt.allocate({1.0F, 2.0F, 3.0F});
     auto structure = Example {.x = 123, .y = y};
 
-    rt.parallel_submit(kmm::TileDomain({1000}, {200}), kmm::Host(example), _x, structure);
+    rt.parallel_submit(kmm::TileDomain(1000, 200), kmm::Host(example), _x, structure);
     rt.synchronize();
 
     return EXIT_SUCCESS;

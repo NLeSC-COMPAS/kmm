@@ -1,138 +1,90 @@
-#include <cmath>
+#include <cstdint>
 
 #include "catch2/catch_all.hpp"
 
 #include "kmm/utils/integer_fun.hpp"
-#define CHECK_EQ(A, B) CHECK((A) == (B))
 
 using namespace kmm;
 
-TEST_CASE("integer_fun, round_up_to_multiple") {
-    CHECK_EQ(round_up_to_multiple(uint32_t(5), uint32_t(2)), uint32_t(6));
-    CHECK_EQ(round_up_to_multiple(uint32_t(103), uint32_t(5)), uint32_t(105));
-    CHECK_EQ(round_up_to_multiple(uint32_t(0), uint32_t(5)), uint32_t(0));
+using i32 = int32_t;
+using u64 = uint64_t;
 
-    CHECK_EQ(round_up_to_multiple(uint64_t(5), uint64_t(2)), uint64_t(6));
-    CHECK_EQ(round_up_to_multiple(uint64_t(103), uint64_t(5)), uint64_t(105));
-    CHECK_EQ(round_up_to_multiple(uint64_t(0), uint64_t(5)), uint64_t(0));
+TEST_CASE("div_floor") {
+    REQUIRE(div_floor<i32>(0, 5) == 0);
+    REQUIRE(div_floor<i32>(8, 4) == 2);
+    REQUIRE(div_floor<i32>(-8, 4) == -2);
+    REQUIRE(div_floor<i32>(8, -4) == -2);
+    REQUIRE(div_floor<i32>(-8, -4) == 2);
+    REQUIRE(div_floor<i32>(7, 4) == 1);
+    REQUIRE(div_floor<i32>(-7, 4) == -2);
+    REQUIRE(div_floor<i32>(7, -4) == -2);
+    REQUIRE(div_floor<i32>(-7, -4) == 1);
 
-    CHECK_EQ(round_up_to_multiple(int32_t(5), int32_t(2)), int32_t(6));
-    CHECK_EQ(round_up_to_multiple(int32_t(5), int32_t(-2)), int32_t(6));
-    CHECK_EQ(round_up_to_multiple(int32_t(-5), int32_t(2)), int32_t(-4));
-    CHECK_EQ(round_up_to_multiple(int32_t(-5), int32_t(-2)), int32_t(-4));
-    CHECK_EQ(round_up_to_multiple(int32_t(6), int32_t(2)), int32_t(6));
-    CHECK_EQ(round_up_to_multiple(int32_t(6), int32_t(-2)), int32_t(6));
-    CHECK_EQ(round_up_to_multiple(int32_t(-6), int32_t(2)), int32_t(-6));
-    CHECK_EQ(round_up_to_multiple(int32_t(-6), int32_t(-2)), int32_t(-6));
-    CHECK_EQ(round_up_to_multiple(int32_t(103), int32_t(5)), int32_t(105));
-    CHECK_EQ(round_up_to_multiple(int32_t(0), int32_t(5)), int32_t(0));
-
-    CHECK_EQ(round_up_to_multiple(int64_t(5), int64_t(2)), int64_t(6));
-    CHECK_EQ(round_up_to_multiple(int64_t(5), int64_t(-2)), int64_t(6));
-    CHECK_EQ(round_up_to_multiple(int64_t(-5), int64_t(2)), int64_t(-4));
-    CHECK_EQ(round_up_to_multiple(int64_t(-5), int64_t(-2)), int64_t(-4));
-    CHECK_EQ(round_up_to_multiple(int64_t(6), int64_t(2)), int64_t(6));
-    CHECK_EQ(round_up_to_multiple(int64_t(6), int64_t(-2)), int64_t(6));
-    CHECK_EQ(round_up_to_multiple(int64_t(-6), int64_t(2)), int64_t(-6));
-    CHECK_EQ(round_up_to_multiple(int64_t(-6), int64_t(-2)), int64_t(-6));
-    CHECK_EQ(round_up_to_multiple(int64_t(103), int64_t(5)), int64_t(105));
-    CHECK_EQ(round_up_to_multiple(int64_t(0), int64_t(5)), int64_t(0));
+    REQUIRE(div_floor<u64>(0ULL, 5ULL) == 0ULL);
+    REQUIRE(div_floor<u64>(9ULL, 2ULL) == 4ULL);
+    REQUIRE(div_floor<u64>(15ULL, 3ULL) == 5ULL);
+    REQUIRE(div_floor<u64>(123'456'789ULL, 1'000ULL) == 123'456ULL);
 }
 
-TEST_CASE("integer_fun, round_up_to_power_of_two") {
-    CHECK_EQ(round_up_to_power_of_two(uint32_t(0)), 1);
-    CHECK_EQ(round_up_to_power_of_two(uint32_t(5)), 8);
-    CHECK_EQ(round_up_to_power_of_two(uint32_t(1024)), 1024);
-    CHECK_EQ(round_up_to_power_of_two(uint32_t(10000)), 16384);
-    CHECK_THROWS(round_up_to_power_of_two(std::numeric_limits<uint32_t>::max()));
+TEST_CASE("div_ceil") {
+    REQUIRE(div_ceil<i32>(0, 5) == 0);
+    REQUIRE(div_ceil<i32>(8, 4) == 2);
+    REQUIRE(div_ceil<i32>(-8, 4) == -2);
+    REQUIRE(div_ceil<i32>(8, -4) == -2);
+    REQUIRE(div_ceil<i32>(-8, -4) == 2);
+    REQUIRE(div_ceil<i32>(7, 4) == 2);
+    REQUIRE(div_ceil<i32>(-7, 4) == -1);
+    REQUIRE(div_ceil<i32>(7, -4) == -1);
+    REQUIRE(div_ceil<i32>(-7, -4) == 2);
 
-    CHECK_EQ(round_up_to_power_of_two(uint64_t(0)), 1);
-    CHECK_EQ(round_up_to_power_of_two(uint64_t(5)), 8);
-    CHECK_EQ(round_up_to_power_of_two(uint64_t(1024)), 1024);
-    CHECK_EQ(round_up_to_power_of_two(uint64_t(10000)), 16384);
-    CHECK_THROWS(round_up_to_power_of_two(std::numeric_limits<uint64_t>::max()));
-
-    CHECK_EQ(round_up_to_power_of_two(int32_t(0)), 1);
-    CHECK_EQ(round_up_to_power_of_two(int32_t(5)), 8);
-    CHECK_EQ(round_up_to_power_of_two(int32_t(-5)), 1);
-    CHECK_EQ(round_up_to_power_of_two(int32_t(1024)), 1024);
-    CHECK_EQ(round_up_to_power_of_two(int32_t(-1024)), 1);
-    CHECK_EQ(round_up_to_power_of_two(int32_t(10000)), 16384);
-    CHECK_EQ(round_up_to_power_of_two(int32_t(-10000)), 1);
-    CHECK_EQ(round_up_to_power_of_two(std::numeric_limits<int32_t>::min()), 1);
-    CHECK_THROWS(round_up_to_power_of_two(std::numeric_limits<int32_t>::max()));
-
-    CHECK_EQ(round_up_to_power_of_two(int64_t(0)), 1);
-    CHECK_EQ(round_up_to_power_of_two(int64_t(5)), 8);
-    CHECK_EQ(round_up_to_power_of_two(int64_t(-5)), 1);
-    CHECK_EQ(round_up_to_power_of_two(int64_t(1024)), 1024);
-    CHECK_EQ(round_up_to_power_of_two(int64_t(-1024)), 1);
-    CHECK_EQ(round_up_to_power_of_two(int64_t(10000)), 16384);
-    CHECK_EQ(round_up_to_power_of_two(int64_t(-10000)), 1);
-    CHECK_EQ(round_up_to_power_of_two(std::numeric_limits<int64_t>::min()), 1);
-    CHECK_THROWS(round_up_to_power_of_two(std::numeric_limits<int64_t>::max()));
+    REQUIRE(div_ceil<u64>(0ULL, 5ULL) == 0ULL);
+    REQUIRE(div_ceil<u64>(9ULL, 2ULL) == 5ULL);
+    REQUIRE(div_ceil<u64>(15ULL, 3ULL) == 5ULL);
+    REQUIRE(div_ceil<u64>(123'456'789ULL, 1'000ULL) == 123'457ULL);
 }
 
-TEST_CASE("integer_fun, div_ceil and div_floor") {
-#define CHECK_DIV_CASE(T, A, B)                                          \
-    CHECK_EQ(div_ceil(T(A), T(B)), T(std::ceil(double(A) / double(B)))); \
-    CHECK_EQ(div_floor(T(A), T(B)), T(std::floor(double(A) / double(B))));
+TEST_CASE("round_up_to_multiple") {
+    // positive input
+    REQUIRE(round_up_to_multiple<i32>(0, 8) == 0);
+    REQUIRE(round_up_to_multiple<i32>(7, 4) == 8);
+    REQUIRE(round_up_to_multiple<i32>(12, 4) == 12);
 
-    CHECK_DIV_CASE(uint32_t, 5, 2);
-    CHECK_DIV_CASE(uint32_t, 6, 2);
-    CHECK_DIV_CASE(uint32_t, 7, 2);
-    CHECK_DIV_CASE(uint32_t, 103, 5);
-    CHECK_DIV_CASE(uint32_t, 0, 5);
+    // negative input
+    REQUIRE(round_up_to_multiple<i32>(-7, 4) == -4);
+    REQUIRE(round_up_to_multiple<i32>(-12, 4) == -12);
+    REQUIRE(round_up_to_multiple<i32>(-7, -4) == -4);
+    REQUIRE(round_up_to_multiple<i32>(-12, -4) == -12);
 
-    CHECK_DIV_CASE(uint64_t, 5, 2);
-    CHECK_DIV_CASE(uint64_t, 103, 5);
-    CHECK_DIV_CASE(uint64_t, 0, 5);
-
-    CHECK_DIV_CASE(int32_t, 5, 2);
-    CHECK_DIV_CASE(int32_t, 5, -2);
-    CHECK_DIV_CASE(int32_t, -5, 2);
-    CHECK_DIV_CASE(int32_t, -5, -2);
-    CHECK_DIV_CASE(int32_t, 6, 2);
-    CHECK_DIV_CASE(int32_t, 6, -2);
-    CHECK_DIV_CASE(int32_t, -6, 2);
-    CHECK_DIV_CASE(int32_t, -6, -2);
-    CHECK_DIV_CASE(int32_t, 103, 5);
-    CHECK_DIV_CASE(int32_t, 0, 5);
-
-    CHECK_DIV_CASE(int64_t, 5, 2);
-    CHECK_DIV_CASE(int64_t, 5, -2);
-    CHECK_DIV_CASE(int64_t, -5, 2);
-    CHECK_DIV_CASE(int64_t, -5, -2);
-    CHECK_DIV_CASE(int64_t, 6, 2);
-    CHECK_DIV_CASE(int64_t, 6, -2);
-    CHECK_DIV_CASE(int64_t, -6, 2);
-    CHECK_DIV_CASE(int64_t, -6, -2);
-    CHECK_DIV_CASE(int64_t, 103, 5);
-    CHECK_DIV_CASE(int64_t, 0, 5);
+    // unsigned
+    REQUIRE(round_up_to_multiple<u64>(9ULL, 8ULL) == 16ULL);
+    REQUIRE(round_up_to_multiple<u64>(32ULL, 8ULL) == 32ULL);
 }
 
-TEST_CASE("integer_fun, is_power_of_two") {
-    CHECK_FALSE(is_power_of_two(uint32_t(0)));
-    CHECK(is_power_of_two(uint32_t(1)));
-    CHECK(is_power_of_two(uint32_t(1024)));
-    CHECK_FALSE(is_power_of_two(uint32_t(1050)));
-    CHECK_FALSE(is_power_of_two(uint32_t(std::numeric_limits<uint32_t>::max())));
+TEST_CASE("round_up_to_power_of_two") {
+    REQUIRE(round_up_to_power_of_two<i32>(-1) == 1);
+    REQUIRE(round_up_to_power_of_two<i32>(0) == 1);
+    REQUIRE(round_up_to_power_of_two<i32>(1) == 1);
+    REQUIRE(round_up_to_power_of_two<i32>(2) == 2);
+    REQUIRE(round_up_to_power_of_two<i32>(3) == 4);
+    REQUIRE(round_up_to_power_of_two<i32>(17) == 32);
 
-    CHECK_FALSE(is_power_of_two(int32_t(0)));
-    CHECK(is_power_of_two(int32_t(1)));
-    CHECK(is_power_of_two(int32_t(1024)));
-    CHECK_FALSE(is_power_of_two(int32_t(1050)));
-    CHECK_FALSE(is_power_of_two(int32_t(std::numeric_limits<int32_t>::max())));
+    REQUIRE(round_up_to_power_of_two<u64>(63ULL) == 64ULL);
+    REQUIRE(round_up_to_power_of_two<u64>(64ULL) == 64ULL);
+    REQUIRE(round_up_to_power_of_two<u64>(65ULL) == 128ULL);
+}
 
-    CHECK_FALSE(is_power_of_two(uint64_t(0)));
-    CHECK(is_power_of_two(uint64_t(1)));
-    CHECK(is_power_of_two(uint64_t(1024)));
-    CHECK_FALSE(is_power_of_two(uint64_t(1050)));
-    CHECK_FALSE(is_power_of_two(uint64_t(std::numeric_limits<uint64_t>::max())));
+TEST_CASE("is_power_of_two") {
+    REQUIRE(is_power_of_two<i32>(-1) == false);
+    REQUIRE(is_power_of_two<i32>(0) == false);
+    REQUIRE(is_power_of_two<i32>(1) == true);
+    REQUIRE(is_power_of_two<i32>(2) == true);
+    REQUIRE(is_power_of_two<i32>(3) == false);
+    REQUIRE(is_power_of_two<i32>(16) == true);
+    REQUIRE(is_power_of_two<i32>(std::numeric_limits<i32>::min()) == false);
+    REQUIRE(is_power_of_two<i32>(std::numeric_limits<i32>::max()) == false);
 
-    CHECK_FALSE(is_power_of_two(int64_t(0)));
-    CHECK(is_power_of_two(int64_t(1)));
-    CHECK(is_power_of_two(int64_t(1024)));
-    CHECK_FALSE(is_power_of_two(int64_t(1050)));
-    CHECK_FALSE(is_power_of_two(int64_t(std::numeric_limits<int64_t>::max())));
+    REQUIRE(is_power_of_two<u64>(1'024ULL) == true);
+    REQUIRE(is_power_of_two<u64>(1'025ULL) == false);
+    REQUIRE(is_power_of_two<u64>(std::numeric_limits<u64>::min()) == false);
+    REQUIRE(is_power_of_two<u64>(std::numeric_limits<u64>::max()) == false);
 }

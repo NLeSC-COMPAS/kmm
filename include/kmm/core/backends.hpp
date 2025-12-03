@@ -13,7 +13,7 @@
 #elif KMM_USE_HIP
     #include <hip/hip_bf16.h>
     #include <hip/hip_fp16.h>
-    #include <hip/hip_runtime_api.h>
+    #include <hip/hip_runtime.h>
     #include <rocblas/rocblas.h>
 #endif
 
@@ -123,7 +123,16 @@ using GPUmemLocationType = CUmemLocationType;
 using GPUevent_t = CUevent;
 using GPU_MEMCPY2D = CUDA_MEMCPY2D;
 
-GPUresult gpuMemcpyPeerAsync(GPUdeviceptr, GPUcontext, GPUdevice, GPUdeviceptr, GPUcontext, GPUdevice, size_t, GPUstream_t);
+GPUresult gpuMemcpyPeerAsync(
+    GPUdeviceptr,
+    GPUcontext,
+    GPUdevice,
+    GPUdeviceptr,
+    GPUcontext,
+    GPUdevice,
+    size_t,
+    GPUstream_t
+);
 
     // cuBLAS
     #define blasCreate          cublasCreate
@@ -250,7 +259,16 @@ const char* blasGetStatusName(blasStatus_t);
 GPUresult gpuMemcpyAsync(GPUdeviceptr, GPUdeviceptr, size_t, GPUstream_t);
 GPUresult gpuMemcpyHtoDAsync(GPUdeviceptr, const void*, size_t, GPUstream_t);
 GPUresult gpuMemcpyHtoD(GPUdeviceptr, const void*, size_t);
-GPUresult gpuMemcpyPeerAsync(GPUdeviceptr, GPUcontext, GPUdevice, GPUdeviceptr, GPUcontext, GPUdevice, size_t, GPUstream_t);
+GPUresult gpuMemcpyPeerAsync(
+    GPUdeviceptr,
+    GPUcontext,
+    GPUdevice,
+    GPUdeviceptr,
+    GPUcontext,
+    GPUdevice,
+    size_t,
+    GPUstream_t
+);
 
 #else
     #define GPU_DEVICE_ATTRIBUTE_MAX   1

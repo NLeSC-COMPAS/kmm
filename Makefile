@@ -1,4 +1,4 @@
-CLANG_FORMAT=clang-format-16 --verbose
+CLANG_FORMAT=clang-format --verbose
 
 pretty:
 	${CLANG_FORMAT} -i include/kmm/*.hpp include/kmm/*/*.hpp

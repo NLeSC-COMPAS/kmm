@@ -1,15 +1,15 @@
 #pragma once
 
 #include <cstddef>
+#include <iostream>
 #include <limits>
 #include <memory>
-#include <stdexcept>
+
+#include "fmt/ostream.h"
 
 namespace kmm {
 
-[[noreturn]] __attribute__((noinline)) inline void throw_small_vector_out_of_capacity() {
-    throw std::overflow_error("small_vector exceeds capacity");
-}
+[[noreturn]] __attribute__((noinline)) void throw_small_vector_out_of_capacity();
 
 template<typename T, size_t InlineSize>
 struct small_vector {
@@ -21,9 +21,9 @@ struct small_vector {
         insert_all(that.begin(), that.end());
     }
 
-    template<size_t N>
-    small_vector(const small_vector<T, N>& that) {
-        insert_all(that.begin(), that.end());
+    template<typename U, size_t N>
+    small_vector(const small_vector<U, N>& that) {
+        insert_all(that);
     }
 
     small_vector(small_vector&& that) noexcept {
@@ -34,8 +34,7 @@ struct small_vector {
         insert_all(items.begin(), items.end());
     }
 
-    template<typename U, size_t K>
-    small_vector& operator=(const small_vector<U, K>& that) {
+    small_vector& operator=(const small_vector& that) {
         if (this != &that) {
             clear();
             insert_all(that);
@@ -44,12 +43,10 @@ struct small_vector {
         return *this;
     }
 
-    small_vector& operator=(const small_vector& that) {
-        if (this != &that) {
-            clear();
-            insert_all(that);
-        }
-
+    template<typename U, size_t K>
+    small_vector& operator=(const small_vector<U, K>& that) {
+        clear();
+        insert_all(that);
         return *this;
     }
 
@@ -88,10 +85,6 @@ struct small_vector {
         return m_size == 0;
     }
 
-    void clear() noexcept {
-        m_size = 0;
-    }
-
     bool is_heap_allocated() const noexcept {
         return m_capacity > InlineSize;
     }
@@ -108,6 +101,7 @@ struct small_vector {
         capacity_type new_capacity = m_capacity;
         do {
             if (new_capacity > std::numeric_limits<capacity_type>::max() - new_capacity) {
+                // Failed to grow capacity
                 return false;
             }
 
@@ -118,7 +112,7 @@ struct small_vector {
             new_capacity = 16;
         }
 
-        auto new_data = std::unique_ptr<T[]>(new (std::nothrow_t {}) T[new_capacity]);
+        auto new_data = std::unique_ptr<T[]>(new (std::nothrow_t {}) T[new_capacity] {});
 
         if (new_data == nullptr) {
             return false;
@@ -205,6 +199,10 @@ struct small_vector {
         m_size = static_cast<capacity_type>(new_size);
     }
 
+    void clear() noexcept {
+        m_size = 0;
+    }
+
     T& operator[](size_t i) noexcept {
         return *(data() + i);
     }
@@ -229,37 +227,29 @@ struct small_vector {
         return data() + size();
     }
 
-    template<typename F>
-    const T* find_if(F pred) const {
-        for (const auto& v : *this) {
-            if (pred(v)) {
-                return &v;
-            }
-        }
-
-        return end();
-    }
-
-    template<typename R>
-    bool contains(R&& item) const {
-        bool found = false;
-
-        for (const auto& v : *this) {
-            if (v == item) {
-                found = true;
-            }
-        }
-
-        return found;
-    }
-
   private:
+    T* m_data = m_inline_data;
     capacity_type m_size = 0;
     capacity_type m_capacity = InlineSize;
     T m_inline_data[InlineSize];
-    T* m_data = m_inline_data;
 };
 
-using small_buffer = small_vector<uint8_t, sizeof(uint64_t)>;
+using byte_buffer = small_vector<uint8_t, sizeof(uint64_t)>;
 
+template<typename T, size_t N>
+std::ostream& operator<<(std::ostream& stream, const small_vector<T, N>& p) {
+    stream << "{";
+    for (size_t i = 0; i < p.size(); i++) {
+        if (i != 0) {
+            stream << ", ";
+        }
+
+        stream << p[i];
+    }
+
+    return stream << "}";
+}
 }  // namespace kmm
+
+template<typename T, size_t N>
+struct fmt::formatter<kmm::small_vector<T, N>>: fmt::ostream_formatter {};

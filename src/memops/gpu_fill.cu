@@ -100,10 +100,12 @@ void execute_gpu_fill_async(GPUstream_t stream, GPUdeviceptr dest_buffer, const 
         KMM_ASSERT((unsigned long long)(dest_buffer) % 8 == 0);  // must be aligned?
         submit_fill_kernel<uint64_t>(stream, dest_buffer, nbytes / sizeof(uint64_t), fill_pattern);
     } else {
-        throw GPUException(fmt::format(
-            "could not fill buffer, value is {} bits, but only 8, 16, 32 or 64 bit is supported",
-            element_size * 8
-        ));
+        throw GPUException(
+            fmt::format(
+                "could not fill buffer, value is {} bits, but only 8, 16, 32 or 64 bit is supported",
+                element_size * 8
+            )
+        );
     }
 }
 

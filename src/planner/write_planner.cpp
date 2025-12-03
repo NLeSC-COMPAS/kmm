@@ -40,7 +40,8 @@ BufferRequirement ArrayWritePlanner<N>::prepare_access(
     return BufferRequirement {
         .buffer_id = buffer.id,
         .memory_id = memory_id,
-        .access_mode = AccessMode::ReadWrite};
+        .access_mode = AccessMode::ReadWrite
+    };
 }
 
 template<size_t N>

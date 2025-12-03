@@ -59,7 +59,7 @@ DeviceResources::DeviceResources(
             );
 
             m_devices[i]->streams.emplace_back(std::move(s));
-            m_devices[i]->last_used_streams.push_back(i);
+            m_devices[i]->last_used_streams.push_back(j);
         }
     }
 }
@@ -72,6 +72,10 @@ DeviceResources::~DeviceResources() {
     }
 }
 
+size_t DeviceResources::num_contexts() const {
+    return m_devices.size();
+}
+
 GPUContextHandle DeviceResources::context(DeviceId device_id) {
     KMM_ASSERT(device_id < m_devices.size());
     return m_devices[device_id]->context;
@@ -79,7 +83,7 @@ GPUContextHandle DeviceResources::context(DeviceId device_id) {
 
 DeviceResources::Stream* DeviceResources::select_stream_for_operation(
     DeviceId device_id,
-    std::optional<uint64_t> stream_hint,
+    DeviceStreamSet stream_hint,
     const DeviceEventSet& deps
 ) {
     static constexpr size_t INVALID = ~size_t(0);
@@ -87,24 +91,37 @@ DeviceResources::Stream* DeviceResources::select_stream_for_operation(
     auto& device = *m_devices[device_id];
     size_t stream_index = INVALID;
 
-    // If there is a hint, use that.
-    if (stream_hint) {
-        stream_index = (*stream_hint) % m_streams_per_device;
+    // Limit available streams to the range 0...streams.size()
+    stream_hint &= DeviceStreamSet::range(0, device.streams.size());
+
+    // No stream given, set it to all streams
+    if (stream_hint.is_empty()) {
+        stream_hint = DeviceStreamSet::all();
     }
 
-    // Otherwise, find a stream that contains one of the dependencies
+    // Case 1: Find a stream that contains one of the dependencies
     if (stream_index == INVALID) {
         for (auto i : device.last_used_streams) {
             auto e = device.streams[i]->last_event;
 
-            if (std::find(deps.begin(), deps.end(), e) != deps.end()) {
+            if (stream_hint.contains(i) && std::find(deps.begin(), deps.end(), e) != deps.end()) {
                 stream_index = i;
                 break;
             }
         }
     }
 
-    // Otherwise, use the least recently used stream
+    // Case 2: Otherwise, find the last used stream that is contained in `stream_hint`
+    if (stream_index == INVALID) {
+        for (auto i : device.last_used_streams) {
+            if (stream_hint.contains(i)) {
+                stream_index = i;
+                break;
+            }
+        }
+    }
+
+    // Case 3: Otherwise, select the last used stream
     if (stream_index == INVALID) {
         stream_index = device.last_used_streams[0];
     }
@@ -123,7 +140,7 @@ DeviceResources::Stream* DeviceResources::select_stream_for_operation(
 
 DeviceEvent DeviceResources::submit(
     DeviceId device_id,
-    std::optional<uint64_t> stream_hint,
+    DeviceStreamSet stream_hint,
     DeviceEventSet deps,
     DeviceResourceOperation& op,
     std::vector<BufferAccessor> accessors
