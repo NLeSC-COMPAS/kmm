@@ -136,6 +136,12 @@
 </dd></dl>
 
 <dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N3kmm13RuntimeConfig23device_memory_keep_freeE">
+<span id="_CPPv3N3kmm13RuntimeConfig23device_memory_keep_freeE"></span><span id="_CPPv2N3kmm13RuntimeConfig23device_memory_keep_freeE"></span><span id="kmm::RuntimeConfig::device_memory_keep_free__s"></span><span class="target" id="structkmm_1_1RuntimeConfig_1aa91249d9f31e6b7dffbe959359537e08"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">device_memory_keep_free</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N3kmm13RuntimeConfig23device_memory_keep_freeE" title="Permalink to this definition"></a><br /></dt>
+<dd><p>Reserve a specified amount of GPU memory for possibly other applications, in bytes. For example, if this is set to 1GB and the memory capacity of the GPU is 12 GB, then at most 11 GB will be used by the KMM runtime system and the remaining space can be used by other applications. </p>
+</dd></dl>
+
+<dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N3kmm13RuntimeConfig24device_memory_block_sizeE">
 <span id="_CPPv3N3kmm13RuntimeConfig24device_memory_block_sizeE"></span><span id="_CPPv2N3kmm13RuntimeConfig24device_memory_block_sizeE"></span><span id="kmm::RuntimeConfig::device_memory_block_size__s"></span><span class="target" id="structkmm_1_1RuntimeConfig_1a25a2d9fa2eabbad8edaa7e10d5849645"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">device_memory_block_size</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">0</span></span><a class="headerlink" href="#_CPPv4N3kmm13RuntimeConfig24device_memory_block_sizeE" title="Permalink to this definition"></a><br /></dt>
 <dd><p>If nonzero, use an arena allocator on each device. This will allocate large blocks of the specified size, from which smaller allocations are subsequently sub-allocated. </p>
@@ -143,7 +149,7 @@
 
 <dl class="cpp var">
 <dt class="sig sig-object cpp" id="_CPPv4N3kmm13RuntimeConfig25device_concurrent_streamsE">
-<span id="_CPPv3N3kmm13RuntimeConfig25device_concurrent_streamsE"></span><span id="_CPPv2N3kmm13RuntimeConfig25device_concurrent_streamsE"></span><span id="kmm::RuntimeConfig::device_concurrent_streams__s"></span><span class="target" id="structkmm_1_1RuntimeConfig_1aea90572700c0952e7faa939847d40896"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">device_concurrent_streams</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">1</span></span><a class="headerlink" href="#_CPPv4N3kmm13RuntimeConfig25device_concurrent_streamsE" title="Permalink to this definition"></a><br /></dt>
+<span id="_CPPv3N3kmm13RuntimeConfig25device_concurrent_streamsE"></span><span id="_CPPv2N3kmm13RuntimeConfig25device_concurrent_streamsE"></span><span id="kmm::RuntimeConfig::device_concurrent_streams__s"></span><span class="target" id="structkmm_1_1RuntimeConfig_1aea90572700c0952e7faa939847d40896"></span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">device_concurrent_streams</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="m"><span class="pre">8</span></span><a class="headerlink" href="#_CPPv4N3kmm13RuntimeConfig25device_concurrent_streamsE" title="Permalink to this definition"></a><br /></dt>
 <dd><p>The number of concurrent streams on each device for execution of kernels. </p>
 </dd></dl>
 
